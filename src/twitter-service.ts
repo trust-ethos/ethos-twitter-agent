@@ -1,4 +1,5 @@
 import type { TwitterUser, TwitterTweet } from "./types.ts";
+import { oauth1a } from "@nexterias/twitter-api-fetch";
 
 export class TwitterService {
   private clientId?: string;
@@ -36,6 +37,13 @@ export class TwitterService {
    */
   hasBearerToken(): boolean {
     return !!this.bearerToken;
+  }
+
+  /**
+   * Check if the service has OAuth 1.0a credentials for posting
+   */
+  hasOAuth1Credentials(): boolean {
+    return !!(this.apiKey && this.apiSecret && this.accessToken && this.accessTokenSecret);
   }
 
   /**
@@ -221,24 +229,32 @@ export class TwitterService {
   }
 
   /**
-   * Reply to a tweet using Twitter API v2
-   * Requires proper authentication with write permissions
+   * Reply to a tweet using Twitter API v2 with OAuth 1.0a
+   * Requires proper OAuth 1.0a credentials with write permissions
    */
   async replyToTweet(tweetId: string, replyText: string): Promise<boolean> {
     try {
       console.log(`📤 Replying to tweet ${tweetId}: ${replyText}`);
       
-      if (!this.bearerToken) {
-        console.log("ℹ️ Bearer token not configured - cannot post tweets");
+      // Check if we have OAuth 1.0a credentials for posting
+      if (!this.hasOAuth1Credentials()) {
+        console.log("ℹ️ OAuth 1.0a credentials not configured - cannot post tweets");
         console.log(`📝 Would reply to tweet ${tweetId} with: "${replyText}"`);
         return true; // Return true for development purposes
       }
 
-      // For now, we'll use the v2 API which requires OAuth 2.0 with write permissions
-      const response = await fetch('https://api.twitter.com/2/tweets', {
+      // Create OAuth 1.0a fetcher
+      const fetcher = await oauth1a({
+        consumerKey: this.apiKey,
+        secretConsumerKey: this.apiSecret,
+        accessToken: this.accessToken,
+        secretAccessToken: this.accessTokenSecret,
+      });
+
+      // Post the reply using OAuth 1.0a
+      const response = await fetcher('/2/tweets', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.bearerToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -254,13 +270,6 @@ export class TwitterService {
         const errorText = await response.text();
         console.error(`❌ Error details: ${errorText}`);
         
-        // If bearer token doesn't have write permissions, log helpful message
-        if (response.status === 403) {
-          console.log(`ℹ️ Note: Bearer token may not have write permissions. You may need OAuth 2.0 with PKCE or OAuth 1.0a credentials.`);
-          console.log(`📤 Would reply to tweet ${tweetId} with: "${replyText}"`);
-          return true; // Return true for development purposes
-        }
-        
         // Handle rate limits gracefully
         if (response.status === 429) {
           const resetTime = response.headers.get('x-rate-limit-reset');
@@ -271,10 +280,11 @@ export class TwitterService {
       }
 
       const result = await response.json();
-      console.log(`✅ Tweet posted successfully:`, result);
+      console.log(`✅ Tweet replied successfully:`, result);
       return true;
     } catch (error) {
       console.error("❌ Failed to reply to tweet:", error);
+      console.log(`📤 Would have replied to tweet ${tweetId} with: "${replyText}"`);
       return false;
     }
   }
