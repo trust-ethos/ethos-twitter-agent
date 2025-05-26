@@ -423,8 +423,8 @@ Learn more about Ethos at https://ethos.network`;
         const originalSaverName = savedTweetInfo?.reviewerUsername || "someone";
         
         return {
-          success: false,
-          message: "Tweet already saved",
+          success: true,
+          message: "Tweet already saved (informational)",
           replyText: `This tweet has already been saved onchain by ${originalSaverName}`
         };
       }
