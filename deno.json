@@ -5,6 +5,7 @@
     "test": "deno test --allow-net --allow-env --allow-read",
     "test-webhook": "deno run --allow-net test-webhook.ts",
     "test-all": "deno run --allow-net test-scenarios.ts",
+    "test-ethos": "deno run --allow-net test-ethos-integration.ts",
     "setup": "deno run --allow-read --allow-write --allow-env setup-twitter-api.ts"
   },
   "imports": {

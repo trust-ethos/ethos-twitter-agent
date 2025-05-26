@@ -1,12 +1,12 @@
-// Comprehensive testing scenarios for the Twitter bot
+// Comprehensive testing scenarios for the Twitter bot with Ethos integration
 // Run with: deno run --allow-net test-scenarios.ts
 
 const BASE_URL = "http://localhost:8000";
 
-// Test scenarios
+// Test scenarios with real users and Ethos integration
 const testScenarios = [
   {
-    name: "Basic Profile Command",
+    name: "Profile Command - User with High Ethos Score",
     event: {
       data: [{
         id: "1234567890",
@@ -17,28 +17,64 @@ const testScenarios = [
       includes: {
         users: [{
           id: "user123",
-          username: "testuser",
-          name: "Test User",
+          username: "vitalikbuterin",
+          name: "Vitalik Buterin",
           profile_image_url: "https://via.placeholder.com/400x400"
         }]
       }
     }
   },
   {
-    name: "Profile Command with Extra Text",
+    name: "Profile Command - User with Some Ethos Activity",
     event: {
       data: [{
         id: "1234567891",
-        text: "@ethosAgent profile please analyze my Twitter account and tell me what you think",
+        text: "@ethosAgent profile please tell me about my reputation",
         author_id: "user456",
         created_at: "2024-01-15T10:35:00.000Z"
       }],
       includes: {
         users: [{
           id: "user456",
-          username: "poweruser",
-          name: "Power User",
+          username: "elonmusk",
+          name: "Elon Musk",
           profile_image_url: "https://via.placeholder.com/400x400"
+        }]
+      }
+    }
+  },
+  {
+    name: "Profile Command - User with Minimal Ethos Activity",
+    event: {
+      data: [{
+        id: "1234567892",
+        text: "@ethosAgent profile",
+        author_id: "user789",
+        created_at: "2024-01-15T10:40:00.000Z"
+      }],
+      includes: {
+        users: [{
+          id: "user789",
+          username: "testuser123",
+          name: "Test User"
+        }]
+      }
+    }
+  },
+  {
+    name: "Profile Command - User Not on Ethos",
+    event: {
+      data: [{
+        id: "1234567893",
+        text: "@ethosAgent profile",
+        author_id: "user101",
+        created_at: "2024-01-15T10:45:00.000Z"
+      }],
+      includes: {
+        users: [{
+          id: "user101",
+          username: "nonexistentuser999",
+          name: "Regular User"
         }]
       }
     }
@@ -47,14 +83,14 @@ const testScenarios = [
     name: "Unknown Command",
     event: {
       data: [{
-        id: "1234567892",
+        id: "1234567894",
         text: "@ethosAgent unknown command here",
-        author_id: "user789",
-        created_at: "2024-01-15T10:40:00.000Z"
+        author_id: "user202",
+        created_at: "2024-01-15T10:50:00.000Z"
       }],
       includes: {
         users: [{
-          id: "user789",
+          id: "user202",
           username: "confused",
           name: "Confused User"
         }]
@@ -65,14 +101,14 @@ const testScenarios = [
     name: "Mention Without Command",
     event: {
       data: [{
-        id: "1234567893",
+        id: "1234567895",
         text: "@ethosAgent hey there!",
-        author_id: "user101",
-        created_at: "2024-01-15T10:45:00.000Z"
+        author_id: "user303",
+        created_at: "2024-01-15T10:55:00.000Z"
       }],
       includes: {
         users: [{
-          id: "user101",
+          id: "user303",
           username: "casual",
           name: "Casual User"
         }]
@@ -83,14 +119,14 @@ const testScenarios = [
     name: "Case Insensitive Profile Command",
     event: {
       data: [{
-        id: "1234567894",
+        id: "1234567896",
         text: "@EthosAgent PROFILE",
-        author_id: "user202",
-        created_at: "2024-01-15T10:50:00.000Z"
+        author_id: "user404",
+        created_at: "2024-01-15T11:00:00.000Z"
       }],
       includes: {
         users: [{
-          id: "user202",
+          id: "user404",
           username: "shouty",
           name: "Shouty User"
         }]
@@ -103,6 +139,7 @@ async function runTest(scenario: any) {
   try {
     console.log(`\n🧪 Testing: ${scenario.name}`);
     console.log(`📝 Tweet: "${scenario.event.data[0].text}"`);
+    console.log(`👤 User: ${scenario.event.includes.users[0].name} (@${scenario.event.includes.users[0].username})`);
     
     const response = await fetch(`${BASE_URL}/webhook/twitter`, {
       method: "POST",
@@ -126,7 +163,7 @@ async function runTest(scenario: any) {
 }
 
 async function testHealthEndpoints() {
-  console.log("\n🏥 Testing Health Endpoints");
+  console.log("🏥 Testing Health Endpoints");
   console.log("============================");
   
   try {
@@ -148,12 +185,40 @@ async function testHealthEndpoints() {
   }
 }
 
+async function testEthosIntegration() {
+  console.log("\n🌐 Testing Ethos Integration");
+  console.log("============================");
+  
+  // Test some direct API calls to verify Ethos is working
+  const testUsers = ["vitalikbuterin", "elonmusk", "nonexistentuser999"];
+  
+  for (const username of testUsers) {
+    try {
+      const response = await fetch(`https://api.ethos.network/api/v1/users/service:x.com:username:${username}/stats`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        const reviewCount = data.data?.reviews?.received || 0;
+        const score = Math.round(data.data?.reviews?.positiveReviewPercentage || 0);
+        console.log(`✅ ${username}: ${reviewCount} reviews, ${score}% positive`);
+      } else {
+        console.log(`ℹ️ ${username}: Not found on Ethos (${response.status})`);
+      }
+    } catch (error) {
+      console.error(`❌ Error testing ${username}:`, error.message);
+    }
+  }
+}
+
 async function runAllTests() {
-  console.log("🚀 Starting Twitter Bot Test Suite");
-  console.log("===================================");
+  console.log("🚀 Starting Twitter Bot Test Suite with Ethos Integration");
+  console.log("=========================================================");
 
   // Test health endpoints first
   await testHealthEndpoints();
+
+  // Test Ethos integration
+  await testEthosIntegration();
 
   // Test webhook scenarios
   console.log("\n📨 Testing Webhook Scenarios");
@@ -162,14 +227,17 @@ async function runAllTests() {
   for (const scenario of testScenarios) {
     await runTest(scenario);
     // Small delay between tests
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 
   console.log("\n🎉 Test suite completed!");
-  console.log("\n💡 Tips:");
-  console.log("  - Check the server logs for detailed processing info");
-  console.log("  - The bot should recognize 'profile' commands and reject unknown ones");
-  console.log("  - All webhook events should return 200 status");
+  console.log("\n💡 What to expect:");
+  console.log("  - ✅ Real Ethos scores for vitalikbuterin (~99), elonmusk (~89)");
+  console.log("  - ✅ Minimal activity message for testuser123 (score 0)");
+  console.log("  - ✅ Fallback message for nonexistentuser999 (not on Ethos)");
+  console.log("  - ✅ Profile commands should work with real Ethos data");
+  console.log("  - ✅ Unknown commands should be rejected appropriately");
+  console.log("  - ✅ All webhook events should return 200 status");
 }
 
 // Run tests if this file is executed directly

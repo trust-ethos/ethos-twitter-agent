@@ -1,11 +1,12 @@
 # Ethos Twitter Agent
 
-A Twitter bot that responds to mentions and processes commands, starting with `@ethosAgent profile`.
+A Twitter bot that responds to mentions and processes commands, starting with `@ethosAgent profile` using real Ethos Network data.
 
 ## Features
 
 - ✅ Listens for Twitter mentions via webhooks
-- ✅ Processes commands like `@ethosAgent profile`
+- ✅ Processes commands like `@ethosAgent profile` with **real Ethos Network integration**
+- ✅ Fetches live credibility scores, reviews, and vouches from Ethos API
 - ✅ Real Twitter API v2 integration
 - ✅ Modular action system for extensibility
 - ✅ Built for Deno Deploy
@@ -28,12 +29,39 @@ A Twitter bot that responds to mentions and processes commands, starting with `@
    deno task test-all
    ```
 
+## Ethos Integration
+
+The `@ethosAgent profile` command now provides **real credibility data** from [Ethos Network](https://ethos.network):
+
+### What You Get
+- **Credibility Score**: Based on positive review percentage  
+- **Review Count**: Total reviews received on Ethos
+- **Vouches Staked**: Amount of ETH staked by others as vouches
+- **Profile Links**: Direct links to Ethos profiles
+
+### Example Responses
+```
+🔥 Real Data Examples:
+• Vitalik Buterin: Score 99, 194 reviews, 1.25 ETH staked
+• Elon Musk: Score 89, 22 reviews, 0.29 ETH staked  
+• New Users: Friendly encouragement to join Ethos
+```
+
+### How It Works
+1. User mentions `@ethosAgent profile`
+2. Bot fetches their Twitter username
+3. Calls Ethos API: `https://api.ethos.network/api/v1/users/service:x.com:username:{username}/stats`
+4. Responds with formatted credibility data
+
 ## Testing Your Bot
 
 ### 🧪 **Local Testing (Recommended)**
 ```bash
-# Run comprehensive test suite
+# Run comprehensive test suite with real Ethos data
 deno task test-all
+
+# Test just the Ethos integration
+deno task test-ethos
 
 # Quick webhook test
 deno task test-webhook
@@ -53,11 +81,12 @@ curl http://localhost:8000/test/twitter
 See `test-with-ngrok.md` for detailed instructions.
 
 ### 📊 **What Gets Tested**
-- ✅ Basic profile commands
+- ✅ Real Ethos scores (vitalikbuterin ~99, elonmusk ~89)
+- ✅ Users with minimal Ethos activity (score 0)  
+- ✅ Users not on Ethos (helpful fallback messages)
 - ✅ Commands with extra text
 - ✅ Unknown command handling
 - ✅ Case insensitive commands
-- ✅ Mentions without commands
 - ✅ Health and API endpoints
 
 ## What Credentials Do You Actually Need?
@@ -88,7 +117,11 @@ Twitter sends mention data directly to your webhook endpoint. No authentication 
 
 ## Commands
 
-- `@ethosAgent profile` - Processes profile-related actions
+- `@ethosAgent profile` - Shows real Ethos credibility data including:
+  - Credibility score (based on positive review percentage)
+  - Number of reviews received
+  - Amount of ETH staked as vouches
+  - Link to full Ethos profile
 
 ## Development
 
@@ -96,8 +129,11 @@ Twitter sends mention data directly to your webhook endpoint. No authentication 
 # Start development server with auto-reload
 deno task dev
 
-# Run comprehensive tests
+# Run comprehensive tests with Ethos integration
 deno task test-all
+
+# Test just Ethos API integration
+deno task test-ethos
 
 # Run simple webhook test
 deno task test-webhook
