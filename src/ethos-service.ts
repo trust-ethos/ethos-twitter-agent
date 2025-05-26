@@ -59,26 +59,30 @@ export class EthosService {
 
       const data = responseData.data;
 
-      // Calculate a simple score based on available data
-      // Since there's no direct "score" field, we'll create one from the data
-      const positiveReviews = data.reviews?.positiveReviewCount || 0;
-      const totalReviews = data.reviews?.received || 0;
-      const vouchesReceived = data.vouches?.staked?.received || 0;
-      const reviewPercentage = data.reviews?.positiveReviewPercentage || 0;
-      
-      // Simple scoring algorithm: base on positive review percentage and vouches
+      // Extract the actual Ethos score (0-2800 scale) from the API response
       let score = 0;
-      if (totalReviews > 0) {
-        score = Math.round(reviewPercentage);
-      } else if (vouchesReceived > 0) {
-        score = 50; // Default score for users with vouches but no reviews
+      
+      // First try to get the official Ethos score from market profile
+      if (data.market?.profile?.ethosScore) {
+        score = data.market.profile.ethosScore;
+      } else {
+        // Fallback: calculate based on review percentage if no official score
+        const reviewPercentage = data.reviews?.positiveReviewPercentage || 0;
+        const totalReviews = data.reviews?.received || 0;
+        const vouchesReceived = data.vouches?.staked?.received || 0;
+        
+        if (totalReviews > 0) {
+          score = Math.round(reviewPercentage);
+        } else if (vouchesReceived > 0) {
+          score = 50; // Default score for users with vouches but no reviews
+        }
       }
 
       const stats: EthosUserStats = {
         score: score,
-        numReviews: totalReviews,
+        numReviews: data.reviews?.received || 0,
         vouches: {
-          staked: vouchesReceived
+          staked: data.vouches?.staked?.received || 0
         }
       };
 

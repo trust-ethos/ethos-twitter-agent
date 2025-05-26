@@ -303,7 +303,7 @@ async function runAllTests() {
   console.log("\n💡 What to expect:");
   console.log("  - 🔄 Reply scenarios: Bot analyzes the original tweet author (e.g., Vitalik, 0x5f_eth, Elon)");
   console.log("  - 💬 Direct mentions: Bot analyzes the person mentioning it");
-  console.log("  - ✅ Real Ethos scores for vitalikbuterin (~99), 0x5f_eth, elonmusk (~89)");
+  console.log("  - ✅ Real Ethos scores: 0x5f_eth (2350), vitalikbuterin (99), elonmusk (89)");
   console.log("  - ✅ Fallback message for nonexistentuser999 (not on Ethos)");
   console.log("  - ✅ Profile commands should work with real Ethos data");
   console.log("  - ✅ Responses should be clean without greetings");

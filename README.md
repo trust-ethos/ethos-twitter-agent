@@ -70,10 +70,16 @@ The bot provides **real credibility data** from [Ethos Network](https://ethos.ne
 ### Example Responses
 ```
 🔥 Real Data Examples:
-• Vitalik Buterin: Score 99, 194 reviews, 1.25 ETH staked
-• Elon Musk: Score 89, 22 reviews, 0.29 ETH staked  
+• 0x5f_eth: Score 2350 (out of 2800), 615 reviews, 18.69 ETH staked
+• Vitalik Buterin: Score 99 (based on 99% positive reviews), 194 reviews, 1.25 ETH staked
+• Elon Musk: Score 89 (based on 89% positive reviews), 22 reviews, 0.29 ETH staked  
 • New Users: Friendly encouragement to join Ethos
 ```
+
+### Scoring System
+- **Official Ethos Score (0-2800)**: For users with market profiles, we use the real Ethos score
+- **Fallback Score (0-100)**: For users without market profiles, we calculate based on positive review percentage
+- **No Activity**: Score 0 for users with no reviews or vouches
 
 ### How It Works
 1. User mentions `@ethosAgent profile` (in reply or direct mention)
@@ -112,8 +118,9 @@ curl http://localhost:8000/test/twitter
 See `test-with-ngrok.md` for detailed instructions.
 
 ### 📊 **What Gets Tested**
-- ✅ **Reply Analysis**: Bot analyzes original tweet authors (Vitalik, Elon)
+- ✅ **Reply Analysis**: Bot analyzes original tweet authors (Vitalik, 0x5f_eth, Elon)
 - ✅ **Direct Mentions**: Bot analyzes the person asking
+- ✅ **Real Ethos Scores**: 0x5f_eth (2350), Vitalik (99), Elon (89)
 - ✅ Users with minimal Ethos activity (score 0)  
 - ✅ Users not on Ethos (helpful fallback messages)
 - ✅ Commands with extra text
@@ -204,5 +211,4 @@ See `env.example` for all available environment variables. Use `deno task setup`
 TWITTER_CLIENT_ID=your_client_id
 TWITTER_CLIENT_SECRET=your_client_secret
 WEBHOOK_SECRET=any_random_string
-PORT=8000
-``` 
+PORT=8000 
