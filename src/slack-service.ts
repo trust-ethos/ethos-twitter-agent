@@ -34,21 +34,13 @@ export class SlackService {
     }
 
     try {
-      const emoji = type === 'success' ? ':white_check_mark:' : 
-                   type === 'error' ? ':x:' : ':information_source:';
-      
-      const notification: SlackNotification = {
-        text: `${emoji} ${payload.response}${payload.tweet_link ? `\n🔗 Tweet: ${payload.tweet_link}` : ''}${payload.error_details ? `\n❌ Error: ${payload.error_details}` : ''}${payload.original_tweet ? `\n📝 Original: ${payload.original_tweet}` : ''}`,
-        username: 'Ethos Twitter Agent',
-        icon_emoji: ':robot_face:'
-      };
-
+      // Send simple structured format as requested: {response: "text"}
       const response = await fetch(this.webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(notification),
+        body: JSON.stringify(payload), // Send the payload directly
       });
 
       if (!response.ok) {
@@ -101,7 +93,7 @@ export class SlackService {
    * Send notification for successful tweet save with structured response
    */
   async notifySuccessfulSave(tweetId: string, tweetUrl: string, sentiment: string, targetUser: string, postedTweetId?: string, botUsername?: string): Promise<void> {
-    const responseText = `Successfully saved tweet as ${sentiment} review for @${targetUser}`;
+    const responseText = `✅ Successfully saved tweet as ${sentiment} review for @${targetUser}`;
     
     const payload: SlackStructuredResponse = {
       response: responseText,
@@ -115,7 +107,7 @@ export class SlackService {
    * Send notification for profile command success with structured response
    */
   async notifyProfileSuccess(targetUser: string, requesterUser: string, postedTweetId?: string, botUsername?: string): Promise<void> {
-    const responseText = `Successfully provided profile analysis for @${targetUser} requested by @${requesterUser}`;
+    const responseText = `✅ Successfully provided profile analysis for @${targetUser} requested by @${requesterUser}`;
     
     const payload: SlackStructuredResponse = {
       response: responseText,
@@ -129,7 +121,7 @@ export class SlackService {
    * Send notification for errors with structured response
    */
   async notifyError(operation: string, error: string, context?: string, originalTweetText?: string): Promise<void> {
-    let responseText = `Failed ${operation}`;
+    let responseText = `❌ Failed ${operation}`;
     if (context) {
       responseText += ` (${context})`;
     }
