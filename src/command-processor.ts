@@ -329,8 +329,9 @@ Learn more about Ethos at https://ethos.network`;
         targetUsername = usernameMatch[1];
         targetName = `@${targetUsername}`;
         saveContext = `saving tweet as review to ${targetName}'s profile as requested by @${mentionerUsername}`;
-      } else if (remainingArgs.length === 0 || (remainingArgs.length === 1 && validSentiments.includes(remainingArgs[0].toLowerCase()))) {
-        // This is just "save" or "save [sentiment]" - save to original tweet author
+      } else {
+        // This is just "save" (with optional sentiment and extra text we ignore)
+        // Save to original tweet author - ignore any extra words after sentiment
         const originalAuthor = allUsers?.find(user => user.id === tweet.in_reply_to_user_id);
         
         if (!originalAuthor) {
@@ -344,12 +345,11 @@ Learn more about Ethos at https://ethos.network`;
         targetUsername = originalAuthor.username;
         targetName = originalAuthor.name;
         saveContext = `saving tweet as review to ${targetName} (@${targetUsername})'s profile as requested by @${mentionerUsername}`;
-      } else {
-        return {
-          success: false,
-          message: "Invalid save command format",
-          replyText: `Invalid save command. Use "@ethosAgent save [positive/negative/neutral]" to save to the original tweet author, or "@ethosAgent save target @username [positive/negative/neutral]" to save to a specific user.`
-        };
+        
+        // Log ignored extra text for debugging
+        if (remainingArgs.length > 0) {
+          console.log(`ℹ️ Ignoring extra text in save command: "${remainingArgs.join(' ')}"`);
+        }
       }
 
       console.log(`💾 Processing save command: ${saveContext}`);
