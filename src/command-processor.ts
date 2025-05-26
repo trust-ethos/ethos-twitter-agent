@@ -420,10 +420,12 @@ Learn more about Ethos at https://ethos.network`;
         const savedTweetInfo = await this.storageService.getSavedTweet(originalTweetId);
         console.log(`⚠️ Tweet ${originalTweetId} was already saved by @${savedTweetInfo?.reviewerUsername} on ${savedTweetInfo?.savedAt}`);
         
+        const originalSaverName = savedTweetInfo?.reviewerUsername || "someone";
+        
         return {
           success: false,
           message: "Tweet already saved",
-          replyText: "Someone has already saved that tweet!"
+          replyText: `This tweet has already been saved onchain by ${originalSaverName}`
         };
       }
       
