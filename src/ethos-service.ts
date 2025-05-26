@@ -15,6 +15,19 @@ export interface EthosApiResponse {
   error?: string;
 }
 
+export interface CreateReviewRequest {
+  targetUsername: string;
+  reviewerUsername: string;
+  tweetId: string;
+  reviewText: string;
+}
+
+export interface CreateReviewResponse {
+  success: boolean;
+  data?: any;
+  error?: string;
+}
+
 export class EthosService {
   private baseUrl = "https://api.ethos.network";
 
@@ -171,5 +184,50 @@ export class EthosService {
     }
     
     return `${baseMessage}. You can check if they're on Ethos here: ${profileUrl}`;
+  }
+
+  /**
+   * Create a review on Ethos for a specific user
+   * @param request - Review creation request data
+   */
+  async createReview(request: CreateReviewRequest): Promise<CreateReviewResponse> {
+    try {
+      console.log(`💾 Creating Ethos review for user: ${request.targetUsername}`);
+      console.log(`📝 Review request:`, {
+        target: request.targetUsername,
+        reviewer: request.reviewerUsername,
+        tweetId: request.tweetId
+      });
+
+      // Check if we have Ethos API credentials
+      const ethosApiKey = Deno.env.get("ETHOS_API_KEY");
+      const ethosApiSecret = Deno.env.get("ETHOS_API_SECRET");
+
+      if (!ethosApiKey || !ethosApiSecret) {
+        console.log("⚠️ Ethos API credentials not configured");
+        return {
+          success: false,
+          error: "Ethos API credentials not configured"
+        };
+      }
+
+      // TODO: Implement actual Ethos API call to create review
+      // This will need the correct endpoint and authentication method
+      // For now, return a placeholder implementation
+      
+      console.log("🔗 Ethos API integration not yet implemented");
+      
+      return {
+        success: false,
+        error: "Ethos review creation API not yet implemented. Please provide the correct API endpoint and authentication method."
+      };
+
+    } catch (error) {
+      console.error('❌ Error creating Ethos review:', error);
+      return {
+        success: false,
+        error: 'Failed to create Ethos review'
+      };
+    }
   }
 } 
