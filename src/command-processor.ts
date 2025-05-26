@@ -354,6 +354,23 @@ Learn more about Ethos at https://ethos.network`;
 
       console.log(`💾 Processing save command: ${saveContext}`);
 
+      // 🚨 ANTI-ABUSE: Check if user is trying to review themselves
+      if (targetUsername.toLowerCase() === mentionerUsername.toLowerCase()) {
+        console.log(`🚨 Self-review abuse detected: @${mentionerUsername} trying to review themselves as ${reviewScore}`);
+        
+        // Override their intended sentiment to negative
+        reviewScore = "negative";
+        
+        // Send Slack notification about the abuse attempt
+        await this.slackService.notifyError(
+          "self-review abuse attempt", 
+          `@${mentionerUsername} tried to review themselves positively`, 
+          `Original sentiment: ${command.args.includes('positive') ? 'positive' : command.args.includes('negative') ? 'negative' : 'neutral'}, converted to negative`
+        );
+        
+        console.log(`🚨 Converted self-review to negative sentiment for @${mentionerUsername}`);
+      }
+
       // Check if the target user has a valid Ethos profile
       console.log(`🔍 Validating Ethos profile for target user: ${targetUsername}`);
       const profileCheck = await this.ethosService.checkUserProfile(targetUsername);
@@ -427,20 +444,33 @@ Learn more about Ethos at https://ethos.network`;
       // Get original tweet author information
       const originalAuthor = allUsers?.find(user => user.id === originalTweet.author_id);
       
-      // Create the title: first 120 characters of tweet 
-      const reviewTitle = originalTweet.text.length > 120 
-        ? originalTweet.text.substring(0, 117) + "..." 
-        : originalTweet.text;
+      // 🚨 ANTI-ABUSE: Create custom title and description for self-reviews
+      let reviewTitle: string;
+      let reviewDescription: string;
       
-      // Create the detailed description
+      const isSelfReview = targetUsername.toLowerCase() === mentionerUsername.toLowerCase();
       const originalTweetLink = `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`;
-      const reviewDescription = `Original tweet saved by @${mentionerUsername}: "${originalTweet.text}"
+      
+      if (isSelfReview) {
+        // Use anti-abuse message for self-reviews
+        reviewTitle = "User tried to abuse Ethos and review themself positively through my code";
+        reviewDescription = "Please don't do that again, anon.";
+        console.log(`🚨 Using anti-abuse title and description for self-review by @${mentionerUsername}`);
+      } else {
+        // Create the normal title: first 120 characters of tweet 
+        reviewTitle = originalTweet.text.length > 120 
+          ? originalTweet.text.substring(0, 117) + "..." 
+          : originalTweet.text;
+        
+        // Create the normal detailed description
+        reviewDescription = `Original tweet saved by @${mentionerUsername}: "${originalTweet.text}"
 
 Authored at: ${originalTweet.created_at}
 
 Author user id: ${originalTweet.author_id}
 
 Link to tweet: ${originalTweetLink}`;
+      }
 
       console.log(`📝 Review details - Score: ${reviewScore}, Title: ${reviewTitle}`);
       console.log(`📝 Review description length: ${reviewDescription.length} characters`);
