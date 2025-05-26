@@ -1,24 +1,23 @@
 import type { TwitterUser, TwitterTweet } from "./types.ts";
 
 export class TwitterService {
-  private clientId: string;
-  private clientSecret: string;
-  private bearerToken: string;
+  private clientId?: string;
+  private clientSecret?: string;
+  private bearerToken?: string;
   private apiKey: string;
   private apiSecret: string;
   private accessToken: string;
   private accessTokenSecret: string;
 
   constructor() {
-    this.clientId = Deno.env.get("TWITTER_CLIENT_ID") || "";
-    this.clientSecret = Deno.env.get("TWITTER_CLIENT_SECRET") || "";
-    this.bearerToken = Deno.env.get("TWITTER_BEARER_TOKEN") || "";
+    this.clientId = Deno.env.get("TWITTER_CLIENT_ID");
+    this.clientSecret = Deno.env.get("TWITTER_CLIENT_SECRET");
+    this.bearerToken = Deno.env.get("TWITTER_BEARER_TOKEN");
     this.apiKey = Deno.env.get("TWITTER_API_KEY") || "";
     this.apiSecret = Deno.env.get("TWITTER_API_SECRET") || "";
     this.accessToken = Deno.env.get("TWITTER_ACCESS_TOKEN") || "";
     this.accessTokenSecret = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET") || "";
 
-    // Only warn about missing credentials if they're needed for specific features
     console.log("🔧 Twitter Service initialized");
     if (!this.bearerToken) {
       console.log("ℹ️ Bearer Token not configured - user lookups and posting will be limited");
@@ -26,72 +25,197 @@ export class TwitterService {
   }
 
   /**
-   * Get user information by username using Twitter API v2
-   * Only needed if you want data beyond what's in the webhook
+   * Check if the service has the minimum required credentials
+   */
+  hasMinimumCredentials(): boolean {
+    return !!(this.clientId && this.clientSecret);
+  }
+
+  /**
+   * Check if the service has bearer token for enhanced features
+   */
+  hasBearerToken(): boolean {
+    return !!this.bearerToken;
+  }
+
+  /**
+   * Get user information by username
    */
   async getUserByUsername(username: string): Promise<TwitterUser | null> {
+    if (!this.hasBearerToken()) {
+      console.log(`🔍 No bearer token available, creating mock user for: ${username}`);
+      // Return a mock user when we don't have bearer token
+      return {
+        id: `mock_${username}`,
+        username: username,
+        name: username.charAt(0).toUpperCase() + username.slice(1),
+        profile_image_url: "https://via.placeholder.com/400x400"
+      };
+    }
+
     try {
       console.log(`🔍 Fetching user info for: ${username}`);
       
-      if (!this.bearerToken) {
-        console.log("ℹ️ Bearer token not configured - using webhook data only");
-        // Return a basic user object that can be enhanced with webhook data
-        return {
-          id: "unknown",
-          username: username,
-          name: username.charAt(0).toUpperCase() + username.slice(1),
-          profile_image_url: undefined
-        };
-      }
-
-      const response = await fetch(
-        `https://api.twitter.com/2/users/by/username/${username}?user.fields=name,username,profile_image_url,public_metrics`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.bearerToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const response = await fetch(`https://api.twitter.com/2/users/by/username/${username}`, {
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`,
+        },
+      });
 
       if (!response.ok) {
         console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
-        const errorText = await response.text();
-        console.error(`❌ Error details: ${errorText}`);
-        
-        // Fallback to basic user info
-        return {
-          id: "unknown",
-          username: username,
-          name: username.charAt(0).toUpperCase() + username.slice(1),
-          profile_image_url: undefined
-        };
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ Error details:`, errorData);
+        return null;
       }
 
       const data = await response.json();
       
-      if (!data.data) {
-        console.error("❌ User not found");
+      if (data.data) {
+        console.log(`✅ Found user: ${data.data.name} (@${data.data.username})`);
+        return data.data;
+      }
+
+      console.log(`❌ User not found: ${username}`);
+      return null;
+
+    } catch (error) {
+      console.error(`❌ Error fetching user ${username}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get user information by user ID
+   */
+  async getUserById(userId: string): Promise<TwitterUser | null> {
+    if (!this.hasBearerToken()) {
+      console.log(`🔍 No bearer token available, creating mock user for ID: ${userId}`);
+      // Return a mock user when we don't have bearer token
+      return {
+        id: userId,
+        username: `user_${userId}`,
+        name: `User ${userId}`,
+        profile_image_url: "https://via.placeholder.com/400x400"
+      };
+    }
+
+    try {
+      console.log(`🔍 Fetching user info for ID: ${userId}`);
+      
+      const response = await fetch(`https://api.twitter.com/2/users/${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ Error details:`, errorData);
         return null;
       }
 
-      const userInfo: TwitterUser = {
-        id: data.data.id,
-        username: data.data.username,
-        name: data.data.name,
-        profile_image_url: data.data.profile_image_url
-      };
+      const data = await response.json();
       
-      console.log(`✅ Found user: ${userInfo.name} (@${userInfo.username})`);
-      return userInfo;
+      if (data.data) {
+        console.log(`✅ Found user: ${data.data.name} (@${data.data.username})`);
+        return data.data;
+      }
+
+      console.log(`❌ User not found for ID: ${userId}`);
+      return null;
+
     } catch (error) {
-      console.error("❌ Failed to fetch user:", error);
-      // Fallback to basic user info
+      console.error(`❌ Error fetching user ${userId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Post a tweet (requires bearer token or OAuth)
+   */
+  async postTweet(text: string): Promise<boolean> {
+    if (!this.hasBearerToken()) {
+      console.log(`📤 Would post tweet: "${text}"`);
+      return true; // Simulate success for testing
+    }
+
+    try {
+      console.log(`📤 Posting tweet: "${text}"`);
+      
+      const response = await fetch('https://api.twitter.com/2/tweets', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Failed to post tweet: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ Error details:`, errorData);
+        return false;
+      }
+
+      const data = await response.json();
+      console.log(`✅ Tweet posted successfully:`, data);
+      return true;
+
+    } catch (error) {
+      console.error(`❌ Error posting tweet:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Test the current authentication setup
+   */
+  async testAuth(): Promise<{ success: boolean; message: string; data?: any }> {
+    if (!this.hasBearerToken()) {
       return {
-        id: "unknown",
-        username: username,
-        name: username.charAt(0).toUpperCase() + username.slice(1),
-        profile_image_url: undefined
+        success: false,
+        message: "No bearer token configured"
+      };
+    }
+
+    try {
+      console.log(`🧪 Testing Twitter API credentials...`);
+      console.log(`🔍 Fetching current authenticated user...`);
+      
+      const response = await fetch('https://api.twitter.com/2/users/me', {
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ Error details:`, errorData);
+        return {
+          success: false,
+          message: `Twitter API error: ${response.status}`,
+          data: errorData
+        };
+      }
+
+      const data = await response.json();
+      console.log(`✅ Authentication successful:`, data);
+      
+      return {
+        success: true,
+        message: "Authentication successful",
+        data
+      };
+
+    } catch (error) {
+      console.error(`❌ Error testing authentication:`, error);
+      return {
+        success: false,
+        message: "Network error during authentication test"
       };
     }
   }

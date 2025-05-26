@@ -63,27 +63,70 @@ export class CommandProcessor {
 
   /**
    * Handle the 'profile' command with Ethos integration
+   * Analyzes the profile of the original tweet author (if this is a reply)
+   * or the person who mentioned the bot (if this is not a reply)
    */
   private async handleProfileCommand(command: Command): Promise<CommandResult> {
     try {
-      const username = command.mentionedUser.username;
-      const name = command.mentionedUser.name;
-      
-      console.log(`👤 Processing profile command for user: ${username} (${name})`);
+      const tweet = command.originalTweet;
+      const mentionerUsername = command.mentionedUser.username;
+      const mentionerName = command.mentionedUser.name;
 
-      // Fetch Ethos stats for the user
-      const ethosResponse = await this.ethosService.getUserStats(username);
+      // Check if this is a reply to another tweet
+      const isReply = tweet.in_reply_to_user_id || tweet.referenced_tweets?.some(ref => ref.type === "replied_to");
+      
+      let targetUsername: string;
+      let targetName: string;
+      let analysisContext: string;
+
+      if (isReply && tweet.in_reply_to_user_id) {
+        // This is a reply - we should analyze the original tweet author
+        try {
+          // Try to get the original tweet author info from Twitter API
+          const originalAuthor = await this.twitterService.getUserById(tweet.in_reply_to_user_id);
+          
+          if (originalAuthor) {
+            targetUsername = originalAuthor.username;
+            targetName = originalAuthor.name;
+            analysisContext = `analyzing the profile of ${targetName} (@${targetUsername}) as requested by @${mentionerUsername}`;
+          } else {
+            // Fallback if we can't get the original author
+            return {
+              success: false,
+              message: "Could not fetch original tweet author information",
+              replyText: `Hey @${mentionerUsername}! 👋 I couldn't fetch information about the original tweet author. Please make sure you're replying to a valid tweet.`
+            };
+          }
+        } catch (error) {
+          console.error("❌ Error fetching original tweet author:", error);
+          return {
+            success: false,
+            message: "Error fetching original tweet author",
+            replyText: `Hey @${mentionerUsername}! 👋 I had trouble accessing the original tweet information. Please try again later.`
+          };
+        }
+      } else {
+        // Not a reply - analyze the person who mentioned the bot
+        targetUsername = mentionerUsername;
+        targetName = mentionerName;
+        analysisContext = `analyzing the profile of ${targetName} (@${targetUsername}) at their request`;
+      }
+
+      console.log(`👤 Processing profile command: ${analysisContext}`);
+
+      // Fetch Ethos stats for the target user
+      const ethosResponse = await this.ethosService.getUserStats(targetUsername);
       
       let replyText: string;
       
       if (ethosResponse.success && ethosResponse.data) {
         // Format response with Ethos data
-        replyText = `Hey @${username}! 👋 ${this.ethosService.formatStats(ethosResponse.data, name, username)}`;
-        console.log(`✅ Ethos data found for ${username}`);
+        replyText = `Hey @${mentionerUsername}! 👋 ${this.ethosService.formatStats(ethosResponse.data, targetName, targetUsername)}`;
+        console.log(`✅ Ethos data found for ${targetUsername}`);
       } else {
         // Fallback message when Ethos data is not available
-        replyText = `Hey @${username}! 👋 ${this.ethosService.getFallbackMessage(name, username, ethosResponse.error)}`;
-        console.log(`ℹ️ No Ethos data for ${username}: ${ethosResponse.error}`);
+        replyText = `Hey @${mentionerUsername}! 👋 ${this.ethosService.getFallbackMessage(targetName, targetUsername, ethosResponse.error)}`;
+        console.log(`ℹ️ No Ethos data for ${targetUsername}: ${ethosResponse.error}`);
       }
 
       return {
@@ -94,8 +137,8 @@ export class CommandProcessor {
     } catch (error) {
       console.error("❌ Error processing profile command:", error);
       
-      const username = command.mentionedUser.username;
-      const fallbackReply = `Hey @${username}! 👋 I'm having trouble accessing profile data right now. Please try again later or check https://app.ethos.network/profile/x/${username}`;
+      const mentionerUsername = command.mentionedUser.username;
+      const fallbackReply = `Hey @${mentionerUsername}! 👋 I'm having trouble accessing profile data right now. Please try again later.`;
       
       return {
         success: false,

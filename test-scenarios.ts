@@ -6,87 +6,115 @@ const BASE_URL = "http://localhost:8000";
 // Test scenarios with real users and Ethos integration
 const testScenarios = [
   {
-    name: "Profile Command - User with High Ethos Score",
+    name: "Reply: Profile Analysis of Vitalik (High Ethos Score)",
     event: {
       data: [{
         id: "1234567890",
         text: "@ethosAgent profile",
-        author_id: "user123",
-        created_at: "2024-01-15T10:30:00.000Z"
+        author_id: "user123", // Person asking for analysis
+        created_at: "2024-01-15T10:30:00.000Z",
+        in_reply_to_user_id: "originaluser1" // Vitalik's user ID
       }],
       includes: {
-        users: [{
-          id: "user123",
-          username: "vitalikbuterin",
-          name: "Vitalik Buterin",
-          profile_image_url: "https://via.placeholder.com/400x400"
-        }]
+        users: [
+          {
+            id: "user123",
+            username: "analystrequest",
+            name: "Analyst Requester",
+            profile_image_url: "https://via.placeholder.com/400x400"
+          },
+          {
+            id: "originaluser1", 
+            username: "vitalikbuterin",
+            name: "Vitalik Buterin",
+            profile_image_url: "https://via.placeholder.com/400x400"
+          }
+        ]
       }
     }
   },
   {
-    name: "Profile Command - User with Some Ethos Activity",
+    name: "Reply: Profile Analysis of Elon (Some Ethos Activity)",
     event: {
       data: [{
         id: "1234567891",
-        text: "@ethosAgent profile please tell me about my reputation",
-        author_id: "user456",
-        created_at: "2024-01-15T10:35:00.000Z"
+        text: "@ethosAgent profile please tell me about this person's reputation",
+        author_id: "user456", // Person asking for analysis
+        created_at: "2024-01-15T10:35:00.000Z",
+        in_reply_to_user_id: "originaluser2" // Elon's user ID
       }],
       includes: {
-        users: [{
-          id: "user456",
-          username: "elonmusk",
-          name: "Elon Musk",
-          profile_image_url: "https://via.placeholder.com/400x400"
-        }]
+        users: [
+          {
+            id: "user456",
+            username: "cryptotrader",
+            name: "Crypto Trader", 
+            profile_image_url: "https://via.placeholder.com/400x400"
+          },
+          {
+            id: "originaluser2",
+            username: "elonmusk",
+            name: "Elon Musk",
+            profile_image_url: "https://via.placeholder.com/400x400"
+          }
+        ]
       }
     }
   },
   {
-    name: "Profile Command - User with Minimal Ethos Activity",
+    name: "Reply: Profile Analysis of User Not on Ethos",
     event: {
       data: [{
         id: "1234567892",
         text: "@ethosAgent profile",
-        author_id: "user789",
-        created_at: "2024-01-15T10:40:00.000Z"
+        author_id: "user789", // Person asking for analysis
+        created_at: "2024-01-15T10:40:00.000Z",
+        in_reply_to_user_id: "originaluser3" // Unknown user's ID
       }],
       includes: {
-        users: [{
-          id: "user789",
-          username: "testuser123",
-          name: "Test User"
-        }]
+        users: [
+          {
+            id: "user789",
+            username: "researcher",
+            name: "Blockchain Researcher"
+          },
+          {
+            id: "originaluser3",
+            username: "nonexistentuser999", 
+            name: "Regular User"
+          }
+        ]
       }
     }
   },
   {
-    name: "Profile Command - User Not on Ethos",
+    name: "Direct Mention: Self Profile Request (No Reply)",
     event: {
       data: [{
         id: "1234567893",
         text: "@ethosAgent profile",
         author_id: "user101",
         created_at: "2024-01-15T10:45:00.000Z"
+        // No in_reply_to_user_id - direct mention for self-analysis
       }],
       includes: {
         users: [{
           id: "user101",
-          username: "nonexistentuser999",
-          name: "Regular User"
+          username: "testuser123",
+          name: "Test User Looking for Self Analysis"
         }]
       }
     }
   },
   {
-    name: "Unknown Command",
+    name: "Unknown Command (Reply Context)",
     event: {
       data: [{
         id: "1234567894",
         text: "@ethosAgent unknown command here",
         author_id: "user202",
-        created_at: "2024-01-15T10:50:00.000Z"
+        created_at: "2024-01-15T10:50:00.000Z",
+        in_reply_to_user_id: "someuser"
       }],
       includes: {
         users: [{
@@ -98,13 +126,14 @@ const testScenarios = [
     }
   },
   {
-    name: "Mention Without Command",
+    name: "Mention Without Command (Reply Context)",
     event: {
       data: [{
         id: "1234567895",
         text: "@ethosAgent hey there!",
         author_id: "user303",
-        created_at: "2024-01-15T10:55:00.000Z"
+        created_at: "2024-01-15T10:55:00.000Z",
+        in_reply_to_user_id: "someuser"
       }],
       includes: {
         users: [{
@@ -116,13 +145,14 @@ const testScenarios = [
     }
   },
   {
-    name: "Case Insensitive Profile Command",
+    name: "Case Insensitive Profile Command (Direct Mention)",
     event: {
       data: [{
         id: "1234567896",
         text: "@EthosAgent PROFILE",
         author_id: "user404",
         created_at: "2024-01-15T11:00:00.000Z"
+        // No reply - self analysis
       }],
       includes: {
         users: [{
@@ -137,9 +167,20 @@ const testScenarios = [
 
 async function runTest(scenario: any) {
   try {
+    const tweet = scenario.event.data[0];
+    const isReply = !!tweet.in_reply_to_user_id;
+    const requester = scenario.event.includes.users.find((u: any) => u.id === tweet.author_id);
+    
     console.log(`\n🧪 Testing: ${scenario.name}`);
-    console.log(`📝 Tweet: "${scenario.event.data[0].text}"`);
-    console.log(`👤 User: ${scenario.event.includes.users[0].name} (@${scenario.event.includes.users[0].username})`);
+    console.log(`📝 Tweet: "${tweet.text}"`);
+    console.log(`👤 Requester: ${requester?.name} (@${requester?.username})`);
+    
+    if (isReply) {
+      const originalAuthor = scenario.event.includes.users.find((u: any) => u.id === tweet.in_reply_to_user_id);
+      console.log(`🔄 Reply to: ${originalAuthor?.name} (@${originalAuthor?.username}) - should analyze this person`);
+    } else {
+      console.log(`💬 Direct mention - should analyze the requester`);
+    }
     
     const response = await fetch(`${BASE_URL}/webhook/twitter`, {
       method: "POST",
@@ -232,8 +273,9 @@ async function runAllTests() {
 
   console.log("\n🎉 Test suite completed!");
   console.log("\n💡 What to expect:");
+  console.log("  - 🔄 Reply scenarios: Bot analyzes the original tweet author (e.g., Vitalik, Elon)");
+  console.log("  - 💬 Direct mentions: Bot analyzes the person mentioning it");
   console.log("  - ✅ Real Ethos scores for vitalikbuterin (~99), elonmusk (~89)");
-  console.log("  - ✅ Minimal activity message for testuser123 (score 0)");
   console.log("  - ✅ Fallback message for nonexistentuser999 (not on Ethos)");
   console.log("  - ✅ Profile commands should work with real Ethos data");
   console.log("  - ✅ Unknown commands should be rejected appropriately");

@@ -5,11 +5,39 @@ A Twitter bot that responds to mentions and processes commands, starting with `@
 ## Features
 
 - ✅ Listens for Twitter mentions via webhooks
-- ✅ Processes commands like `@ethosAgent profile` with **real Ethos Network integration**
+- ✅ **Reply-based Profile Analysis**: Analyzes the original tweet author when replying
+- ✅ **Direct Mention Analysis**: Analyzes the person mentioning the bot
 - ✅ Fetches live credibility scores, reviews, and vouches from Ethos API
 - ✅ Real Twitter API v2 integration
 - ✅ Modular action system for extensibility
 - ✅ Built for Deno Deploy
+
+## How Profile Analysis Works
+
+The `@ethosAgent profile` command works differently based on context:
+
+### 🔄 **Reply Analysis** (Most Common Use Case)
+When someone replies to a tweet with `@ethosAgent profile`, the bot analyzes **the original tweet author**:
+
+```
+Tweet A: "Just launched my new project!" - @vitalikbuterin
+Tweet B: "@ethosAgent profile" - @analyst_user (replying to Tweet A)
+Bot Reply: "Hey @analyst_user! 👋 Vitalik Buterin currently has an Ethos score of 99..."
+```
+
+### 💬 **Direct Mention Analysis** 
+When someone mentions the bot directly (not replying), it analyzes **the person who mentioned it**:
+
+```
+Tweet: "@ethosAgent profile" - @user_asking_about_self
+Bot Reply: "Hey @user_asking_about_self! 👋 Your Ethos score is..."
+```
+
+This pattern makes the bot perfect for:
+- 📊 **Due diligence**: "What's this person's reputation?"
+- 🔍 **Research**: Analyzing profiles in discussions
+- 🤝 **Trust verification**: Quick credibility checks
+- 📈 **Self-analysis**: Check your own Ethos score
 
 ## Quick Setup
 
@@ -31,7 +59,7 @@ A Twitter bot that responds to mentions and processes commands, starting with `@
 
 ## Ethos Integration
 
-The `@ethosAgent profile` command now provides **real credibility data** from [Ethos Network](https://ethos.network):
+The bot provides **real credibility data** from [Ethos Network](https://ethos.network):
 
 ### What You Get
 - **Credibility Score**: Based on positive review percentage  
@@ -48,8 +76,8 @@ The `@ethosAgent profile` command now provides **real credibility data** from [E
 ```
 
 ### How It Works
-1. User mentions `@ethosAgent profile`
-2. Bot fetches their Twitter username
+1. User mentions `@ethosAgent profile` (in reply or direct mention)
+2. Bot determines target: original tweet author (if reply) or mentioner (if direct)
 3. Calls Ethos API: `https://api.ethos.network/api/v1/users/service:x.com:username:{username}/stats`
 4. Responds with formatted credibility data
 
@@ -57,7 +85,7 @@ The `@ethosAgent profile` command now provides **real credibility data** from [E
 
 ### 🧪 **Local Testing (Recommended)**
 ```bash
-# Run comprehensive test suite with real Ethos data
+# Run comprehensive test suite with reply scenarios
 deno task test-all
 
 # Test just the Ethos integration
@@ -76,12 +104,16 @@ curl http://localhost:8000/test/twitter
 2. **Start your bot**: `deno task dev`
 3. **Expose locally**: `ngrok http 8000` (in another terminal)
 4. **Set up webhook**: Use ngrok URL in Twitter Developer Portal
-5. **Tweet at your bot**: `@YourBotUsername profile`
+5. **Test reply scenario**: 
+   - Find any tweet
+   - Reply with `@YourBotUsername profile`
+   - Bot analyzes the original tweet author!
 
 See `test-with-ngrok.md` for detailed instructions.
 
 ### 📊 **What Gets Tested**
-- ✅ Real Ethos scores (vitalikbuterin ~99, elonmusk ~89)
+- ✅ **Reply Analysis**: Bot analyzes original tweet authors (Vitalik, Elon)
+- ✅ **Direct Mentions**: Bot analyzes the person asking
 - ✅ Users with minimal Ethos activity (score 0)  
 - ✅ Users not on Ethos (helpful fallback messages)
 - ✅ Commands with extra text
@@ -103,6 +135,7 @@ See `test-with-ngrok.md` for detailed instructions.
 Twitter sends mention data directly to your webhook endpoint. No authentication needed to receive:
 - Tweet text and ID
 - Author username and name  
+- Reply information (if it's a reply)
 - All data needed for `@ethosAgent profile` command
 
 ## Twitter API Setup
@@ -118,6 +151,8 @@ Twitter sends mention data directly to your webhook endpoint. No authentication 
 ## Commands
 
 - `@ethosAgent profile` - Shows real Ethos credibility data including:
+  - **In Replies**: Analyzes the original tweet author
+  - **Direct Mentions**: Analyzes the person mentioning the bot
   - Credibility score (based on positive review percentage)
   - Number of reviews received
   - Amount of ETH staked as vouches
@@ -129,7 +164,7 @@ Twitter sends mention data directly to your webhook endpoint. No authentication 
 # Start development server with auto-reload
 deno task dev
 
-# Run comprehensive tests with Ethos integration
+# Run comprehensive tests with reply scenarios
 deno task test-all
 
 # Test just Ethos API integration
