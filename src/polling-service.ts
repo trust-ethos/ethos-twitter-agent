@@ -3,6 +3,7 @@
 
 import { TwitterService } from "./twitter-service.ts";
 import { CommandProcessor } from "./command-processor.ts";
+import { SlackService } from "./slack-service.ts";
 
 interface PollingState {
   lastTweetId: string | null;
@@ -14,6 +15,7 @@ interface PollingState {
 export class PollingService {
   private twitterService: TwitterService;
   private commandProcessor: CommandProcessor;
+  private slackService: SlackService;
   private botUsername: string;
   private lastTweetId: string | null = null;
   private processedTweetIds: Set<string> = new Set(); // Track processed tweets
@@ -29,6 +31,7 @@ export class PollingService {
   ) {
     this.twitterService = twitterService;
     this.commandProcessor = commandProcessor;
+    this.slackService = new SlackService();
     this.botUsername = botUsername;
     
     // Load persisted state on startup
@@ -240,14 +243,66 @@ export class PollingService {
         
         // Reply to the tweet
         try {
-          await this.twitterService.replyToTweet(mention.id, result.replyText);
-          console.log(`📤 Replied successfully to @${author.username}`);
+          const replyResult = await this.twitterService.replyToTweet(mention.id, result.replyText);
+          
+          if (replyResult.success) {
+            console.log(`📤 Replied successfully to @${author.username}`);
+            
+            // Send Slack notification for successful response
+            if (command.type === 'profile') {
+              // For profile commands, we need to determine who was analyzed
+              const isReply = mention.in_reply_to_user_id;
+              let targetUser = author.username; // default to self-analysis
+              
+              if (isReply) {
+                // Find the original author
+                const originalAuthor = users.find(user => user.id === mention.in_reply_to_user_id);
+                if (originalAuthor) {
+                  targetUser = originalAuthor.username;
+                }
+              }
+              
+              await this.slackService.notifyProfileSuccess(
+                targetUser,
+                author.username,
+                replyResult.postedTweetId,
+                this.botUsername
+              );
+            }
+            // Note: Save command notifications are handled in the command processor
+            
+          } else {
+            console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyResult.error);
+            
+            // Send Slack notification for failed reply
+            await this.slackService.notifyError(
+              `${command.type} command reply`,
+              replyResult.error || "Unknown error",
+              `@${author.username}`,
+              mention.text
+            );
+          }
         } catch (replyError) {
           console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyError);
-          console.log(`📤 Would have replied with: "${result.replyText}"`);
+          
+          // Send Slack notification for reply exception
+          await this.slackService.notifyError(
+            `${command.type} command reply`,
+            replyError instanceof Error ? replyError.message : String(replyError),
+            `@${author.username}`,
+            mention.text
+          );
         }
       } else {
         console.log(`❌ Command processing failed: ${result.message}`);
+        
+        // Send Slack notification for command processing failure
+        await this.slackService.notifyError(
+          `${command.type} command processing`,
+          result.message,
+          `@${author.username}`,
+          mention.text
+        );
       }
 
     } catch (error) {

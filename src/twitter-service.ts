@@ -319,7 +319,7 @@ export class TwitterService {
    * Reply to a tweet using Twitter API v2 with OAuth 1.0a
    * Requires proper OAuth 1.0a credentials with write permissions
    */
-  async replyToTweet(tweetId: string, replyText: string): Promise<boolean> {
+  async replyToTweet(tweetId: string, replyText: string): Promise<{ success: boolean; postedTweetId?: string; error?: string }> {
     try {
       console.log(`📤 Replying to tweet ${tweetId}: ${replyText}`);
       
@@ -327,7 +327,7 @@ export class TwitterService {
       if (!this.hasOAuth1Credentials()) {
         console.log("ℹ️ OAuth 1.0a credentials not configured - cannot post tweets");
         console.log(`📝 Would reply to tweet ${tweetId} with: "${replyText}"`);
-        return true; // Return true for development purposes
+        return { success: true }; // Return success for development purposes
       }
 
       // Create OAuth 1.0a fetcher
@@ -349,8 +349,8 @@ export class TwitterService {
       });
 
       if (!response.ok) {
-        console.error(`❌ Failed to post tweet: ${response.status} ${response.statusText}`);
         const errorText = await response.text();
+        console.error(`❌ Failed to post tweet: ${response.status} ${response.statusText}`);
         console.error(`❌ Error details: ${errorText}`);
         
         // Handle rate limits gracefully
@@ -359,16 +359,32 @@ export class TwitterService {
           console.log(`⏳ Rate limit hit. Resets at: ${resetTime ? new Date(parseInt(resetTime) * 1000) : 'unknown'}`);
         }
         
-        return false;
+        return { 
+          success: false, 
+          error: `${response.status} ${response.statusText}: ${errorText}` 
+        };
       }
 
       const result = await response.json();
       console.log(`✅ Tweet replied successfully:`, result);
-      return true;
+      
+      // Extract the posted tweet ID from the response
+      const postedTweetId = result?.data?.id;
+      if (postedTweetId) {
+        console.log(`🆔 Posted tweet ID: ${postedTweetId}`);
+      }
+      
+      return { 
+        success: true, 
+        postedTweetId: postedTweetId 
+      };
     } catch (error) {
       console.error("❌ Failed to reply to tweet:", error);
       console.log(`📤 Would have replied to tweet ${tweetId} with: "${replyText}"`);
-      return false;
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
+      };
     }
   }
 

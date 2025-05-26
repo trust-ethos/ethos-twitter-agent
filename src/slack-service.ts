@@ -5,6 +5,13 @@ export interface SlackNotification {
   channel?: string;
 }
 
+export interface SlackStructuredResponse {
+  response: string;
+  tweet_link?: string;
+  error_details?: string;
+  original_tweet?: string;
+}
+
 export class SlackService {
   private webhookUrl: string | null;
 
@@ -19,7 +26,43 @@ export class SlackService {
   }
 
   /**
-   * Send a notification to Slack webhook
+   * Send a structured notification to Slack webhook with additional response data
+   */
+  async sendStructuredNotification(payload: SlackStructuredResponse, type: 'success' | 'error' | 'info' = 'info'): Promise<void> {
+    if (!this.webhookUrl) {
+      return; // Silently skip if no webhook URL configured
+    }
+
+    try {
+      const emoji = type === 'success' ? ':white_check_mark:' : 
+                   type === 'error' ? ':x:' : ':information_source:';
+      
+      const notification: SlackNotification = {
+        text: `${emoji} ${payload.response}${payload.tweet_link ? `\n🔗 Tweet: ${payload.tweet_link}` : ''}${payload.error_details ? `\n❌ Error: ${payload.error_details}` : ''}${payload.original_tweet ? `\n📝 Original: ${payload.original_tweet}` : ''}`,
+        username: 'Ethos Twitter Agent',
+        icon_emoji: ':robot_face:'
+      };
+
+      const response = await fetch(this.webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(notification),
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Slack webhook failed: ${response.status} ${response.statusText}`);
+      } else {
+        console.log(`📢 Slack structured notification sent: ${type}`);
+      }
+    } catch (error) {
+      console.error('❌ Error sending Slack structured notification:', error);
+    }
+  }
+
+  /**
+   * Send a notification to Slack webhook (legacy method)
    */
   async sendNotification(message: string, type: 'success' | 'error' | 'info' = 'info'): Promise<void> {
     if (!this.webhookUrl) {
@@ -55,29 +98,61 @@ export class SlackService {
   }
 
   /**
-   * Send notification for successful tweet save
+   * Send notification for successful tweet save with structured response
    */
-  async notifySuccessfulSave(tweetId: string, tweetUrl: string, sentiment: string, targetUser: string): Promise<void> {
-    const message = `Successfully saved tweet as ${sentiment} review for @${targetUser}: ${tweetUrl}`;
-    await this.sendNotification(message, 'success');
+  async notifySuccessfulSave(tweetId: string, tweetUrl: string, sentiment: string, targetUser: string, postedTweetId?: string, botUsername?: string): Promise<void> {
+    const responseText = `Successfully saved tweet as ${sentiment} review for @${targetUser}`;
+    
+    const payload: SlackStructuredResponse = {
+      response: responseText,
+      tweet_link: postedTweetId && botUsername ? `https://x.com/${botUsername}/status/${postedTweetId}` : undefined
+    };
+    
+    await this.sendStructuredNotification(payload, 'success');
   }
 
   /**
-   * Send notification for errors
+   * Send notification for profile command success with structured response
    */
-  async notifyError(operation: string, error: string, context?: string): Promise<void> {
-    let message = `Failed ${operation}: ${error}`;
+  async notifyProfileSuccess(targetUser: string, requesterUser: string, postedTweetId?: string, botUsername?: string): Promise<void> {
+    const responseText = `Successfully provided profile analysis for @${targetUser} requested by @${requesterUser}`;
+    
+    const payload: SlackStructuredResponse = {
+      response: responseText,
+      tweet_link: postedTweetId && botUsername ? `https://x.com/${botUsername}/status/${postedTweetId}` : undefined
+    };
+    
+    await this.sendStructuredNotification(payload, 'success');
+  }
+
+  /**
+   * Send notification for errors with structured response
+   */
+  async notifyError(operation: string, error: string, context?: string, originalTweetText?: string): Promise<void> {
+    let responseText = `Failed ${operation}`;
     if (context) {
-      message += ` (${context})`;
+      responseText += ` (${context})`;
     }
-    await this.sendNotification(message, 'error');
+    
+    const payload: SlackStructuredResponse = {
+      response: responseText,
+      error_details: error,
+      original_tweet: originalTweetText
+    };
+    
+    await this.sendStructuredNotification(payload, 'error');
   }
 
   /**
-   * Send info notification
+   * Send info notification with structured response
    */
-  async notifyInfo(message: string): Promise<void> {
-    await this.sendNotification(message, 'info');
+  async notifyInfo(message: string, additionalData?: { tweet_link?: string; error_details?: string; original_tweet?: string }): Promise<void> {
+    const payload: SlackStructuredResponse = {
+      response: message,
+      ...additionalData
+    };
+    
+    await this.sendStructuredNotification(payload, 'info');
   }
 
   /**
