@@ -158,7 +158,6 @@ console.log(`🚀 Ethos Twitter Agent starting on port ${port}`);
 
 if (usePolling) {
   console.log(`🔄 Running in POLLING mode (good for Basic Twitter API plan)`);
-  console.log(`💡 This replaces your make.com workflow`);
   console.log(`🕐 Polling every 3 minutes via Deno Deploy Cron`);
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter (disabled in polling mode)`);
   console.log(`🧪 Test endpoints:`);

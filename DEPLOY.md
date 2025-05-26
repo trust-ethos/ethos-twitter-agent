@@ -28,27 +28,69 @@
 
 ### Step 3: Configure Environment Variables
 
-In the Deno Deploy dashboard, go to **Settings > Environment Variables** and add:
+In your Deno Deploy project settings, add:
 
 ```bash
-# Twitter API Credentials
+# Required
 TWITTER_BEARER_TOKEN=your_bearer_token_here
-TWITTER_API_PLAN=basic
-
-# Polling Mode (for Basic API plan)
-USE_POLLING=true
-
-# Optional: Custom bot username
 BOT_USERNAME=ethosAgent
+
+# Optional (polling is auto-detected)
+TWITTER_API_PLAN=basic
+USE_POLLING=true
 ```
 
-### Step 4: Automatic Deployments! 🎉
+### Step 4: Deploy!
 
-From now on, every push to your main branch will automatically:
-1. ✅ Trigger a new deployment
-2. ✅ Run your bot on Deno Deploy
-3. ✅ Use Deno KV for persistence (no file system needed)
-4. ✅ Scale automatically
+1. **Push any change** to GitHub:
+   ```bash
+   git add .
+   git commit -m "Deploy to production"
+   git push origin master
+   ```
+
+2. **Deno Deploy automatically deploys** within 30 seconds
+
+3. **Test your deployment**:
+   ```bash
+   curl https://your-project-name.deno.dev/
+   curl https://your-project-name.deno.dev/polling/status
+   ```
+
+## ✅ Deployment Complete!
+
+Your Twitter bot is now:
+
+- ✅ **Deployed** and running 24/7
+- ✅ **Auto-polling** every 3 minutes
+- ✅ **Processing** real Twitter mentions
+- ✅ **Auto-deploying** on every `git push`
+- ✅ **Persisting** state with Deno KV
+- ✅ **Cost-effective** (free hosting + $100/month Twitter API)
+
+## 🎯 Next Steps
+
+1. **Monitor logs** in Deno Deploy dashboard
+2. **Test with real mentions**: `@ethosAgent profile`
+3. **Add custom features** as needed
+4. **Scale** with confidence (handles hundreds of mentions/day)
+
+## 🔧 Troubleshooting
+
+### Bot not responding?
+1. Check environment variables are set
+2. Check Twitter API credentials
+3. View logs in Deno Deploy dashboard
+
+### Want to change behavior?
+1. Edit code locally
+2. Push to GitHub
+3. Auto-deploy happens automatically
+
+### Need help?
+- Check the logs in Deno Deploy dashboard
+- Test locally first with `deno task start`
+- Verify Twitter API credentials work
 
 ## 🔗 Access Your Bot
 
@@ -77,22 +119,6 @@ https://YOUR_PROJECT_NAME.deno.dev/
 - **Logs**: Real-time logs in the dashboard
 - **Analytics**: Request metrics and performance
 - **KV Data**: View your persistent data
-
-## 🔄 make.com Migration Complete
-
-Your bot now:
-- ✅ Polls every 3 minutes (like make.com)
-- ✅ Processes 3 mentions at a time
-- ✅ Prevents duplicate processing
-- ✅ Works with Basic Twitter API ($100/month)
-- ✅ Auto-deploys on code changes
-- ✅ Scales automatically
-- ✅ Has persistent storage with Deno KV
-
-**Cost comparison**:
-- make.com: Unknown recurring cost
-- Deno Deploy: **FREE** for most usage (100,000 requests/day)
-- Twitter API: $100/month (Basic plan)
 
 ## 🚨 Important Notes
 

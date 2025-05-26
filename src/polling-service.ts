@@ -1,4 +1,4 @@
-// Polling service to replace make.com workflow
+// Polling service for Twitter mentions
 // Checks for new mentions every 3 minutes, processes up to 3 at a time
 
 import { TwitterService } from "./twitter-service.ts";
@@ -18,8 +18,8 @@ export class PollingService {
   private lastTweetId: string | null = null;
   private processedTweetIds: Set<string> = new Set(); // Track processed tweets
   private isPolling: boolean = false;
-  private pollInterval: number = 3 * 60 * 1000; // 3 minutes like make.com
-  private maxMentions: number = 3; // Process 3 mentions at a time like make.com
+  private pollInterval: number = 3 * 60 * 1000; // 3 minutes
+  private maxMentions: number = 3; // Process 3 mentions at a time
   private kv: Deno.Kv | null = null; // Deno KV for cloud persistence
 
   constructor(
@@ -109,7 +109,6 @@ export class PollingService {
     this.isPolling = true;
     console.log(`🚀 Starting polling for @${this.botUsername} mentions`);
     console.log(`⏰ Checking every ${this.pollInterval / 1000 / 60} minutes for ${this.maxMentions} new mentions`);
-    console.log(`💡 This replaces the make.com webhook workflow`);
     console.log(`💾 Persistence: ${this.kv ? 'Deno KV (cloud-ready)' : 'In-memory (local only)'}`);
 
     // Run initial poll
@@ -144,13 +143,13 @@ export class PollingService {
   }
 
   /**
-   * Poll for new mentions (mimics make.com flow)
+   * Poll for new mentions
    */
   private async pollForMentions() {
     try {
       console.log(`\n🔍 Polling for @${this.botUsername} mentions...`);
       
-      // Twitter API requires min 10 results, but we'll process only maxMentions (3) like make.com
+      // Twitter API requires min 10 results, but we'll process only maxMentions (3)
       const apiMaxResults = Math.max(10, this.maxMentions);
       
       const mentionsData = await this.twitterService.searchMentions(
@@ -167,14 +166,14 @@ export class PollingService {
       const allMentions = mentionsData.data;
       const users = mentionsData.includes?.users || [];
 
-      // Only process the first maxMentions (3) to match make.com behavior
+      // Only process the first maxMentions (3) mentions per cycle
       const mentionsToProcess = allMentions.slice(0, this.maxMentions);
 
-      console.log(`📨 Found ${allMentions.length} mentions, processing ${mentionsToProcess.length} (like make.com)`);
+      console.log(`📨 Found ${allMentions.length} mentions, processing ${mentionsToProcess.length}`);
 
       let processedAny = false;
 
-      // Process each mention (like make.com did)
+      // Process each mention
       for (const mention of mentionsToProcess) {
         // Skip if we've already processed this tweet
         if (this.processedTweetIds.has(mention.id)) {
