@@ -52,11 +52,14 @@ export class CommandProcessor {
       case "profile":
         return await this.handleProfileCommand(command, allUsers);
       
+      case "help":
+        return await this.handleHelpCommand(command);
+      
       default:
         return {
           success: false,
           message: `Unknown command: ${command.type}`,
-          replyText: `I don't recognize the command "${command.type}". Try @ethosAgent profile`
+          replyText: `I don't recognize the command "${command.type}". Try @ethosAgent help for available commands.`
         };
     }
   }
@@ -133,6 +136,49 @@ export class CommandProcessor {
         success: false,
         message: "Error processing profile command",
         replyText: fallbackReply
+      };
+    }
+  }
+
+  /**
+   * Handle the 'help' command
+   */
+  private async handleHelpCommand(command: Command): Promise<CommandResult> {
+    try {
+      // Only respond if there are no additional arguments (just "help")
+      if (command.args.length > 0) {
+        console.log(`ℹ️ Help command ignored - has additional arguments: ${command.args.join(' ')}`);
+        return {
+          success: false,
+          message: "Help command ignored due to additional arguments",
+          replyText: undefined // Don't reply when help has extra args
+        };
+      }
+
+      console.log(`📚 Processing help command for @${command.mentionedUser.username}`);
+
+      const helpText = `👋 Hi! I'm the Ethos Agent bot. Here are the commands I understand:
+
+🔍 **profile** - Get Ethos reputation data for a user
+   • Reply to someone's tweet: "@ethosAgent profile"
+   • Or mention me directly: "@ethosAgent profile"
+
+❓ **help** - Show this help message
+
+🌐 Learn more about Ethos at https://ethos.network`;
+
+      return {
+        success: true,
+        message: "Help command processed successfully",
+        replyText: helpText
+      };
+    } catch (error) {
+      console.error("❌ Error processing help command:", error);
+      
+      return {
+        success: false,
+        message: "Error processing help command",
+        replyText: `I'm having trouble showing help right now. Try @ethosAgent profile to check someone's Ethos reputation.`
       };
     }
   }

@@ -153,7 +153,7 @@ export class EthosService {
       reviewText = "They have no reviews yet. ";
     }
     
-    return `${name} currently has ${scoreText}. ${reviewText}They also have ${stats.vouches.staked} eth vouched for them. You can find their full profile here: ${profileUrl}`;
+    return `${name} currently has ${scoreText}. ${reviewText}They also have ${stats.vouches.staked} eth vouched for them. You can find their full profile below ${profileUrl}`;
   }
 
   /**
