@@ -391,7 +391,7 @@ Learn more about Ethos at https://ethos.network`;
 
 Authored at: ${originalTweet.created_at}
 
-Author twitter id: ${originalTweet.author_id}
+Author user id: ${originalTweet.author_id}
 
 Link to tweet: ${originalTweetLink}`;
 
@@ -405,7 +405,8 @@ Link to tweet: ${originalTweetLink}`;
         description: reviewDescription,
         targetUsername,
         tweetId: originalTweetId,
-        reviewerUsername: mentionerUsername
+        reviewerUsername: mentionerUsername,
+        reviewerUserId: command.mentionedUser.id
       });
 
       if (reviewResult.success) {
