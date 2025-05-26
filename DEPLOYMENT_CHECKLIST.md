@@ -53,6 +53,7 @@ USE_POLLING=true
 1. **Profile Command**: Tweet `@ethosAgent profile` 
 2. **Slack Notifications**: Check Slack for success/error messages
 3. **Persistence**: Verify KV storage is working
+4. **Anti-abuse Protection**: Try self-review - should convert to negative
 
 ## Monitoring
 
@@ -68,6 +69,7 @@ USE_POLLING=true
 - ✅ Sends Slack notifications for activity
 - ✅ Persists state between deployments
 - ✅ Handles rate limits gracefully
+- ✅ **Anti-abuse protection**: Converts self-reviews to negative automatically
 
 ## Troubleshooting
 

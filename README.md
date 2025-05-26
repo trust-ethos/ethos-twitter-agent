@@ -8,6 +8,16 @@
 
 A Twitter bot that analyzes Ethos reputation scores for mentioned users and allows saving tweets as onchain reviews. A native TypeScript/Deno solution for automated Twitter monitoring and credibility assessment.
 
+## ✨ Key Features
+
+- **🔍 Reputation Analysis**: Get detailed Ethos credibility scores for any Twitter user
+- **💾 Onchain Reviews**: Save tweets permanently as credibility reviews with sentiment  
+- **🎯 Flexible Targeting**: Review original tweet authors or specify custom targets
+- **🔄 Polling Mode**: Works with Twitter Basic API plan (no webhooks needed)
+- **📊 Real-time Monitoring**: Slack notifications for all bot activity
+- **💾 State Persistence**: Continues where it left off after restarts
+- **🚨 Anti-Abuse Protection**: Automatically converts self-reviews to negative
+
 ## ✨ Features
 
 - 🔍 **Real-time Twitter monitoring** - polls for mentions every 3 minutes
@@ -68,6 +78,12 @@ Bot responds: "✅ Review saved! I've recorded this tweet as a positive review f
 User replies to a scam tweet with: "@ethosAgent save negative"
 Bot responds: "✅ Review saved! I've recorded this tweet as a negative review for scammer123 on Ethos."
 ```
+
+**🚨 Anti-Abuse Protection:**
+- **Self-reviews are automatically converted to negative** regardless of intended sentiment
+- Custom title: "User tried to abuse Ethos and review themself positively through my code"
+- Custom description: "Please don't do that again, anon."
+- Prevents gaming of the reputation system
 
 ### 🎯 Save Target Command
 
