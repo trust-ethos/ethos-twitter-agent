@@ -34,8 +34,26 @@ export class CommandProcessor {
     }
 
     const parts = textWithEthosAgentRemoved.split(/\s+/);
-    const commandType = parts[0].toLowerCase();
-    const args = parts.slice(1);
+    
+    // Find the first non-@mention word as the command
+    // This handles cases like "@user1 @user2 save target @user3" where "save" is the command
+    let commandType = '';
+    let commandIndex = -1;
+    
+    for (let i = 0; i < parts.length; i++) {
+      if (!parts[i].startsWith('@')) {
+        commandType = parts[i].toLowerCase();
+        commandIndex = i;
+        break;
+      }
+    }
+    
+    if (!commandType) {
+      return null; // No command found (only @mentions)
+    }
+    
+    // Args are everything after the command
+    const args = commandIndex >= 0 ? parts.slice(commandIndex + 1) : [];
 
     return {
       type: commandType,
