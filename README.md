@@ -228,6 +228,7 @@ ethos-twitter-agent/
 │   ├── webhook-handler.ts        # Twitter webhook handler (Premium API)
 │   ├── polling-service.ts        # Polling service with persistence
 │   ├── storage-service.ts        # State management & duplicate prevention
+│   ├── slack-service.ts          # Slack webhook notifications (optional)
 │   └── types.ts                  # TypeScript type definitions
 ├── main.ts                       # 🚀 Main application server
 ├── deno.json                     # Tasks, dependencies, cron config
@@ -251,6 +252,7 @@ The bot provides detailed logging for monitoring:
 📊 Found credibility score: 1307
 ✅ Command processed successfully, replying...
 📤 Replied successfully to @user
+📢 Slack notification sent: success
 ```
 
 ### Key Metrics
@@ -258,6 +260,7 @@ The bot provides detailed logging for monitoring:
 - **Success rate**: Tracks successful vs failed command processing
 - **API health**: Monitors Twitter and Ethos API response times
 - **Duplicate prevention**: Shows skipped vs processed tweets
+- **Slack notifications**: Optional real-time notifications for saves and errors
 
 ### Status Endpoints
 ```bash
@@ -286,6 +289,9 @@ BOT_USERNAME=ethosAgent
 TWITTER_API_PLAN=basic          # "basic" or "premium" 
 USE_POLLING=true                # Force polling mode
 PORT=8000                       # Server port
+
+# Slack Notifications (Optional)
+SLACK_WEBHOOK_URL=https://hooks.slack.com/triggers/YOUR_WORKSPACE/YOUR_TRIGGER_ID/YOUR_SECRET
 ```
 
 ### Webhook Mode (Premium API Only)
@@ -526,3 +532,25 @@ curl -X POST http://localhost:8000/webhook/twitter \
     }
   }'
 ```
+
+### 📢 Slack Integration (Optional)
+
+Get real-time notifications in Slack for bot activity:
+
+**What gets notified:**
+- ✅ **Successful saves**: Tweet saved as review with link
+- ❌ **Errors**: Failed operations with context
+- 🔍 **Context**: User who triggered action, target user, tweet details
+
+**Setup:**
+1. Create a Slack webhook URL (see [Slack API docs](https://api.slack.com/messaging/webhooks))
+2. Add `SLACK_WEBHOOK_URL` to your `.env` file
+3. Restart the bot
+
+**Example notifications:**
+```
+✅ Successfully saved tweet as positive review for @vitalik: https://x.com/user/status/123...
+❌ Failed save command (Unknown error): @user trying to save tweet 123... for @target
+```
+
+**Note**: Slack notifications are completely optional - if no webhook URL is configured, the bot works normally without notifications.

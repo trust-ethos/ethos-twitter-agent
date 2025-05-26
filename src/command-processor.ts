@@ -2,16 +2,19 @@ import type { Command, CommandResult, TwitterTweet, TwitterUser } from "./types.
 import type { TwitterService } from "./twitter-service.ts";
 import { EthosService } from "./ethos-service.ts";
 import { StorageService } from "./storage-service.ts";
+import { SlackService } from "./slack-service.ts";
 
 export class CommandProcessor {
   private twitterService: TwitterService;
   private ethosService: EthosService;
   private storageService: StorageService;
+  private slackService: SlackService;
 
   constructor(twitterService: TwitterService) {
     this.twitterService = twitterService;
     this.ethosService = new EthosService();
     this.storageService = new StorageService();
+    this.slackService = new SlackService();
   }
 
   /**
@@ -89,6 +92,13 @@ export class CommandProcessor {
       }
     } catch (error) {
       console.error(`❌ Unexpected error processing ${command.type} command:`, error);
+      
+      // Send Slack notification for unexpected error
+      await this.slackService.notifyError(
+        `${command.type} command`, 
+        error instanceof Error ? error.message : String(error),
+        `@${command.mentionedUser.username} using command "${command.type}"`
+      );
       
       // Only provide standardized error message for known commands
       const knownCommands = ["profile", "help", "save"];
@@ -470,6 +480,14 @@ Link to tweet: ${originalTweetLink}`;
           }
         }
 
+        // Send Slack notification for successful save
+        await this.slackService.notifySuccessfulSave(
+          originalTweetId, 
+          originalTweetLink, 
+          reviewScore, 
+          targetUsername
+        );
+
         const finalMessage = reviewLink ? 
           `I just saved this tweet permanently onchain. You can view it below${reviewLink}` :
           `I just saved this tweet permanently onchain. You can view it below`;
@@ -480,6 +498,13 @@ Link to tweet: ${originalTweetLink}`;
           replyText: finalMessage
         };
       } else {
+        // Send Slack notification for failed save
+        await this.slackService.notifyError(
+          "save command", 
+          reviewResult.error || "Unknown error", 
+          `@${mentionerUsername} trying to save tweet ${originalTweetId} for @${targetUsername}`
+        );
+
         return {
           success: false,
           message: "Failed to save review",
@@ -489,6 +514,13 @@ Link to tweet: ${originalTweetLink}`;
 
     } catch (error) {
       console.error("❌ Error processing save command:", error);
+      
+      // Send Slack notification for unexpected error
+      await this.slackService.notifyError(
+        "save command", 
+        error instanceof Error ? error.message : String(error),
+        `@${command.mentionedUser.username} trying to save tweet`
+      );
       
       return {
         success: false,

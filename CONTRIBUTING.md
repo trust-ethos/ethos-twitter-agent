@@ -57,6 +57,52 @@ This project follows the [Ethos Network Community Guidelines](https://ethos.netw
    deno task start
    ```
 
+### Development Environment
+
+1. **Clone and setup**:
+   ```bash
+   git clone https://github.com/ethos-network/ethos-twitter-agent.git
+   cd ethos-twitter-agent
+   ```
+
+2. **Configure environment** (copy from `env.example`):
+   ```bash
+   cp env.example .env
+   # Edit .env with your credentials
+   ```
+
+3. **Install Deno** (if not already installed):
+   ```bash
+   curl -fsSL https://deno.land/install.sh | sh
+   ```
+
+4. **Test setup**:
+   ```bash
+   deno task test-all
+   ```
+
+5. **Start development server**:
+   ```bash
+   deno task dev  # Auto-restart on file changes
+   ```
+
+### Testing Slack Integration (Optional)
+
+If you want to test Slack notifications:
+
+1. **Create a test Slack webhook** (see [Slack API docs](https://api.slack.com/messaging/webhooks))
+2. **Add to your `.env`**:
+   ```bash
+   SLACK_WEBHOOK_URL=https://hooks.slack.com/triggers/YOUR_TEST_WEBHOOK
+   ```
+3. **Test notifications**:
+   ```bash
+   # Trigger a save command to see success notification
+   # Trigger an error to see error notification
+   ```
+
+Note: Slack integration is completely optional - all functionality works without it.
+
 ## Making Changes
 
 ### Code Style
