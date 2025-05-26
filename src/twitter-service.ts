@@ -386,32 +386,7 @@ export class TwitterService {
       console.log("🔐 Validating webhook signature...");
       
       // For development, we'll accept all signatures
-      // In production, implement proper HMAC-SHA256 validation:
-      /*
-      const webhookSecret = Deno.env.get("WEBHOOK_SECRET");
-      if (!webhookSecret) {
-        console.error("❌ Webhook secret not configured");
-        return false;
-      }
-      
-      const expectedSignature = await crypto.subtle.sign(
-        "HMAC",
-        await crypto.subtle.importKey(
-          "raw",
-          new TextEncoder().encode(webhookSecret),
-          { name: "HMAC", hash: "SHA-256" },
-          false,
-          ["sign"]
-        ),
-        new TextEncoder().encode(payload)
-      );
-      
-      const expectedHex = Array.from(new Uint8Array(expectedSignature))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      
-      return signature === `sha256=${expectedHex}`;
-      */
+      // In production, implement proper HMAC-SHA256 validation
       
       console.log("✅ Signature validation passed (development mode)");
       return true;
