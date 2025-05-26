@@ -20,6 +20,24 @@ const pollingService = new PollingService(twitterService, commandProcessor);
 // Determine mode based on environment variable
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
 
+// Set up Deno.cron() directly for Deno Deploy (alternative to deno.json cron)
+if (usePolling) {
+  try {
+    Deno.cron("ethosAgent-polling", "*/3 * * * *", async () => {
+      console.log("🕐 Deno.cron triggered: Checking for new mentions");
+      try {
+        await pollingService.runSinglePoll();
+        console.log("✅ Deno.cron polling cycle completed");
+      } catch (error) {
+        console.error("❌ Deno.cron polling failed:", error);
+      }
+    });
+    console.log("🕐 Deno.cron() registered for polling every 3 minutes");
+  } catch (error) {
+    console.log("⚠️ Deno.cron() not available (likely running locally):", error.message);
+  }
+}
+
 // Health check endpoint
 router.get("/", (ctx) => {
   ctx.response.body = { status: "Ethos Twitter Agent is running" };
@@ -114,10 +132,10 @@ router.post("/polling/stop", async (ctx) => {
   };
 });
 
-// Deno Deploy Cron endpoint - runs every 3 minutes
+// Deno Deploy Cron endpoint - runs every 3 minutes (fallback for JSON cron)
 router.post("/cron/poll-mentions", async (ctx) => {
   try {
-    console.log("🕐 Cron triggered: Checking for new mentions");
+    console.log("🕐 HTTP Cron triggered: Checking for new mentions");
     
     // Run a single polling cycle
     await pollingService.runSinglePoll();
@@ -128,7 +146,7 @@ router.post("/cron/poll-mentions", async (ctx) => {
       timestamp: new Date().toISOString()
     };
   } catch (error) {
-    console.error("❌ Cron polling failed:", error);
+    console.error("❌ HTTP Cron polling failed:", error);
     ctx.response.status = 500;
     ctx.response.body = {
       status: "error",
