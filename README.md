@@ -25,8 +25,40 @@ A Twitter bot that responds to mentions and processes commands, starting with `@
 
 3. **Test with webhook simulation:**
    ```bash
-   deno task test-webhook
+   deno task test-all
    ```
+
+## Testing Your Bot
+
+### 🧪 **Local Testing (Recommended)**
+```bash
+# Run comprehensive test suite
+deno task test-all
+
+# Quick webhook test
+deno task test-webhook
+
+# Test health endpoints
+curl http://localhost:8000/
+curl http://localhost:8000/test/twitter
+```
+
+### 🌐 **Real Twitter Testing with ngrok**
+1. **Install ngrok**: Download from [ngrok.com](https://ngrok.com/)
+2. **Start your bot**: `deno task dev`
+3. **Expose locally**: `ngrok http 8000` (in another terminal)
+4. **Set up webhook**: Use ngrok URL in Twitter Developer Portal
+5. **Tweet at your bot**: `@YourBotUsername profile`
+
+See `test-with-ngrok.md` for detailed instructions.
+
+### 📊 **What Gets Tested**
+- ✅ Basic profile commands
+- ✅ Commands with extra text
+- ✅ Unknown command handling
+- ✅ Case insensitive commands
+- ✅ Mentions without commands
+- ✅ Health and API endpoints
 
 ## What Credentials Do You Actually Need?
 
@@ -64,11 +96,14 @@ Twitter sends mention data directly to your webhook endpoint. No authentication 
 # Start development server with auto-reload
 deno task dev
 
-# Run tests
-deno task test
+# Run comprehensive tests
+deno task test-all
 
-# Test webhook with mock data
+# Run simple webhook test
 deno task test-webhook
+
+# Run unit tests
+deno task test
 
 # Setup Twitter API credentials (optional for basic features)
 deno task setup
