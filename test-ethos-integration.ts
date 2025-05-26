@@ -10,6 +10,7 @@ const testUsers = [
   "elonmusk",     // Well-known user, likely to have Ethos profile
   "testuser123",  // Unlikely to have Ethos profile
   "vitalikbuterin", // Another well-known user
+  "0x5f_eth",     // Good Ethos profile
   "nonexistentuser999" // Definitely won't exist
 ];
 

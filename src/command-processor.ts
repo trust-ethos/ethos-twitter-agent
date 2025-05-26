@@ -45,12 +45,12 @@ export class CommandProcessor {
   /**
    * Process a command and return the result
    */
-  async processCommand(command: Command): Promise<CommandResult> {
+  async processCommand(command: Command, allUsers?: TwitterUser[]): Promise<CommandResult> {
     console.log(`🎯 Processing command: ${command.type} with args:`, command.args);
 
     switch (command.type) {
       case "profile":
-        return await this.handleProfileCommand(command);
+        return await this.handleProfileCommand(command, allUsers);
       
       default:
         return {
@@ -66,7 +66,7 @@ export class CommandProcessor {
    * Analyzes the profile of the original tweet author (if this is a reply)
    * or the person who mentioned the bot (if this is not a reply)
    */
-  private async handleProfileCommand(command: Command): Promise<CommandResult> {
+  private async handleProfileCommand(command: Command, allUsers?: TwitterUser[]): Promise<CommandResult> {
     try {
       const tweet = command.originalTweet;
       const mentionerUsername = command.mentionedUser.username;
@@ -80,29 +80,19 @@ export class CommandProcessor {
       let analysisContext: string;
 
       if (isReply && tweet.in_reply_to_user_id) {
-        // This is a reply - we should analyze the original tweet author
-        try {
-          // Try to get the original tweet author info from Twitter API
-          const originalAuthor = await this.twitterService.getUserById(tweet.in_reply_to_user_id);
-          
-          if (originalAuthor) {
-            targetUsername = originalAuthor.username;
-            targetName = originalAuthor.name;
-            analysisContext = `analyzing the profile of ${targetName} (@${targetUsername}) as requested by @${mentionerUsername}`;
-          } else {
-            // Fallback if we can't get the original author
-            return {
-              success: false,
-              message: "Could not fetch original tweet author information",
-              replyText: `Hey @${mentionerUsername}! 👋 I couldn't fetch information about the original tweet author. Please make sure you're replying to a valid tweet.`
-            };
-          }
-        } catch (error) {
-          console.error("❌ Error fetching original tweet author:", error);
+        // This is a reply - find the original tweet author from the webhook data
+        const originalAuthor = allUsers?.find(user => user.id === tweet.in_reply_to_user_id);
+        
+        if (originalAuthor) {
+          targetUsername = originalAuthor.username;
+          targetName = originalAuthor.name;
+          analysisContext = `analyzing the profile of ${targetName} (@${targetUsername}) as requested by @${mentionerUsername}`;
+        } else {
+          // Fallback if we can't find the original author in webhook data
           return {
             success: false,
-            message: "Error fetching original tweet author",
-            replyText: `Hey @${mentionerUsername}! 👋 I had trouble accessing the original tweet information. Please try again later.`
+            message: "Could not find original tweet author information",
+            replyText: `I couldn't find information about the original tweet author. Please make sure you're replying to a valid tweet.`
           };
         }
       } else {
@@ -120,12 +110,12 @@ export class CommandProcessor {
       let replyText: string;
       
       if (ethosResponse.success && ethosResponse.data) {
-        // Format response with Ethos data
-        replyText = `Hey @${mentionerUsername}! 👋 ${this.ethosService.formatStats(ethosResponse.data, targetName, targetUsername)}`;
+        // Format response with Ethos data (without greeting)
+        replyText = this.ethosService.formatStats(ethosResponse.data, targetName, targetUsername);
         console.log(`✅ Ethos data found for ${targetUsername}`);
       } else {
-        // Fallback message when Ethos data is not available
-        replyText = `Hey @${mentionerUsername}! 👋 ${this.ethosService.getFallbackMessage(targetName, targetUsername, ethosResponse.error)}`;
+        // Fallback message when Ethos data is not available (without greeting)
+        replyText = this.ethosService.getFallbackMessage(targetName, targetUsername, ethosResponse.error);
         console.log(`ℹ️ No Ethos data for ${targetUsername}: ${ethosResponse.error}`);
       }
 
@@ -137,8 +127,7 @@ export class CommandProcessor {
     } catch (error) {
       console.error("❌ Error processing profile command:", error);
       
-      const mentionerUsername = command.mentionedUser.username;
-      const fallbackReply = `Hey @${mentionerUsername}! 👋 I'm having trouble accessing profile data right now. Please try again later.`;
+      const fallbackReply = `I'm having trouble accessing profile data right now. Please try again later.`;
       
       return {
         success: false,

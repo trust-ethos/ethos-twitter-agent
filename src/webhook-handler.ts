@@ -92,8 +92,8 @@ export class TwitterWebhookHandler {
 
       console.log(`🎯 Found command: ${command.type}`);
 
-      // Process the command
-      const result = await this.commandProcessor.processCommand(command);
+      // Process the command, passing all users from webhook data
+      const result = await this.commandProcessor.processCommand(command, event.includes?.users);
 
       if (result.success && result.replyText) {
         console.log(`✅ Command processed successfully, replying...`);

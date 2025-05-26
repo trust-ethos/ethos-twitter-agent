@@ -34,6 +34,34 @@ const testScenarios = [
     }
   },
   {
+    name: "Reply: Profile Analysis of 0x5f_eth (Good Ethos Profile)",
+    event: {
+      data: [{
+        id: "1234567890b",
+        text: "@ethosAgent profile",
+        author_id: "user124", // Person asking for analysis
+        created_at: "2024-01-15T10:32:00.000Z",
+        in_reply_to_user_id: "originaluser1b" // 0x5f_eth's user ID
+      }],
+      includes: {
+        users: [
+          {
+            id: "user124",
+            username: "cryptoresearcher",
+            name: "Crypto Researcher",
+            profile_image_url: "https://via.placeholder.com/400x400"
+          },
+          {
+            id: "originaluser1b", 
+            username: "0x5f_eth",
+            name: "0x5f_eth",
+            profile_image_url: "https://via.placeholder.com/400x400"
+          }
+        ]
+      }
+    }
+  },
+  {
     name: "Reply: Profile Analysis of Elon (Some Ethos Activity)",
     event: {
       data: [{
@@ -231,7 +259,7 @@ async function testEthosIntegration() {
   console.log("============================");
   
   // Test some direct API calls to verify Ethos is working
-  const testUsers = ["vitalikbuterin", "elonmusk", "nonexistentuser999"];
+  const testUsers = ["vitalikbuterin", "0x5f_eth", "elonmusk", "nonexistentuser999"];
   
   for (const username of testUsers) {
     try {
@@ -273,16 +301,21 @@ async function runAllTests() {
 
   console.log("\n🎉 Test suite completed!");
   console.log("\n💡 What to expect:");
-  console.log("  - 🔄 Reply scenarios: Bot analyzes the original tweet author (e.g., Vitalik, Elon)");
+  console.log("  - 🔄 Reply scenarios: Bot analyzes the original tweet author (e.g., Vitalik, 0x5f_eth, Elon)");
   console.log("  - 💬 Direct mentions: Bot analyzes the person mentioning it");
-  console.log("  - ✅ Real Ethos scores for vitalikbuterin (~99), elonmusk (~89)");
+  console.log("  - ✅ Real Ethos scores for vitalikbuterin (~99), 0x5f_eth, elonmusk (~89)");
   console.log("  - ✅ Fallback message for nonexistentuser999 (not on Ethos)");
   console.log("  - ✅ Profile commands should work with real Ethos data");
+  console.log("  - ✅ Responses should be clean without greetings");
   console.log("  - ✅ Unknown commands should be rejected appropriately");
   console.log("  - ✅ All webhook events should return 200 status");
 }
 
 // Run tests if this file is executed directly
+// @ts-ignore: Deno specific
 if (import.meta.main) {
   await runAllTests();
-} 
+}
+
+// Export to make this a module
+export {}; 
