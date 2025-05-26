@@ -1,6 +1,6 @@
 # Ethos Twitter Agent
 
-A Twitter bot that responds to mentions and processes commands, starting with `@ethosAgent profile` using real Ethos Network data.
+A Twitter bot that analyzes Ethos reputation scores for mentioned users. **This replaces your make.com workflow** with a native TypeScript/Deno solution.
 
 ## Features
 
@@ -11,6 +11,232 @@ A Twitter bot that responds to mentions and processes commands, starting with `@
 - ✅ Real Twitter API v2 integration
 - ✅ Modular action system for extensibility
 - ✅ Built for Deno Deploy
+
+## 🆚 Webhook vs Polling Mode
+
+### 🔄 **Polling Mode** (Recommended for Basic Twitter API Plan)
+- ✅ Works with **Basic Twitter API plan** ($100/month)
+- ✅ **Replaces your make.com workflow** exactly (3 mentions every 3 minutes)
+- ✅ No webhook setup required
+- ✅ Easier to test and debug
+- ⚠️ Requires Bearer Token
+
+### 🌐 **Webhook Mode** (For Premium Users)  
+- ✅ Real-time responses
+- ❌ Requires **Premium Twitter API plan** ($5,000+/month)
+- ❌ Complex webhook setup
+- ❌ ngrok required for local testing
+
+## 🚀 Quick Start (Polling Mode - Make.com Replacement)
+
+1. **Get your Twitter Bearer Token**:
+   - Visit [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
+   - Go to your app → Keys and Tokens
+   - Copy the "Bearer Token"
+
+2. **Configure environment**:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env`:
+   ```env
+   TWITTER_BEARER_TOKEN=your_bearer_token_here
+   TWITTER_API_PLAN=basic
+   USE_POLLING=true
+   BOT_USERNAME=ethosAgent
+   ```
+
+3. **Start the bot**:
+   ```bash
+   deno task start
+   ```
+
+4. **See it work**:
+   ```
+   🔄 Running in POLLING mode (good for Basic Twitter API plan)
+   💡 This replaces your make.com workflow
+   🚀 Starting polling for @ethosAgent mentions
+   ⏰ Checking every 3 minutes for 3 new mentions
+   ```
+
+## 🧪 Testing
+
+```bash
+# Test polling functionality
+deno task test-polling
+
+# Test Ethos API integration
+deno task test-ethos
+
+# Run all tests
+deno task test-all
+```
+
+## 📊 Polling Endpoints
+
+Once running, you can control polling via HTTP:
+
+```bash
+# Check status
+curl http://localhost:8000/polling/status
+
+# Start polling manually
+curl -X POST http://localhost:8000/polling/start
+
+# Stop polling
+curl -X POST http://localhost:8000/polling/stop
+```
+
+## 💾 Persistence & Duplicate Prevention
+
+The bot automatically prevents duplicate processing across restarts:
+
+### How It Works
+- **State File**: `polling-state.json` stores processed tweet IDs and last tweet ID
+- **Restart Safe**: Bot loads state on startup, remembers what it processed
+- **Duplicate Prevention**: Skips tweets it has already processed
+- **Memory Management**: Keeps track of last 1,000 processed tweets
+
+### Test Persistence
+```bash
+# Test the persistence system
+deno task test-persistence
+
+# Check current state
+cat polling-state.json | jq
+```
+
+### What Gets Saved
+```json
+{
+  "lastTweetId": "1926857098052165635",
+  "processedTweetIds": ["1926857098052165635", "1926123456789012345"],
+  "botUsername": "ethosAgent", 
+  "lastSaved": "2025-05-26T06:20:00.000Z"
+}
+```
+
+**Result**: No duplicate replies, even after server restarts! 🎯
+
+## 🎯 How It Works
+
+### Make.com Replacement
+Your old make.com workflow:
+1. ⏰ Check every 3 minutes
+2. 📨 Get 3 new mentions  
+3. 🤖 Process @ethosAgent profile commands
+4. 📤 Reply with Ethos scores
+
+This bot does **exactly the same thing**:
+1. ⏰ Polls every 3 minutes
+2. 📨 Gets 3 new mentions
+3. 🤖 Processes @ethosAgent profile commands  
+4. 📤 Replies with real Ethos scores (0-2800 scale)
+
+### Reply Logic
+- **Reply to tweet**: Analyzes the **original tweet author**
+- **Direct mention**: Analyzes the **person mentioning the bot**
+
+### Response Format
+```
+[Name] currently has an Ethos score of [score]. They have [numReviews] reviews and [staked] eth staked against their name. You can find their full profile here: [url]
+```
+
+## 🔧 Configuration
+
+### Environment Variables
+```env
+# Required for polling
+TWITTER_BEARER_TOKEN=your_bearer_token_here
+
+# Mode selection  
+TWITTER_API_PLAN=basic          # Enables polling mode
+USE_POLLING=true                # Force polling mode
+
+# Optional
+BOT_USERNAME=ethosAgent         # Bot username to monitor
+PORT=8000                       # Server port
+```
+
+## 📁 Project Structure
+
+```
+├── main.ts                     # Main server with polling/webhook modes
+├── src/
+│   ├── polling-service.ts      # 🆕 Polling service (make.com replacement)
+│   ├── twitter-service.ts      # Twitter API integration
+│   ├── command-processor.ts    # Command parsing and processing
+│   ├── ethos-service.ts        # Ethos API integration  
+│   ├── webhook-handler.ts      # Webhook processing
+│   └── types.ts               # TypeScript definitions
+├── test-polling.ts            # 🆕 Test polling functionality
+└── test-scenarios.ts          # Comprehensive test suite
+```
+
+## 🚀 Deployment
+
+### Local Development
+```bash
+deno task dev  # Auto-restart on changes
+```
+
+### Production
+```bash
+deno task start
+```
+
+### Docker (Optional)
+```dockerfile
+FROM denoland/deno:alpine
+WORKDIR /app
+COPY . .
+RUN deno cache main.ts
+EXPOSE 8000
+CMD ["deno", "task", "start"]
+```
+
+## 💡 Migration from Make.com
+
+### What You Get
+✅ **Same functionality** as your make.com workflow  
+✅ **Better performance** (native TypeScript vs visual scripting)  
+✅ **Lower cost** (no make.com subscription needed)  
+✅ **More control** (full source code, custom logic)  
+✅ **Real Ethos scores** (0-2800 scale, not calculated percentages)  
+✅ **Better error handling** and logging  
+
+### Migration Steps
+1. Stop your make.com scenario
+2. Set up this bot with polling mode  
+3. Test with `deno task test-polling`
+4. Deploy and monitor logs
+5. Cancel make.com subscription 💰
+
+## ❓ Troubleshooting
+
+### "No bearer token configured"
+- Add `TWITTER_BEARER_TOKEN` to your `.env` file
+- Get it from Twitter Developer Portal → Your App → Keys and Tokens
+
+### "401 Unauthorized"  
+- Double-check your Bearer Token is correct
+- Make sure your Twitter app has the right permissions
+
+### "No new mentions found"
+- This is normal for testing
+- The bot only processes new mentions since the last check
+- Try mentioning @ethosAgent in a real tweet to test
+
+## 🔄 Next Steps
+
+1. **Test the polling**: `deno task test-polling`
+2. **Add your Bearer Token** to `.env`  
+3. **Run the bot**: `deno task start`
+4. **Mention @ethosAgent profile** in a tweet
+5. **Watch the logs** for processing
+
+**This completely replaces your make.com workflow!** 🎉
 
 ## How Profile Analysis Works
 

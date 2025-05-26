@@ -1,11 +1,13 @@
 {
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read main.ts",
-    "dev": "deno run --allow-net --allow-env --allow-read --watch main.ts",
-    "test": "deno test --allow-net --allow-env --allow-read",
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write main.ts",
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --watch main.ts",
+    "test": "deno test --allow-net --allow-env --allow-read --allow-write",
     "test-webhook": "deno run --allow-net test-webhook.ts",
     "test-all": "deno run --allow-net test-scenarios.ts",
     "test-ethos": "deno run --allow-net test-ethos-integration.ts",
+    "test-polling": "deno run --allow-net --allow-env --allow-read --allow-write test-polling.ts",
+    "test-persistence": "deno run --allow-net --allow-read --allow-write test-persistence.ts",
     "setup": "deno run --allow-read --allow-write --allow-env setup-twitter-api.ts"
   },
   "imports": {
@@ -15,6 +17,17 @@
   },
   "compilerOptions": {
     "strict": true,
-    "lib": ["dom", "deno.ns"]
+    "lib": [
+      "dom",
+      "deno.ns"
+    ]
+  },
+  "deploy": {
+    "project": "bf512f03-85ed-4384-bc8d-6a5beb11e8de",
+    "exclude": [
+      "**/node_modules"
+    ],
+    "include": [],
+    "entrypoint": "main.ts"
   }
-} 
+}

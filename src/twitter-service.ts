@@ -261,6 +261,12 @@ export class TwitterService {
           return true; // Return true for development purposes
         }
         
+        // Handle rate limits gracefully
+        if (response.status === 429) {
+          const resetTime = response.headers.get('x-rate-limit-reset');
+          console.log(`⏳ Rate limit hit. Resets at: ${resetTime ? new Date(parseInt(resetTime) * 1000) : 'unknown'}`);
+        }
+        
         return false;
       }
 
@@ -370,6 +376,56 @@ export class TwitterService {
       return userInfo;
     } catch (error) {
       console.error("❌ Failed to fetch current user:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Search for recent mentions of the bot
+   * Used for polling instead of webhooks (Basic API plan)
+   */
+  async searchMentions(botUsername: string, maxResults: number = 10, sinceId?: string): Promise<any> {
+    if (!this.bearerToken) {
+      console.log("⚠️ No bearer token configured - mentions search requires bearer token");
+      return null;
+    }
+
+    try {
+      // Twitter API requires max_results to be between 10 and 100
+      const validMaxResults = Math.max(10, Math.min(100, maxResults));
+      
+      const query = `@${botUsername} -is:retweet`;
+      const params = new URLSearchParams({
+        query,
+        max_results: validMaxResults.toString(),
+        'tweet.fields': 'created_at,author_id,in_reply_to_user_id,conversation_id',
+        'user.fields': 'id,username,name,profile_image_url',
+        expansions: 'author_id,in_reply_to_user_id'
+      });
+
+      if (sinceId) {
+        params.append('since_id', sinceId);
+      }
+
+      const response = await fetch(`https://api.twitter.com/2/tweets/search/recent?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
+        console.error(`❌ Error details: ${errorText}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log(`🔍 Found ${data.data?.length || 0} new mentions`);
+      return data;
+    } catch (error) {
+      console.error("❌ Error searching for mentions:", error);
       return null;
     }
   }
