@@ -306,14 +306,10 @@ export class EthosService {
       // Static values as specified
       const staticAuthorAddress = "0x792cCe0d4230FF69FA69F466Ef62B8f81eB619d7";
       
-      // Create the source as a stringified JSON object
-      const sourceObject = {
-        source: "ethosAgent",
-        sourceAuthor: `service:x.com:username:${request.reviewerUsername}`
-      };
-      const sourceString = JSON.stringify(sourceObject);
+      // Create the source as a flat string format
+      const sourceString = `ethosService:ethosTwitterAgent:service:x.com:username:${request.reviewerUsername}`;
 
-      // Prepare the review payload with source as stringified JSON
+      // Prepare the review payload with source as flat string
       const reviewPayload = {
         score: request.score,
         title: request.title,
