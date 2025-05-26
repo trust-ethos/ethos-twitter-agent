@@ -25,15 +25,15 @@ export class CommandProcessor {
       return null;
     }
 
-    // Remove all @mentions to get the actual command
-    // This handles cases like "@user1 @user2 @ethosAgent @ethosAgent profile"
-    const textWithoutMentions = tweet.text.replace(/@[\w_]+/g, '').trim();
+    // Remove @ethosAgent mentions but preserve other @mentions for command arguments
+    // This handles cases like "@user1 @user2 @ethosAgent save target @username"
+    const textWithEthosAgentRemoved = tweet.text.replace(/@ethosagent/gi, '').trim();
     
-    if (!textWithoutMentions) {
+    if (!textWithEthosAgentRemoved) {
       return null;
     }
 
-    const parts = textWithoutMentions.split(/\s+/);
+    const parts = textWithEthosAgentRemoved.split(/\s+/);
     const commandType = parts[0].toLowerCase();
     const args = parts.slice(1);
 
@@ -195,10 +195,14 @@ export class CommandProcessor {
    • Reply to someone's tweet with "@ethosAgent profile" to check their reputation
    • Or just mention me with "@ethosAgent profile" to check your own
 
-**save [positive/negative/neutral]** - Save a tweet permanently onchain as a review
+**save [positive/negative/neutral] ** - Save a tweet permanently onchain as a review
    • Reply to any tweet with "@ethosAgent save" to save it with neutral sentiment
    • Add sentiment: "@ethosAgent save positive" or "@ethosAgent save negative"
-   • Save to someone else: "@ethosAgent save target @username positive"
+   • Default sentiment is neutral if not specified
+
+**save target [@ mention] ** - Save a tweet permanently onchain as a review to a specified user
+   • Reply to any tweet with "@ethosAgent save target @ mention" to save it with neutral sentiment
+   • Add sentiment: "@ethosAgent save positive target [@ mention]"
    • Default sentiment is neutral if not specified
 
 **help** - Show this help message
@@ -267,10 +271,25 @@ Learn more about Ethos at https://ethos.network`;
       // Parse remaining args to see if this is "save target @username"
       if (remainingArgs.length >= 2 && remainingArgs[0].toLowerCase() === "target") {
         // This is "save target @username" format
-        const targetArg = remainingArgs[1];
+        // Find the LAST @mention in the entire original text to handle cases like:
+        // "@user1 @user2 @ethosAgent save positive target @targetuser"
+        // We only want @targetuser, not @user1 or @user2
         
-        // Extract username from @username format
-        const usernameMatch = targetArg.match(/^@?(\w+)$/);
+        const originalText = command.originalTweet.text;
+        const mentionMatches = originalText.match(/@\w+/g);
+        
+        if (!mentionMatches || mentionMatches.length === 0) {
+          return {
+            success: false,
+            message: "No target username found",
+            replyText: `No @mention found for target user. Use "@ethosAgent save target @username" format.`
+          };
+        }
+        
+        // Get the last @mention (excluding @ethosAgent which should be removed by parsing)
+        const lastMention = mentionMatches[mentionMatches.length - 1];
+        const usernameMatch = lastMention.match(/^@(\w+)$/);
+        
         if (!usernameMatch) {
           return {
             success: false,
@@ -460,4 +479,4 @@ Link to tweet: ${originalTweetLink}`;
       };
     }
   }
-} 
+}
