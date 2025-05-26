@@ -235,8 +235,8 @@ Learn more about Ethos at https://ethos.network`;
       console.log(`   referenced_tweets: ${tweet.referenced_tweets ? JSON.stringify(tweet.referenced_tweets) : 'null'}`);
       console.log(`   allUsers provided: ${allUsers ? allUsers.length : 0} users`);
 
-      // Check if this is a reply to another tweet
-      if (!tweet.in_reply_to_user_id) {
+      // Check if this is a reply to another tweet by looking at referenced_tweets
+      if (!tweet.referenced_tweets || tweet.referenced_tweets.length === 0) {
         return {
           success: false,
           message: "Save command requires replying to a tweet",
@@ -306,21 +306,13 @@ Learn more about Ethos at https://ethos.network`;
 
       // Find the original tweet that's being replied to
       let originalTweetId: string;
-      if (tweet.referenced_tweets) {
-        const repliedTweet = tweet.referenced_tweets.find(ref => ref.type === "replied_to");
-        if (repliedTweet) {
-          originalTweetId = repliedTweet.id;
-        } else {
-          return {
-            success: false,
-            message: "Could not find original tweet ID in referenced tweets",
-            replyText: `I couldn't find the tweet you're trying to save. Please make sure you're replying to a valid tweet.`
-          };
-        }
+      const repliedTweet = tweet.referenced_tweets.find(ref => ref.type === "replied_to");
+      if (repliedTweet) {
+        originalTweetId = repliedTweet.id;
       } else {
         return {
           success: false,
-          message: "No referenced tweets found - cannot determine original tweet ID",
+          message: "Could not find replied-to tweet in referenced tweets",
           replyText: `I couldn't find the tweet you're trying to save. Please make sure you're replying to a valid tweet.`
         };
       }
