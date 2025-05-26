@@ -3,7 +3,8 @@
     "start": "deno run --allow-net --allow-env --allow-read main.ts",
     "dev": "deno run --allow-net --allow-env --allow-read --watch main.ts",
     "test": "deno test --allow-net --allow-env --allow-read",
-    "test-webhook": "deno run --allow-net test-webhook.ts"
+    "test-webhook": "deno run --allow-net test-webhook.ts",
+    "setup": "deno run --allow-read --allow-write --allow-env setup-twitter-api.ts"
   },
   "imports": {
     "std/": "https://deno.land/std@0.208.0/",
