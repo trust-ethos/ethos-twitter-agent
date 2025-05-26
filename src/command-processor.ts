@@ -304,6 +304,30 @@ Learn more about Ethos at https://ethos.network`;
 
       console.log(`💾 Processing save command: ${saveContext}`);
 
+      // Check if the target user has a valid Ethos profile
+      console.log(`🔍 Validating Ethos profile for target user: ${targetUsername}`);
+      const profileCheck = await this.ethosService.checkUserProfile(targetUsername);
+      
+      if (!profileCheck.success) {
+        console.log(`❌ Profile validation failed: ${profileCheck.error}`);
+        return {
+          success: false,
+          message: "Failed to validate user profile",
+          replyText: this.getStandardErrorMessage()
+        };
+      }
+      
+      if (!profileCheck.hasProfile) {
+        console.log(`❌ User ${targetUsername} does not have a valid Ethos profile`);
+        return {
+          success: false,
+          message: "Target user does not have an Ethos profile",
+          replyText: "I'm sorry, only users with an Ethos profile can use this functionality"
+        };
+      }
+      
+      console.log(`✅ User ${targetUsername} has a valid Ethos profile (profileId: ${profileCheck.profileId})`);
+
       // Find the original tweet that's being replied to
       let originalTweetId: string;
       const repliedTweet = tweet.referenced_tweets.find(ref => ref.type === "replied_to");

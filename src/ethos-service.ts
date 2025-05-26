@@ -30,6 +30,13 @@ export interface CreateReviewResponse {
   error?: string;
 }
 
+export interface EthosUserSearchResponse {
+  success: boolean;
+  hasProfile: boolean;
+  profileId?: number;
+  error?: string;
+}
+
 export class EthosService {
   private baseUrl = "https://api.ethos.network";
 
@@ -186,6 +193,91 @@ export class EthosService {
     }
     
     return `${baseMessage}. You can check if they're on Ethos here: ${profileUrl}`;
+  }
+
+  /**
+   * Check if a user has a valid Ethos profile
+   * @param username - Twitter username (without @)
+   */
+  async checkUserProfile(username: string): Promise<EthosUserSearchResponse> {
+    try {
+      console.log(`🔍 Checking if user ${username} has an Ethos profile...`);
+      
+      const searchUrl = `${this.baseUrl}/api/v1/users/search?query=${encodeURIComponent(username)}&limit=10`;
+      console.log(`🔗 Search API URL: ${searchUrl}`);
+      
+      const response = await fetch(searchUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'EthosAgent/1.0'
+        }
+      });
+      
+      console.log(`📡 Search API response status: ${response.status} ${response.statusText}`);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`❌ Search API error: ${response.status} ${response.statusText}`);
+        console.log(`❌ Error details:`, errorText);
+        
+        return {
+          success: false,
+          hasProfile: false,
+          error: `Search API error: ${response.status}`
+        };
+      }
+      
+      const data = await response.json();
+      console.log(`📡 Search API response data:`, JSON.stringify(data, null, 2));
+      
+      if (!data.ok || !data.data || !data.data.values) {
+        console.log(`⚠️ Unexpected search API response structure`);
+        return {
+          success: false,
+          hasProfile: false,
+          error: 'Unexpected API response structure'
+        };
+      }
+      
+      // Look for an exact username match (case-insensitive)
+      const normalizedUsername = username.toLowerCase();
+      console.log(`🔍 Looking for username match: "${normalizedUsername}"`);
+      
+      const matchingUser = data.data.values.find((user: any) => 
+        user.username && user.username.toLowerCase() === normalizedUsername
+      );
+      
+      if (!matchingUser) {
+        console.log(`❌ No exact username match found for ${username}`);
+        return {
+          success: true,
+          hasProfile: false,
+          error: 'User not found in search results'
+        };
+      }
+      
+      console.log(`✅ Found matching user:`, matchingUser);
+      
+      // Check if the user has a profileId (indicates a valid profile)
+      const hasValidProfile = matchingUser.profileId && matchingUser.profileId > 0;
+      
+      console.log(`📊 Profile check result: hasProfile=${hasValidProfile}, profileId=${matchingUser.profileId}`);
+      
+      return {
+        success: true,
+        hasProfile: hasValidProfile,
+        profileId: matchingUser.profileId || undefined
+      };
+      
+    } catch (error) {
+      console.error('❌ Error checking user profile:', error);
+      return {
+        success: false,
+        hasProfile: false,
+        error: 'Failed to check user profile'
+      };
+    }
   }
 
   /**
