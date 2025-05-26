@@ -22,6 +22,7 @@ export interface TwitterWebhookEvent {
   data?: TwitterTweet[];
   includes?: {
     users?: TwitterUser[];
+    tweets?: TwitterTweet[];
   };
 }
 

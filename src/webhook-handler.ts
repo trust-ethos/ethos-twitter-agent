@@ -83,6 +83,27 @@ export class TwitterWebhookHandler {
       console.log(`   referenced_tweets: ${tweet.referenced_tweets ? JSON.stringify(tweet.referenced_tweets) : 'null'}`);
       console.log(`   conversation_id: ${tweet.conversation_id || 'null'}`);
 
+      // Enhanced logging for referenced tweets (similar to make.com data)
+      if (tweet.referenced_tweets && tweet.referenced_tweets.length > 0) {
+        console.log(`🔗 Referenced tweets details:`);
+        for (const ref of tweet.referenced_tweets) {
+          console.log(`   Type: ${ref.type}`);
+          console.log(`   Referenced Tweet ID: ${ref.id}`);
+          
+          // Look for referenced tweet data in the includes section
+          if (event.includes?.tweets) {
+            const refTweet = event.includes.tweets.find((t: any) => t.id === ref.id);
+            if (refTweet) {
+              console.log(`   Referenced Tweet Text: "${refTweet.text}"`);
+              console.log(`   Referenced Tweet Author: ${refTweet.author_id}`);
+              console.log(`   Referenced Tweet Created: ${refTweet.created_at}`);
+            }
+          }
+        }
+      } else {
+        console.log(`ℹ️ No referenced tweets - this is a standalone mention`);
+      }
+
       // Find the user who mentioned us
       const author = event.includes?.users?.find(user => user.id === tweet.author_id);
       
