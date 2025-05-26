@@ -326,7 +326,7 @@ Learn more about Ethos at https://ethos.network`;
       
       // Create the detailed description
       const originalTweetLink = `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`;
-      const reviewDescription = `Original tweet: "${originalTweet.text}"
+      const reviewDescription = `Original tweet saved by @${mentionerUsername}: "${originalTweet.text}"
 
 Authored at: ${originalTweet.created_at}
 Author twitter id: ${originalTweet.author_id}
