@@ -17,6 +17,21 @@ const commandProcessor = new CommandProcessor(twitterService);
 const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
 const pollingService = new PollingService(twitterService, commandProcessor);
 
+// Validate environment variables
+const twitterBearerToken = Deno.env.get("TWITTER_BEARER_TOKEN");
+const twitterApiKey = Deno.env.get("TWITTER_API_KEY");
+const twitterApiSecret = Deno.env.get("TWITTER_API_SECRET");
+const twitterAccessToken = Deno.env.get("TWITTER_ACCESS_TOKEN");
+const twitterAccessTokenSecret = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET");
+const ethosApiKey = Deno.env.get("ETHOS_API_KEY");
+const ethosEnv = Deno.env.get("ETHOS_ENV") || "prod"; // Default to prod
+
+console.log(`🌍 Ethos Environment: ${ethosEnv}`);
+
+if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccessToken || !twitterAccessTokenSecret) {
+  console.log("⚠️ Twitter API credentials not fully configured");
+}
+
 // Determine mode based on environment variable
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
 

@@ -16,10 +16,11 @@ export interface EthosApiResponse {
 }
 
 export interface CreateReviewRequest {
+  score: "positive" | "negative" | "neutral";
+  title: string;
+  description: string;
   targetUsername: string;
-  reviewerUsername: string;
   tweetId: string;
-  reviewText: string;
 }
 
 export interface CreateReviewResponse {
@@ -192,7 +193,7 @@ export class EthosService {
    */
   async createReview(request: CreateReviewRequest): Promise<CreateReviewResponse> {
     try {
-      console.log(`💾 Creating Ethos review for ${request.targetUsername} by ${request.reviewerUsername}`);
+      console.log(`💾 Creating Ethos review for ${request.targetUsername} with score: ${request.score}`);
 
       // Check if we have Ethos API credentials
       const ethosApiKey = Deno.env.get("ETHOS_API_KEY");
@@ -205,12 +206,24 @@ export class EthosService {
         };
       }
 
-      // Prepare the review payload
+      // Get environment setting (defaults to prod)
+      const ethosEnv = Deno.env.get("ETHOS_ENV") || "prod";
+      console.log(`🌍 Using Ethos environment: ${ethosEnv}`);
+
+      // Static values as specified
+      const staticAuthorAddress = "0x792cCe0d4230FF69FA69F466Ef62B8f81eB619d7";
+      const staticSource = "ethosAgentTwitter";
+
+      // Prepare the review payload in the expected format
       const reviewPayload = {
-        targetUsername: request.targetUsername,
-        reviewerUsername: request.reviewerUsername,
-        tweetId: request.tweetId,
-        reviewText: request.reviewText
+        score: request.score,
+        title: request.title,
+        description: request.description,
+        service: "x.com",
+        username: request.targetUsername,
+        authorAddress: staticAuthorAddress,
+        env: ethosEnv,
+        source: staticSource
       };
 
       console.log(`📝 Review payload:`, reviewPayload);

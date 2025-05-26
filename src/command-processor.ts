@@ -272,13 +272,22 @@ Learn more about Ethos at https://ethos.network`;
       console.log(`👤 Target user: ${targetName} (@${targetUsername})`);
       console.log(`👤 Reviewer: ${mentionerName} (@${mentionerUsername})`);
 
-      // TODO: Call Ethos API to create the review
-      // For now, return a placeholder response
+      // Extract review details from the command
+      // For now, we'll default to "neutral" score and use tweet content as description
+      // In the future, we could parse args for specific scores like "save positive" or "save negative"
+      const reviewScore: "positive" | "negative" | "neutral" = "neutral"; // Default score
+      const reviewTitle = `Review from @${mentionerUsername}`;
+      const reviewDescription = `Review saved via @ethosAgent from tweet ${originalTweetId}`;
+
+      console.log(`📝 Review details - Score: ${reviewScore}, Title: ${reviewTitle}`);
+
+      // Call Ethos API to create the review
       const reviewResult = await this.ethosService.createReview({
+        score: reviewScore,
+        title: reviewTitle,
+        description: reviewDescription,
         targetUsername,
-        reviewerUsername: mentionerUsername,
-        tweetId: originalTweetId,
-        reviewText: `Tweet review saved via @ethosAgent`
+        tweetId: originalTweetId
       });
 
       if (reviewResult.success) {
