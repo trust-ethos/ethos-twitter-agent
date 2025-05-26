@@ -40,10 +40,10 @@ Get someone's Ethos credibility score and reputation information.
 **Examples:**
 ```
 User replies to @vitalik's tweet with: "@ethosAgent profile"
-Bot responds: "vitalik.eth currently has an Ethos score of 95. They have 42 reviews, 98% are positive. They also have 12.5 eth vouched for them. You can find their full profile here: https://app.ethos.network/profile/x/vitalik"
+Bot responds: "vitalik.eth currently has an Ethos score of 1895. They have 42 reviews, 98% are positive. They also have 12.5 eth vouched for them. You can find their full profile here: https://app.ethos.network/profile/x/vitalik"
 
 User tweets: "@ethosAgent profile"  
-Bot responds: "John currently has an Ethos score of 67. They have 3 reviews, 100% are positive. They also have 0.25 eth vouched for them. You can find their full profile here: https://app.ethos.network/profile/x/john"
+Bot responds: "John currently has an Ethos score of 1567. They have 3 reviews, 100% are positive. They also have 0.25 eth vouched for them. You can find their full profile here: https://app.ethos.network/profile/x/john"
 ```
 
 ### 💾 Save Command
