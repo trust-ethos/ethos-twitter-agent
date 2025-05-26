@@ -14,7 +14,7 @@ const router = new Router();
 // Initialize services
 const twitterService = new TwitterService();
 const commandProcessor = new CommandProcessor(twitterService);
-const webhookHandler = new TwitterWebhookHandler(commandProcessor);
+const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
 const pollingService = new PollingService(twitterService, commandProcessor);
 
 // Determine mode based on environment variable

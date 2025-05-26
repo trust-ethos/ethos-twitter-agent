@@ -1,12 +1,15 @@
 import type { Context } from "oak";
 import type { TwitterWebhookEvent } from "./types.ts";
 import type { CommandProcessor } from "./command-processor.ts";
+import type { TwitterService } from "./twitter-service.ts";
 
 export class TwitterWebhookHandler {
   private commandProcessor: CommandProcessor;
+  private twitterService: TwitterService;
 
-  constructor(commandProcessor: CommandProcessor) {
+  constructor(commandProcessor: CommandProcessor, twitterService: TwitterService) {
     this.commandProcessor = commandProcessor;
+    this.twitterService = twitterService;
   }
 
   /**
@@ -98,12 +101,14 @@ export class TwitterWebhookHandler {
       if (result.success && result.replyText) {
         console.log(`✅ Command processed successfully, replying...`);
         
-        // Here we would reply to the tweet
-        // For now, we'll just log what we would reply
-        console.log(`📤 Would reply with: "${result.replyText}"`);
-        
-        // In production:
-        // await this.twitterService.replyToTweet(tweet.id, result.replyText);
+        // Reply to the tweet
+        try {
+          await this.twitterService.replyToTweet(tweet.id, result.replyText);
+          console.log(`📤 Replied successfully to @${author.username}`);
+        } catch (replyError) {
+          console.error(`❌ Failed to reply to tweet ${tweet.id}:`, replyError);
+          console.log(`📤 Would have replied with: "${result.replyText}"`);
+        }
       } else {
         console.log(`❌ Command processing failed: ${result.message}`);
       }

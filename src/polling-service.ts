@@ -236,14 +236,16 @@ export class PollingService {
       const result = await this.commandProcessor.processCommand(command, users);
 
       if (result.success && result.replyText) {
-        console.log(`✅ Command processed successfully, would reply...`);
+        console.log(`✅ Command processed successfully, replying...`);
         
-        // Here we would reply to the tweet
-        // For now, we'll just log what we would reply
-        console.log(`📤 Would reply with: "${result.replyText}"`);
-        
-        // In production:
-        // await this.twitterService.replyToTweet(mention.id, result.replyText);
+        // Reply to the tweet
+        try {
+          await this.twitterService.replyToTweet(mention.id, result.replyText);
+          console.log(`📤 Replied successfully to @${author.username}`);
+        } catch (replyError) {
+          console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyError);
+          console.log(`📤 Would have replied with: "${result.replyText}"`);
+        }
       } else {
         console.log(`❌ Command processing failed: ${result.message}`);
       }

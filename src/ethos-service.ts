@@ -114,7 +114,7 @@ export class EthosService {
   formatStats(stats: EthosUserStats, name: string, username: string): string {
     const profileUrl = this.getProfileUrl(username);
     
-    return `${name} currently has an Ethos score of ${stats.score}. They have ${stats.numReviews} reviews and ${stats.vouches.staked} eth staked against their name. You can find their full profile here: ${profileUrl}`;
+    return `${name} currently has an Ethos score of ${stats.score}. They have ${stats.numReviews} reviews and ${stats.vouches.staked} eth vouched for them. You can find their full profile here: ${profileUrl}`;
   }
 
   /**
