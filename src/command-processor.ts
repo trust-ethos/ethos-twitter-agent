@@ -303,10 +303,18 @@ Learn more about Ethos at https://ethos.network`;
         if (repliedTweet) {
           originalTweetId = repliedTweet.id;
         } else {
-          originalTweetId = tweet.in_reply_to_user_id; // fallback
+          return {
+            success: false,
+            message: "Could not find original tweet ID in referenced tweets",
+            replyText: `I couldn't find the tweet you're trying to save. Please make sure you're replying to a valid tweet.`
+          };
         }
       } else {
-        originalTweetId = tweet.in_reply_to_user_id; // fallback
+        return {
+          success: false,
+          message: "No referenced tweets found - cannot determine original tweet ID",
+          replyText: `I couldn't find the tweet you're trying to save. Please make sure you're replying to a valid tweet.`
+        };
       }
 
       console.log(`🔗 Original tweet ID: ${originalTweetId}`);
