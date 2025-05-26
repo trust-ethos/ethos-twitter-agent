@@ -18,8 +18,8 @@ export class PollingService {
   private lastTweetId: string | null = null;
   private processedTweetIds: Set<string> = new Set(); // Track processed tweets
   private isPolling: boolean = false;
-  private pollInterval: number = 3 * 60 * 1000; // 3 minutes
-  private maxMentions: number = 3; // Process 3 mentions at a time
+  private pollInterval: number = 30 * 1000; // 30 seconds (was 3 minutes)
+  private maxMentions: number = 5; // Process 5 mentions at a time (was 3)
   private kv: Deno.Kv | null = null; // Deno KV for cloud persistence
 
   constructor(

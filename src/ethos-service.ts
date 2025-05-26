@@ -26,62 +26,90 @@ export class EthosService {
     try {
       console.log(`🔍 Fetching Ethos stats for user: ${username}`);
       
-      // Use the correct userkey format: service:x.com:username:<twitterUsername>
       const userkey = `service:x.com:username:${username}`;
-      const response = await fetch(`${this.baseUrl}/api/v1/users/${userkey}/stats`);
       
-      if (!response.ok) {
-        console.error(`❌ Ethos API error: ${response.status} ${response.statusText}`);
+      // First, try to get the actual credibility score from the scores API
+      let score: number | null = null;
+      let scoresApiWorked = false;
+      
+      try {
+        console.log(`🎯 Getting credibility score via scores API...`);
+        const scoresUrl = `${this.baseUrl}/api/v1/score/${userkey}`;
+        console.log(`🔗 Scores API URL: ${scoresUrl}`);
         
-        if (response.status === 404) {
+        const scoresResponse = await fetch(scoresUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'EthosAgent/1.0'
+          }
+        });
+        
+        console.log(`📡 Scores API response status: ${scoresResponse.status} ${scoresResponse.statusText}`);
+        
+        if (scoresResponse.ok) {
+          const scoresData = await scoresResponse.json();
+          console.log(`✅ Scores API response data:`, JSON.stringify(scoresData, null, 2));
+          
+          if (scoresData.ok && scoresData.data && typeof scoresData.data.score === 'number') {
+            score = scoresData.data.score;
+            scoresApiWorked = true;
+            console.log(`📊 Found credibility score from scores API: ${score}`);
+          } else {
+            console.log(`⚠️ Scores API response structure unexpected:`, scoresData);
+          }
+        } else {
+          const errorText = await scoresResponse.text();
+          console.log(`❌ Scores API error: ${scoresResponse.status} ${scoresResponse.statusText}`);
+          console.log(`❌ Error response:`, errorText);
+        }
+      } catch (error) {
+        console.log(`❌ Scores API request failed:`, error);
+      }
+      
+      console.log(`📊 Scores API result: worked=${scoresApiWorked}, score=${score}`);
+      
+      // Now get the stats data (reviews, vouches, etc.)
+      console.log(`📊 Getting stats data via stats API...`);
+      const statsUrl = `${this.baseUrl}/api/v1/users/${userkey}/stats`;
+      console.log(`🔗 Stats API URL: ${statsUrl}`);
+      
+      const statsResponse = await fetch(statsUrl);
+      console.log(`📡 Stats API response status: ${statsResponse.status} ${statsResponse.statusText}`);
+      
+      if (!statsResponse.ok) {
+        if (statsResponse.status === 404) {
+          console.log(`ℹ️ No Ethos data for ${username}: User not found on Ethos`);
           return {
             success: false,
-            error: "User not found on Ethos"
+            error: 'User not found on Ethos'
           };
         }
         
+        const errorText = await statsResponse.text();
+        console.log(`❌ Ethos API error: ${statsResponse.status} ${statsResponse.statusText}`);
+        console.log(`❌ Error details:`, errorText);
+        
         return {
           success: false,
-          error: `Ethos API error: ${response.status}`
+          error: `Ethos API error: ${statsResponse.status}`
         };
       }
 
-      const responseData = await response.json();
-      console.log(`✅ Ethos stats received:`, responseData);
+      const data = await statsResponse.json();
+      console.log(`✅ Ethos stats received:`, JSON.stringify(data, null, 2));
 
-      // Check if response is successful and has data
-      if (!responseData.ok || !responseData.data) {
-        console.warn("⚠️ Ethos API returned non-successful response:", responseData);
-        return {
-          success: false,
-          error: "No data available from Ethos API"
-        };
-      }
-
-      const data = responseData.data;
-
-      // Extract the actual Ethos score
-      let score: number | null = 0;
-      
-      // Priority 1: If user has a market profile, use the official ethosScore
-      if (data.market?.profile?.ethosScore) {
-        score = data.market.profile.ethosScore;
-        console.log(`📊 Using market profile score: ${score}`);
-      } else {
-        // Priority 2: For users without market profiles, we don't have an official score
-        // In this case, we'll note that they don't have an official score yet
-        console.log(`📊 No market profile found, user doesn't have an official Ethos score yet`);
-        score = null; // Will be handled in formatStats
-      }
-
+      // Combine the score from scores API with stats from stats API
       const stats: EthosUserStats = {
-        score: score,
-        numReviews: data.reviews?.received || 0,
-        positivePercentage: Math.round(data.reviews?.positiveReviewPercentage || 0),
+        score: score, // From scores API or null if not available
+        numReviews: data.data.reviews.received || 0,
+        positivePercentage: Math.round(data.data.reviews.positiveReviewPercentage || 0),
         vouches: {
-          staked: data.vouches?.staked?.received || 0
+          staked: data.data.vouches.staked.received || 0,
         }
       };
+
+      console.log(`📊 Final stats object:`, JSON.stringify(stats, null, 2));
 
       return {
         success: true,
@@ -89,10 +117,10 @@ export class EthosService {
       };
 
     } catch (error) {
-      console.error("❌ Failed to fetch Ethos user stats:", error);
+      console.error('❌ Error fetching Ethos stats:', error);
       return {
         success: false,
-        error: "Network error while fetching Ethos data"
+        error: 'Failed to fetch Ethos data'
       };
     }
   }
@@ -113,7 +141,7 @@ export class EthosService {
     
     let scoreText = "";
     if (stats.score !== null) {
-      scoreText = `Ethos score of ${stats.score}`;
+      scoreText = `an Ethos score of ${stats.score}`;
     } else {
       scoreText = `no official Ethos score yet`;
     }
@@ -125,7 +153,7 @@ export class EthosService {
       reviewText = "They have no reviews yet. ";
     }
     
-    return `${name} currently has an ${scoreText}. ${reviewText}They also have ${stats.vouches.staked} eth vouched for them. You can find their full profile here: ${profileUrl}`;
+    return `${name} currently has ${scoreText}. ${reviewText}They also have ${stats.vouches.staked} eth vouched for them. You can find their full profile here: ${profileUrl}`;
   }
 
   /**

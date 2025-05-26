@@ -13,7 +13,7 @@
   "cron": [
     {
       "name": "ethosAgent-polling",
-      "cron": "*/3 * * * *",
+      "cron": "*/30 * * * * *",
       "path": "/cron/poll-mentions"
     }
   ],
