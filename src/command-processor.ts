@@ -48,23 +48,51 @@ export class CommandProcessor {
   async processCommand(command: Command, allUsers?: TwitterUser[]): Promise<CommandResult> {
     console.log(`🎯 Processing command: ${command.type} with args:`, command.args);
 
-    switch (command.type) {
-      case "profile":
-        return await this.handleProfileCommand(command, allUsers);
+    try {
+      switch (command.type) {
+        case "profile":
+          return await this.handleProfileCommand(command, allUsers);
+        
+        case "help":
+          return await this.handleHelpCommand(command);
+        
+        case "save":
+          return await this.handleSaveCommand(command, allUsers);
+        
+        default:
+          return {
+            success: false,
+            message: `Unknown command: ${command.type}`,
+            replyText: `I don't recognize the command "${command.type}". Try @ethosAgent help for available commands.`
+          };
+      }
+    } catch (error) {
+      console.error(`❌ Unexpected error processing ${command.type} command:`, error);
       
-      case "help":
-        return await this.handleHelpCommand(command);
-      
-      case "save":
-        return await this.handleSaveCommand(command, allUsers);
-      
-      default:
+      // Only provide standardized error message for known commands
+      const knownCommands = ["profile", "help", "save"];
+      if (knownCommands.includes(command.type)) {
         return {
           success: false,
-          message: `Unknown command: ${command.type}`,
-          replyText: `I don't recognize the command "${command.type}". Try @ethosAgent help for available commands.`
+          message: `Unexpected error processing ${command.type} command`,
+          replyText: this.getStandardErrorMessage()
         };
+      }
+      
+      // For unknown commands, still provide the regular unknown command message
+      return {
+        success: false,
+        message: `Unknown command: ${command.type}`,
+        replyText: `I don't recognize the command "${command.type}". Try @ethosAgent help for available commands.`
+      };
     }
+  }
+
+  /**
+   * Standard fallback error message for known commands
+   */
+  private getStandardErrorMessage(): string {
+    return "I'm sorry but I'm having difficulties right now. I may be experiencing a temporary outage. Please try again later.";
   }
 
   /**
@@ -133,12 +161,10 @@ export class CommandProcessor {
     } catch (error) {
       console.error("❌ Error processing profile command:", error);
       
-      const fallbackReply = `I'm having trouble accessing profile data right now. Please try again later.`;
-      
       return {
         success: false,
         message: "Error processing profile command",
-        replyText: fallbackReply
+        replyText: this.getStandardErrorMessage()
       };
     }
   }
@@ -185,7 +211,7 @@ Learn more about Ethos at https://ethos.network`;
       return {
         success: false,
         message: "Error processing help command",
-        replyText: `I'm having trouble showing help right now. Try @ethosAgent profile to check someone's Ethos reputation.`
+        replyText: this.getStandardErrorMessage()
       };
     }
   }
@@ -310,7 +336,7 @@ Learn more about Ethos at https://ethos.network`;
       return {
         success: false,
         message: "Error processing save command",
-        replyText: `I'm having trouble saving the review right now. Please try again later.`
+        replyText: this.getStandardErrorMessage()
       };
     }
   }
