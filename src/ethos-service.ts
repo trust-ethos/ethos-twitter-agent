@@ -1,8 +1,9 @@
 // Ethos API service for fetching user stats and profile information
 
 export interface EthosUserStats {
-  score: number;
+  score: number | null;
   numReviews: number;
+  positivePercentage: number;
   vouches: {
     staked: number;
   };
@@ -59,28 +60,24 @@ export class EthosService {
 
       const data = responseData.data;
 
-      // Extract the actual Ethos score (0-2800 scale) from the API response
-      let score = 0;
+      // Extract the actual Ethos score
+      let score: number | null = 0;
       
-      // First try to get the official Ethos score from market profile
+      // Priority 1: If user has a market profile, use the official ethosScore
       if (data.market?.profile?.ethosScore) {
         score = data.market.profile.ethosScore;
+        console.log(`📊 Using market profile score: ${score}`);
       } else {
-        // Fallback: calculate based on review percentage if no official score
-        const reviewPercentage = data.reviews?.positiveReviewPercentage || 0;
-        const totalReviews = data.reviews?.received || 0;
-        const vouchesReceived = data.vouches?.staked?.received || 0;
-        
-        if (totalReviews > 0) {
-          score = Math.round(reviewPercentage);
-        } else if (vouchesReceived > 0) {
-          score = 50; // Default score for users with vouches but no reviews
-        }
+        // Priority 2: For users without market profiles, we don't have an official score
+        // In this case, we'll note that they don't have an official score yet
+        console.log(`📊 No market profile found, user doesn't have an official Ethos score yet`);
+        score = null; // Will be handled in formatStats
       }
 
       const stats: EthosUserStats = {
         score: score,
         numReviews: data.reviews?.received || 0,
+        positivePercentage: Math.round(data.reviews?.positiveReviewPercentage || 0),
         vouches: {
           staked: data.vouches?.staked?.received || 0
         }
@@ -114,7 +111,21 @@ export class EthosService {
   formatStats(stats: EthosUserStats, name: string, username: string): string {
     const profileUrl = this.getProfileUrl(username);
     
-    return `${name} currently has an Ethos score of ${stats.score}. They have ${stats.numReviews} reviews and ${stats.vouches.staked} eth vouched for them. You can find their full profile here: ${profileUrl}`;
+    let scoreText = "";
+    if (stats.score !== null) {
+      scoreText = `Ethos score of ${stats.score}`;
+    } else {
+      scoreText = `no official Ethos score yet`;
+    }
+    
+    let reviewText = "";
+    if (stats.numReviews > 0) {
+      reviewText = `They have ${stats.numReviews} reviews, ${stats.positivePercentage}% are positive. `;
+    } else {
+      reviewText = "They have no reviews yet. ";
+    }
+    
+    return `${name} currently has an ${scoreText}. ${reviewText}They also have ${stats.vouches.staked} eth vouched for them. You can find their full profile here: ${profileUrl}`;
   }
 
   /**

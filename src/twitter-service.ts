@@ -1,5 +1,4 @@
 import type { TwitterUser, TwitterTweet } from "./types.ts";
-import { oauth1a } from "@nexterias/twitter-api-fetch";
 
 export class TwitterService {
   private clientId?: string;
@@ -229,6 +228,94 @@ export class TwitterService {
   }
 
   /**
+   * Generate OAuth 1.0a signature for Twitter API v2
+   */
+  private async generateOAuthSignature(
+    method: string,
+    url: string,
+    params: Record<string, string>
+  ): Promise<string> {
+    // OAuth 1.0a parameters
+    const oauthParams = {
+      oauth_consumer_key: this.apiKey,
+      oauth_token: this.accessToken,
+      oauth_signature_method: "HMAC-SHA1",
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_nonce: Math.random().toString(36).substring(2, 15),
+      oauth_version: "1.0",
+      ...params
+    };
+
+    // Sort parameters
+    const sortedParams = Object.keys(oauthParams)
+      .sort()
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(oauthParams[key])}`)
+      .join('&');
+
+    // Create signature base string
+    const signatureBaseString = [
+      method.toUpperCase(),
+      encodeURIComponent(url),
+      encodeURIComponent(sortedParams)
+    ].join('&');
+
+    // Create signing key
+    const signingKey = [
+      encodeURIComponent(this.apiSecret),
+      encodeURIComponent(this.accessTokenSecret)
+    ].join('&');
+
+    // Generate HMAC-SHA1 signature
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(signingKey);
+    const messageData = encoder.encode(signatureBaseString);
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-1' },
+      false,
+      ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const signatureBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+    
+    return signatureBase64;
+  }
+
+  /**
+   * Generate OAuth 1.0a Authorization header
+   */
+  private async generateOAuthHeader(
+    method: string,
+    url: string,
+    params: Record<string, string> = {}
+  ): Promise<string> {
+    const oauthParams = {
+      oauth_consumer_key: this.apiKey,
+      oauth_token: this.accessToken,
+      oauth_signature_method: "HMAC-SHA1",
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_nonce: Math.random().toString(36).substring(2, 15),
+      oauth_version: "1.0"
+    };
+
+    const signature = await this.generateOAuthSignature(method, url, { ...params, ...oauthParams });
+    
+    const authParams = {
+      ...oauthParams,
+      oauth_signature: signature
+    };
+
+    const authString = Object.keys(authParams)
+      .map(key => `${encodeURIComponent(key)}="${encodeURIComponent(authParams[key])}"`)
+      .join(', ');
+
+    return `OAuth ${authString}`;
+  }
+
+  /**
    * Reply to a tweet using Twitter API v2 with OAuth 1.0a
    * Requires proper OAuth 1.0a credentials with write permissions
    */
@@ -244,17 +331,13 @@ export class TwitterService {
       }
 
       // Create OAuth 1.0a fetcher
-      const fetcher = await oauth1a({
-        consumerKey: this.apiKey,
-        secretConsumerKey: this.apiSecret,
-        accessToken: this.accessToken,
-        secretAccessToken: this.accessTokenSecret,
-      });
+      const fetcher = await this.generateOAuthHeader('POST', 'https://api.twitter.com/2/tweets');
 
       // Post the reply using OAuth 1.0a
-      const response = await fetcher('/2/tweets', {
+      const response = await fetch(`https://api.twitter.com/2/tweets`, {
         method: 'POST',
         headers: {
+          'Authorization': fetcher,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
