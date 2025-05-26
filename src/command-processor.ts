@@ -1,14 +1,17 @@
 import type { Command, CommandResult, TwitterTweet, TwitterUser } from "./types.ts";
 import type { TwitterService } from "./twitter-service.ts";
 import { EthosService } from "./ethos-service.ts";
+import { StorageService } from "./storage-service.ts";
 
 export class CommandProcessor {
   private twitterService: TwitterService;
   private ethosService: EthosService;
+  private storageService: StorageService;
 
   constructor(twitterService: TwitterService) {
     this.twitterService = twitterService;
     this.ethosService = new EthosService();
+    this.storageService = new StorageService();
   }
 
   /**
@@ -345,6 +348,23 @@ Learn more about Ethos at https://ethos.network`;
       console.log(`👤 Target user: ${targetName} (@${targetUsername})`);
       console.log(`👤 Reviewer: ${mentionerName} (@${mentionerUsername})`);
 
+      // Check if this tweet has already been saved
+      console.log(`🔍 Checking if tweet ${originalTweetId} has already been saved...`);
+      const alreadySaved = await this.storageService.isTweetSaved(originalTweetId);
+      
+      if (alreadySaved) {
+        const savedTweetInfo = await this.storageService.getSavedTweet(originalTweetId);
+        console.log(`⚠️ Tweet ${originalTweetId} was already saved by @${savedTweetInfo?.reviewerUsername} on ${savedTweetInfo?.savedAt}`);
+        
+        return {
+          success: false,
+          message: "Tweet already saved",
+          replyText: "Someone has already saved that tweet!"
+        };
+      }
+      
+      console.log(`✅ Tweet ${originalTweetId} has not been saved before, proceeding...`);
+
       // Fetch the original tweet details
       console.log(`📄 Fetching original tweet details for ID: ${originalTweetId}`);
       const originalTweet = await this.twitterService.getTweetById(originalTweetId);
@@ -391,6 +411,9 @@ Original tweet link: ${originalTweetLink}`;
       });
 
       if (reviewResult.success) {
+        // Mark the tweet as saved in our storage
+        await this.storageService.markTweetSaved(originalTweetId, targetUsername, mentionerUsername, reviewScore);
+        
         // Log the response data to understand its structure
         console.log(`🔍 Review creation response data:`, JSON.stringify(reviewResult.data, null, 2));
         

@@ -120,6 +120,29 @@ router.get("/test/user/:username", async (ctx) => {
   }
 });
 
+// Storage stats endpoint
+router.get("/test/storage", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService']; // Access private member for testing
+    const stats = await storageService.getStats();
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Storage statistics",
+      stats: stats,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Storage stats test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Storage stats test failed",
+      error: error.message
+    };
+  }
+});
+
 // Polling control endpoints
 router.get("/polling/status", (ctx) => {
   ctx.response.body = {
