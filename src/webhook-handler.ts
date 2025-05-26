@@ -159,6 +159,7 @@ export class TwitterWebhookHandler {
               await this.slackService.notifyProfileSuccess(
                 targetUser,
                 author.username,
+                result.replyText || "",
                 replyResult.postedTweetId || undefined,
                 this.botUsername
               );

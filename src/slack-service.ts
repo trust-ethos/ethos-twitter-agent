@@ -10,6 +10,7 @@ export interface SlackStructuredResponse {
   tweet_link?: string;
   error_details?: string;
   original_tweet?: string;
+  sent_reply?: string;
 }
 
 export class SlackService {
@@ -92,12 +93,13 @@ export class SlackService {
   /**
    * Send notification for successful tweet save with structured response
    */
-  async notifySuccessfulSave(tweetId: string, tweetUrl: string, sentiment: string, targetUser: string, postedTweetId?: string, botUsername?: string): Promise<void> {
+  async notifySuccessfulSave(tweetId: string, tweetUrl: string, sentiment: string, targetUser: string, replyText?: string, postedTweetId?: string, botUsername?: string): Promise<void> {
     const responseText = `✅ Successfully saved tweet as ${sentiment} review for @${targetUser}`;
     
     const payload: SlackStructuredResponse = {
       response: responseText,
-      tweet_link: postedTweetId && botUsername ? `https://x.com/${botUsername}/status/${postedTweetId}` : undefined
+      tweet_link: postedTweetId && botUsername ? `https://x.com/${botUsername}/status/${postedTweetId}` : undefined,
+      sent_reply: replyText
     };
     
     await this.sendStructuredNotification(payload, 'success');
@@ -106,12 +108,13 @@ export class SlackService {
   /**
    * Send notification for profile command success with structured response
    */
-  async notifyProfileSuccess(targetUser: string, requesterUser: string, postedTweetId?: string, botUsername?: string): Promise<void> {
-    const responseText = `✅ Successfully provided profile analysis for @${targetUser} requested by @${requesterUser}`;
+  async notifyProfileSuccess(targetUser: string, mentionerUsername: string, replyText?: string, postedTweetId?: string, botUsername?: string): Promise<void> {
+    const responseText = `✅ Successfully generated profile for @${targetUser} (requested by @${mentionerUsername})`;
     
     const payload: SlackStructuredResponse = {
       response: responseText,
-      tweet_link: postedTweetId && botUsername ? `https://x.com/${botUsername}/status/${postedTweetId}` : undefined
+      tweet_link: postedTweetId && botUsername ? `https://x.com/${botUsername}/status/${postedTweetId}` : undefined,
+      sent_reply: replyText
     };
     
     await this.sendStructuredNotification(payload, 'success');

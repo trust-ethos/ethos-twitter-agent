@@ -518,16 +518,17 @@ Link to tweet: ${originalTweetLink}`;
         }
 
         // Send Slack notification for successful save
+        const finalMessage = reviewLink ? 
+          `I just saved this tweet permanently onchain. You can view it below${reviewLink}` :
+          `I just saved this tweet permanently onchain. You can view it below`;
+
         await this.slackService.notifySuccessfulSave(
           originalTweetId, 
           originalTweetLink, 
           reviewScore, 
-          targetUsername
+          targetUsername,
+          finalMessage // Include the actual reply text that was sent
         );
-
-        const finalMessage = reviewLink ? 
-          `I just saved this tweet permanently onchain. You can view it below${reviewLink}` :
-          `I just saved this tweet permanently onchain. You can view it below`;
 
         return {
           success: true,

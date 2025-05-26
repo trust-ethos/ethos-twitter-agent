@@ -265,7 +265,8 @@ export class PollingService {
               await this.slackService.notifyProfileSuccess(
                 targetUser,
                 author.username,
-                replyResult.postedTweetId,
+                result.replyText || "",
+                replyResult.postedTweetId || undefined,
                 this.botUsername
               );
             }
