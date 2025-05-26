@@ -186,15 +186,17 @@ export class CommandProcessor {
 
       console.log(`📚 Processing help command for @${command.mentionedUser.username}`);
 
-      const helpText = `Hello I am @ethosAgent. Commands I know:
+      const helpText = `Hey there! 👋 I'm the Ethos Agent. Here's what I can do:
 
-**profile** - Get Ethos reputation data for a user
-   • Reply to someone's tweet: "@ethosAgent profile"
-   • Or mention me directly: "@ethosAgent profile"
+**profile** - Get someone's Ethos credibility score and reputation info
+   • Reply to someone's tweet with "@ethosAgent profile" to check their reputation
+   • Or just mention me with "@ethosAgent profile" to check your own
 
-**save** - Save a tweet as a review to someone's Ethos profile
-   • Reply to a tweet: "@ethosAgent save" (saves to original tweet author)
-   • Or specify target: "@ethosAgent save target @username"
+**save [positive/negative/neutral]** - Save a tweet permanently onchain as a review
+   • Reply to any tweet with "@ethosAgent save" to save it with neutral sentiment
+   • Add sentiment: "@ethosAgent save positive" or "@ethosAgent save negative"
+   • Save to someone else: "@ethosAgent save target @username positive"
+   • Default sentiment is neutral if not specified
 
 **help** - Show this help message
 
@@ -234,14 +236,27 @@ Learn more about Ethos at https://ethos.network`;
         };
       }
 
-      // Parse command args to see if this is "save target @username"
+      // Parse command args to extract sentiment and target information
       let targetUsername: string;
       let targetName: string;
       let saveContext: string;
+      let reviewScore: "positive" | "negative" | "neutral" = "neutral"; // Default score
+      let remainingArgs = [...command.args]; // Copy args array to process
 
-      if (command.args.length >= 2 && command.args[0].toLowerCase() === "target") {
+      // Check for sentiment in the args (positive/negative/neutral)
+      const validSentiments = ["positive", "negative", "neutral"];
+      const sentimentIndex = remainingArgs.findIndex(arg => validSentiments.includes(arg.toLowerCase()));
+      
+      if (sentimentIndex !== -1) {
+        reviewScore = remainingArgs[sentimentIndex].toLowerCase() as "positive" | "negative" | "neutral";
+        remainingArgs.splice(sentimentIndex, 1); // Remove sentiment from args
+        console.log(`💭 Found sentiment: ${reviewScore}`);
+      }
+
+      // Parse remaining args to see if this is "save target @username"
+      if (remainingArgs.length >= 2 && remainingArgs[0].toLowerCase() === "target") {
         // This is "save target @username" format
-        const targetArg = command.args[1];
+        const targetArg = remainingArgs[1];
         
         // Extract username from @username format
         const usernameMatch = targetArg.match(/^@?(\w+)$/);
@@ -256,8 +271,8 @@ Learn more about Ethos at https://ethos.network`;
         targetUsername = usernameMatch[1];
         targetName = `@${targetUsername}`;
         saveContext = `saving tweet as review to ${targetName}'s profile as requested by @${mentionerUsername}`;
-      } else if (command.args.length === 0) {
-        // This is just "save" - save to original tweet author
+      } else if (remainingArgs.length === 0 || (remainingArgs.length === 1 && validSentiments.includes(remainingArgs[0].toLowerCase()))) {
+        // This is just "save" or "save [sentiment]" - save to original tweet author
         const originalAuthor = allUsers?.find(user => user.id === tweet.in_reply_to_user_id);
         
         if (!originalAuthor) {
@@ -275,7 +290,7 @@ Learn more about Ethos at https://ethos.network`;
         return {
           success: false,
           message: "Invalid save command format",
-          replyText: `Invalid save command. Use "@ethosAgent save" to save to the original tweet author, or "@ethosAgent save target @username" to save to a specific user.`
+          replyText: `Invalid save command. Use "@ethosAgent save [positive/negative/neutral]" to save to the original tweet author, or "@ethosAgent save target @username [positive/negative/neutral]" to save to a specific user.`
         };
       }
 
@@ -312,9 +327,6 @@ Learn more about Ethos at https://ethos.network`;
 
       // Get original tweet author information
       const originalAuthor = allUsers?.find(user => user.id === originalTweet.author_id);
-      
-      // Extract review details from the command
-      const reviewScore: "positive" | "negative" | "neutral" = "neutral"; // Default score
       
       // Create the title: "Tweet saved onchain: " + first characters of tweet (up to 120 total)
       const titlePrefix = "Tweet saved onchain: ";
