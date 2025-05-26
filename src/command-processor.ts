@@ -380,22 +380,20 @@ Learn more about Ethos at https://ethos.network`;
       // Get original tweet author information
       const originalAuthor = allUsers?.find(user => user.id === originalTweet.author_id);
       
-      // Create the title: "Tweet saved onchain: " + first characters of tweet (up to 120 total)
-      const titlePrefix = "Tweet saved onchain: ";
-      const remainingTitleLength = 120 - titlePrefix.length;
-      const truncatedTweetText = originalTweet.text.length > remainingTitleLength 
-        ? originalTweet.text.substring(0, remainingTitleLength - 3) + "..." 
+      // Create the title: first 120 characters of tweet 
+      const reviewTitle = originalTweet.text.length > 120 
+        ? originalTweet.text.substring(0, 117) + "..." 
         : originalTweet.text;
-      const reviewTitle = titlePrefix + truncatedTweetText;
       
       // Create the detailed description
       const originalTweetLink = `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`;
       const reviewDescription = `Original tweet saved by @${mentionerUsername}: "${originalTweet.text}"
 
 Authored at: ${originalTweet.created_at}
+
 Author twitter id: ${originalTweet.author_id}
 
-Original tweet link: ${originalTweetLink}`;
+Link to tweet: ${originalTweetLink}`;
 
       console.log(`📝 Review details - Score: ${reviewScore}, Title: ${reviewTitle}`);
       console.log(`📝 Review description length: ${reviewDescription.length} characters`);
