@@ -75,6 +75,14 @@ export class TwitterWebhookHandler {
       console.log(`📢 Processing mention in tweet: ${tweet.id}`);
       console.log(`📝 Tweet text: "${tweet.text}"`);
 
+      // Debug: Log detailed tweet structure for save command debugging
+      console.log(`🔍 Tweet structure debugging:`);
+      console.log(`   Tweet ID: ${tweet.id}`);
+      console.log(`   Author ID: ${tweet.author_id}`);
+      console.log(`   in_reply_to_user_id: ${tweet.in_reply_to_user_id || 'null'}`);
+      console.log(`   referenced_tweets: ${tweet.referenced_tweets ? JSON.stringify(tweet.referenced_tweets) : 'null'}`);
+      console.log(`   conversation_id: ${tweet.conversation_id || 'null'}`);
+
       // Find the user who mentioned us
       const author = event.includes?.users?.find(user => user.id === tweet.author_id);
       

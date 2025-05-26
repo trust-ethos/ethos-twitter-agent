@@ -227,6 +227,14 @@ Learn more about Ethos at https://ethos.network`;
       const mentionerUsername = command.mentionedUser.username;
       const mentionerName = command.mentionedUser.name;
 
+      // Debug: Log the tweet data structure to understand what we're receiving
+      console.log(`🔍 Save command debugging:`);
+      console.log(`   Tweet ID: ${tweet.id}`);
+      console.log(`   Tweet text: "${tweet.text}"`);
+      console.log(`   in_reply_to_user_id: ${tweet.in_reply_to_user_id || 'null'}`);
+      console.log(`   referenced_tweets: ${tweet.referenced_tweets ? JSON.stringify(tweet.referenced_tweets) : 'null'}`);
+      console.log(`   allUsers provided: ${allUsers ? allUsers.length : 0} users`);
+
       // Check if this is a reply to another tweet
       if (!tweet.in_reply_to_user_id) {
         return {
