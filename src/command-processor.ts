@@ -342,7 +342,8 @@ Original tweet link: ${originalTweetLink}`;
         title: reviewTitle,
         description: reviewDescription,
         targetUsername,
-        tweetId: originalTweetId
+        tweetId: originalTweetId,
+        reviewerUsername: mentionerUsername
       });
 
       if (reviewResult.success) {

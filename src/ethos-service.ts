@@ -21,6 +21,7 @@ export interface CreateReviewRequest {
   description: string;
   targetUsername: string;
   tweetId: string;
+  reviewerUsername: string;
 }
 
 export interface CreateReviewResponse {
@@ -212,9 +213,9 @@ export class EthosService {
 
       // Static values as specified
       const staticAuthorAddress = "0x792cCe0d4230FF69FA69F466Ef62B8f81eB619d7";
-      const staticSource = "ethosAgentTwitter";
+      const staticSource = "ethosAgent";
 
-      // Prepare the review payload in the expected format
+      // Prepare the review payload with separate source and sourceAuthor fields
       const reviewPayload = {
         score: request.score,
         title: request.title,
@@ -223,7 +224,8 @@ export class EthosService {
         username: request.targetUsername,
         authorAddress: staticAuthorAddress,
         env: ethosEnv,
-        source: staticSource
+        source: staticSource,
+        sourceAuthor: `service:x.com:username:${request.reviewerUsername}`
       };
 
       console.log(`📝 Review payload:`, reviewPayload);
