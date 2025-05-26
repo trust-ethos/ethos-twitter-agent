@@ -298,14 +298,43 @@ Learn more about Ethos at https://ethos.network`;
       console.log(`👤 Target user: ${targetName} (@${targetUsername})`);
       console.log(`👤 Reviewer: ${mentionerName} (@${mentionerUsername})`);
 
+      // Fetch the original tweet details
+      console.log(`📄 Fetching original tweet details for ID: ${originalTweetId}`);
+      const originalTweet = await this.twitterService.getTweetById(originalTweetId);
+      
+      if (!originalTweet) {
+        return {
+          success: false,
+          message: "Could not fetch original tweet details",
+          replyText: `I couldn't fetch the details of the original tweet. Please make sure you're replying to a valid tweet.`
+        };
+      }
+
+      // Get original tweet author information
+      const originalAuthor = allUsers?.find(user => user.id === originalTweet.author_id);
+      
       // Extract review details from the command
-      // For now, we'll default to "neutral" score and use tweet content as description
-      // In the future, we could parse args for specific scores like "save positive" or "save negative"
       const reviewScore: "positive" | "negative" | "neutral" = "neutral"; // Default score
-      const reviewTitle = `Review from @${mentionerUsername}`;
-      const reviewDescription = `Review saved via @ethosAgent from tweet ${originalTweetId}`;
+      
+      // Create the title: "Tweet saved onchain: " + first characters of tweet (up to 120 total)
+      const titlePrefix = "Tweet saved onchain: ";
+      const remainingTitleLength = 120 - titlePrefix.length;
+      const truncatedTweetText = originalTweet.text.length > remainingTitleLength 
+        ? originalTweet.text.substring(0, remainingTitleLength - 3) + "..." 
+        : originalTweet.text;
+      const reviewTitle = titlePrefix + truncatedTweetText;
+      
+      // Create the detailed description
+      const originalTweetLink = `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`;
+      const reviewDescription = `Original tweet: "${originalTweet.text}"
+
+Authored at: ${originalTweet.created_at}
+Author twitter id: ${originalTweet.author_id}
+
+Original tweet link: ${originalTweetLink}`;
 
       console.log(`📝 Review details - Score: ${reviewScore}, Title: ${reviewTitle}`);
+      console.log(`📝 Review description length: ${reviewDescription.length} characters`);
 
       // Call Ethos API to create the review
       const reviewResult = await this.ethosService.createReview({

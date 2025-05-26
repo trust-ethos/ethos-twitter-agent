@@ -522,4 +522,51 @@ export class TwitterService {
       return null;
     }
   }
+
+  /**
+   * Get tweet information by tweet ID
+   */
+  async getTweetById(tweetId: string): Promise<TwitterTweet | null> {
+    if (!this.hasBearerToken()) {
+      console.log(`🔍 No bearer token available, creating mock tweet for ID: ${tweetId}`);
+      // Return a mock tweet when we don't have bearer token
+      return {
+        id: tweetId,
+        text: `Mock tweet content for ID ${tweetId}`,
+        author_id: `mock_author_${tweetId}`,
+        created_at: new Date().toISOString()
+      };
+    }
+
+    try {
+      console.log(`🔍 Fetching tweet info for ID: ${tweetId}`);
+      
+      const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,author_id`, {
+        headers: {
+          'Authorization': `Bearer ${this.bearerToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ Error details:`, errorData);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      if (data.data) {
+        console.log(`✅ Found tweet: ${data.data.text.substring(0, 50)}...`);
+        return data.data;
+      }
+
+      console.log(`❌ Tweet not found for ID: ${tweetId}`);
+      return null;
+
+    } catch (error) {
+      console.error(`❌ Error fetching tweet ${tweetId}:`, error);
+      return null;
+    }
+  }
 } 
