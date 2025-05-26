@@ -135,6 +135,15 @@ export class PollingService {
   }
 
   /**
+   * Run a single polling cycle (perfect for cron jobs)
+   */
+  async runSinglePoll() {
+    console.log(`\n🕐 Running single poll cycle for @${this.botUsername}`);
+    await this.pollForMentions();
+    console.log(`✅ Single poll cycle completed`);
+  }
+
+  /**
    * Poll for new mentions (mimics make.com flow)
    */
   private async pollForMentions() {

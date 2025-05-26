@@ -10,6 +10,13 @@
     "test-persistence": "deno run --allow-net --allow-read --allow-write test-persistence.ts",
     "setup": "deno run --allow-read --allow-write --allow-env setup-twitter-api.ts"
   },
+  "cron": [
+    {
+      "name": "ethosAgent-polling",
+      "cron": "*/3 * * * *",
+      "path": "/cron/poll-mentions"
+    }
+  ],
   "imports": {
     "std/": "https://deno.land/std@0.208.0/",
     "oak": "https://deno.land/x/oak@v12.6.1/mod.ts",

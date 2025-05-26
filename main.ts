@@ -114,6 +114,31 @@ router.post("/polling/stop", async (ctx) => {
   };
 });
 
+// Deno Deploy Cron endpoint - runs every 3 minutes
+router.post("/cron/poll-mentions", async (ctx) => {
+  try {
+    console.log("🕐 Cron triggered: Checking for new mentions");
+    
+    // Run a single polling cycle
+    await pollingService.runSinglePoll();
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Polling cycle completed",
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Cron polling failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Cron polling failed",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+});
+
 // Twitter webhook endpoints
 router.get("/webhook/twitter", webhookHandler.handleChallengeRequest.bind(webhookHandler));
 router.post("/webhook/twitter", webhookHandler.handleWebhook.bind(webhookHandler));
@@ -134,6 +159,7 @@ console.log(`🚀 Ethos Twitter Agent starting on port ${port}`);
 if (usePolling) {
   console.log(`🔄 Running in POLLING mode (good for Basic Twitter API plan)`);
   console.log(`💡 This replaces your make.com workflow`);
+  console.log(`🕐 Polling every 3 minutes via Deno Deploy Cron`);
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter (disabled in polling mode)`);
   console.log(`🧪 Test endpoints:`);
   console.log(`   GET  http://localhost:${port}/test/twitter - Test API credentials`);
@@ -141,11 +167,11 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
   console.log(`   POST http://localhost:${port}/polling/start - Start polling`);
   console.log(`   POST http://localhost:${port}/polling/stop - Stop polling`);
+  console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every 3 min)`);
   
-  // Auto-start polling
-  setTimeout(() => {
-    pollingService.startPolling();
-  }, 2000); // Wait 2 seconds for server to fully start
+  // Initialize polling service but don't start continuous polling
+  // Deno Deploy cron will call /cron/poll-mentions every 3 minutes
+  console.log(`🔧 Polling service initialized for cron-based polling`);
 } else {
   console.log(`🔗 Running in WEBHOOK mode (requires paid Twitter API plan)`);
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter`);
