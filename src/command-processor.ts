@@ -317,16 +317,40 @@ Learn more about Ethos at https://ethos.network`;
       });
 
       if (reviewResult.success) {
+        // Log the response data to understand its structure
+        console.log(`🔍 Review creation response data:`, JSON.stringify(reviewResult.data, null, 2));
+        
+        // Check if the response includes a review link or data to construct one
+        let reviewLink = "";
+        if (reviewResult.data) {
+          if (reviewResult.data.reviewUrl || reviewResult.data.url || reviewResult.data.link) {
+            // Direct URL provided
+            reviewLink = ` ${reviewResult.data.reviewUrl || reviewResult.data.url || reviewResult.data.link}`;
+          } else if (reviewResult.data.reviewId || reviewResult.data.id || reviewResult.data.reviewID) {
+            // Construct the review link using the review ID
+            const reviewId = reviewResult.data.reviewId || reviewResult.data.id || reviewResult.data.reviewID;
+            reviewLink = ` https://app.ethos.network/review/${reviewId}`;
+          } else if (reviewResult.data.attestationUID || reviewResult.data.uid) {
+            // Some APIs use attestation UID for review linking
+            const uid = reviewResult.data.attestationUID || reviewResult.data.uid;
+            reviewLink = ` https://app.ethos.network/review/${uid}`;
+          }
+        }
+
+        const finalMessage = reviewLink ? 
+          `I just saved this tweet permanently onchain. You can view it below${reviewLink}` :
+          `I just saved this tweet permanently onchain. You can view it below`;
+
         return {
           success: true,
           message: "Review saved successfully",
-          replyText: `✅ Tweet has been saved as a review to ${targetName}'s Ethos profile. You can view their profile at https://app.ethos.network/profile/x/${targetUsername}`
+          replyText: finalMessage
         };
       } else {
         return {
           success: false,
           message: "Failed to save review",
-          replyText: `❌ I couldn't save the review to ${targetName}'s Ethos profile. ${reviewResult.error || 'Please try again later.'}`
+          replyText: this.getStandardErrorMessage()
         };
       }
 
