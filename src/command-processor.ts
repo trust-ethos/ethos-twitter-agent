@@ -93,16 +93,17 @@ export class CommandProcessor {
     } catch (error) {
       console.error(`❌ Unexpected error processing ${command.type} command:`, error);
       
-      // Send Slack notification for unexpected error
-      await this.slackService.notifyError(
-        `${command.type} command`, 
-        error instanceof Error ? error.message : String(error),
-        `@${command.mentionedUser.username} using command "${command.type}"`
-      );
-      
-      // Only provide standardized error message for known commands
+      // Only send Slack notifications for known commands that have unexpected errors
+      // Don't spam Slack for unknown commands (people mentioning bot in conversation)
       const knownCommands = ["profile", "help", "save"];
       if (knownCommands.includes(command.type)) {
+        // Send Slack notification for unexpected error on known commands
+        await this.slackService.notifyError(
+          `${command.type} command`, 
+          error instanceof Error ? error.message : String(error),
+          `@${command.mentionedUser.username} using command "${command.type}"`
+        );
+        
         return {
           success: false,
           message: `Unexpected error processing ${command.type} command`,
@@ -110,7 +111,7 @@ export class CommandProcessor {
         };
       }
       
-      // For unknown commands, still provide the regular unknown command message
+      // For unknown commands, don't send Slack notifications - just return the regular response
       return {
         success: false,
         message: `Unknown command: ${command.type}`,
