@@ -493,7 +493,7 @@ export class TwitterService {
         max_results: validMaxResults.toString(),
         'tweet.fields': 'created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets',
         'user.fields': 'id,username,name,profile_image_url',
-        expansions: 'author_id,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.author_id'
+        expansions: 'author_id,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id'
       });
 
       if (sinceId) {
