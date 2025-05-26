@@ -176,14 +176,28 @@ PORT=8000                       # Server port
 
 ## 🚀 Deployment
 
+### 🌟 GitHub Auto-Deployment (Recommended)
+
+For automatic deployment on every push to GitHub:
+
+**📖 See [DEPLOY.md](./DEPLOY.md) for complete GitHub integration setup**
+
+Benefits:
+- ✅ Deploy automatically on `git push`
+- ✅ Zero-downtime deployments
+- ✅ Free hosting (100K requests/day)
+- ✅ Built-in Deno KV persistence
+- ✅ Real-time logs and monitoring
+
 ### Local Development
 ```bash
 deno task dev  # Auto-restart on changes
 ```
 
-### Production
+### Manual Deployment
 ```bash
-deno task start
+# One-time manual deploy (use GitHub instead)
+deployctl deploy --project=ethos-twitter-agent --entrypoint=main.ts
 ```
 
 ### Docker (Optional)
