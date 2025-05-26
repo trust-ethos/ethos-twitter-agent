@@ -22,15 +22,15 @@ export class CommandProcessor {
       return null;
     }
 
-    // Extract command after @ethosagent
-    const ethosAgentIndex = text.indexOf("@ethosagent");
-    const afterMention = tweet.text.substring(ethosAgentIndex + "@ethosagent".length).trim();
+    // Remove all @mentions to get the actual command
+    // This handles cases like "@user1 @user2 @ethosAgent @ethosAgent profile"
+    const textWithoutMentions = tweet.text.replace(/@[\w_]+/g, '').trim();
     
-    if (!afterMention) {
+    if (!textWithoutMentions) {
       return null;
     }
 
-    const parts = afterMention.split(/\s+/);
+    const parts = textWithoutMentions.split(/\s+/);
     const commandType = parts[0].toLowerCase();
     const args = parts.slice(1);
 
