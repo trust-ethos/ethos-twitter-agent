@@ -16,37 +16,43 @@ A Twitter bot that responds to mentions and processes commands, starting with `@
    ```bash
    deno task setup
    ```
-   You'll need your Twitter App's Client ID, Client Secret, and Bearer Token.
+   **Minimum required:** Just Client ID and Client Secret for webhook processing!
 
 2. **Start the development server:**
    ```bash
    deno task dev
    ```
 
-3. **Test your API integration:**
+3. **Test with webhook simulation:**
    ```bash
-   # Test API credentials
-   curl http://localhost:8000/test/twitter
-   
-   # Test user lookup
-   curl http://localhost:8000/test/user/your_username
+   deno task test-webhook
    ```
 
+## What Credentials Do You Actually Need?
+
+### 🎯 **For Basic Mention Processing (Minimum Setup):**
+- **Client ID & Client Secret** - Just for app identification
+- **That's it!** Webhooks work without authentication
+
+### 🔍 **For Enhanced Features (Optional):**
+- **Bearer Token** - For enhanced user lookups and posting tweets
+- **API v1.1 credentials** - Alternative for posting tweets
+
+### 📨 **How Mentions Work:**
+Twitter sends mention data directly to your webhook endpoint. No authentication needed to receive:
+- Tweet text and ID
+- Author username and name  
+- All data needed for `@ethosAgent profile` command
+
 ## Twitter API Setup
-
-### Required Credentials
-
-1. **Twitter Client ID & Secret** - From your Twitter App dashboard
-2. **Bearer Token** - For reading user data and tweets
-3. **Optional: API Key/Secret & Access Tokens** - For posting replies
 
 ### Getting Your Credentials
 
 1. Go to [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
 2. Create a new App or use an existing one
 3. Go to "Keys and Tokens" tab
-4. Copy your Client ID, Client Secret, and Bearer Token
-5. Run `deno task setup` to configure
+4. Copy your **Client ID and Client Secret** (that's all you need to start!)
+5. Optionally: Copy Bearer Token for enhanced features
 
 ## Commands
 
@@ -64,15 +70,15 @@ deno task test
 # Test webhook with mock data
 deno task test-webhook
 
-# Setup Twitter API credentials
+# Setup Twitter API credentials (optional for basic features)
 deno task setup
 ```
 
 ## API Endpoints
 
 - `GET /` - Health check
-- `GET /test/twitter` - Test Twitter API credentials
-- `GET /test/user/:username` - Test user lookup
+- `GET /test/twitter` - Test Twitter API credentials (if configured)
+- `GET /test/user/:username` - Test user lookup (if bearer token configured)
 - `GET /webhook/twitter` - Twitter webhook verification
 - `POST /webhook/twitter` - Process Twitter webhook events
 
@@ -86,4 +92,11 @@ This project is designed to deploy on Deno Deploy:
 
 ## Environment Variables
 
-See `env.example` for all required environment variables. Use `deno task setup` for easy configuration. 
+See `env.example` for all available environment variables. Use `deno task setup` for easy configuration, or manually create a `.env` file with just:
+
+```
+TWITTER_CLIENT_ID=your_client_id
+TWITTER_CLIENT_SECRET=your_client_secret
+WEBHOOK_SECRET=any_random_string
+PORT=8000
+``` 
