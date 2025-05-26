@@ -28,8 +28,10 @@ export class CommandProcessor {
       return null;
     }
 
+    // Define valid commands that we actually support
+    const validCommands = ["profile", "save", "help"];
+    
     // Remove @ethosAgent mentions but preserve other @mentions for command arguments
-    // This handles cases like "@user1 @user2 @ethosAgent save target @username"
     const textWithEthosAgentRemoved = tweet.text.replace(/@ethosagent/gi, '').trim();
     
     if (!textWithEthosAgentRemoved) {
@@ -38,26 +40,28 @@ export class CommandProcessor {
 
     const parts = textWithEthosAgentRemoved.split(/\s+/);
     
-    // Find the first non-@mention word as the command
-    // This handles cases like "@user1 @user2 save target @user3" where "save" is the command
+    // Find the first valid command word in the text
     let commandType = '';
     let commandIndex = -1;
     
     for (let i = 0; i < parts.length; i++) {
-      if (!parts[i].startsWith('@')) {
-        commandType = parts[i].toLowerCase();
+      const word = parts[i].toLowerCase();
+      if (validCommands.includes(word)) {
+        commandType = word;
         commandIndex = i;
         break;
       }
     }
     
     if (!commandType) {
-      return null; // No command found (only @mentions)
+      console.log(`ℹ️ Ignoring casual mention (no valid commands found): "${tweet.text}"`);
+      return null; // No valid command found - ignore casual mentions
     }
     
     // Args are everything after the command
     const args = commandIndex >= 0 ? parts.slice(commandIndex + 1) : [];
 
+    console.log(`🎯 Found valid command: ${commandType}`);
     return {
       type: commandType,
       args,
