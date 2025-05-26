@@ -192,41 +192,64 @@ export class EthosService {
    */
   async createReview(request: CreateReviewRequest): Promise<CreateReviewResponse> {
     try {
-      console.log(`💾 Creating Ethos review for user: ${request.targetUsername}`);
-      console.log(`📝 Review request:`, {
-        target: request.targetUsername,
-        reviewer: request.reviewerUsername,
-        tweetId: request.tweetId
-      });
+      console.log(`💾 Creating Ethos review for ${request.targetUsername} by ${request.reviewerUsername}`);
 
       // Check if we have Ethos API credentials
       const ethosApiKey = Deno.env.get("ETHOS_API_KEY");
-      const ethosApiSecret = Deno.env.get("ETHOS_API_SECRET");
 
-      if (!ethosApiKey || !ethosApiSecret) {
-        console.log("⚠️ Ethos API credentials not configured");
+      if (!ethosApiKey) {
+        console.log("⚠️ Ethos API key not configured");
         return {
           success: false,
           error: "Ethos API credentials not configured"
         };
       }
 
-      // TODO: Implement actual Ethos API call to create review
-      // This will need the correct endpoint and authentication method
-      // For now, return a placeholder implementation
-      
-      console.log("🔗 Ethos API integration not yet implemented");
-      
+      // Prepare the review payload
+      const reviewPayload = {
+        targetUsername: request.targetUsername,
+        reviewerUsername: request.reviewerUsername,
+        tweetId: request.tweetId,
+        reviewText: request.reviewText
+      };
+
+      console.log(`📝 Review payload:`, reviewPayload);
+
+      // Make the API call to create the review
+      const response = await fetch("https://ethos-automations.deno.dev/api/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": ethosApiKey,
+        },
+        body: JSON.stringify(reviewPayload),
+      });
+
+      console.log(`📡 Ethos review API response status: ${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`❌ Ethos review API error: ${response.status} ${response.statusText}`);
+        console.log(`❌ Error details: ${errorText}`);
+        return {
+          success: false,
+          error: `API request failed: ${response.status} ${response.statusText}`
+        };
+      }
+
+      const responseData = await response.json();
+      console.log(`✅ Ethos review created successfully:`, responseData);
+
       return {
-        success: false,
-        error: "Ethos review creation API not yet implemented. Please provide the correct API endpoint and authentication method."
+        success: true,
+        data: responseData
       };
 
     } catch (error) {
-      console.error('❌ Error creating Ethos review:', error);
+      console.error("❌ Error creating Ethos review:", error);
       return {
         success: false,
-        error: 'Failed to create Ethos review'
+        error: error.message || "Unknown error occurred"
       };
     }
   }
