@@ -197,17 +197,19 @@ export class EthosService {
   }
 
   /**
-   * Check if a user has a valid Ethos profile
+   * Check if a user has a valid Ethos profile using the addresses API
    * @param username - Twitter username (without @)
    */
   async checkUserProfile(username: string): Promise<EthosUserSearchResponse> {
     try {
-      console.log(`🔍 Checking if user ${username} has an Ethos profile...`);
+      console.log(`🔍 Checking if user ${username} has an Ethos profile using addresses API...`);
       
-      const searchUrl = `${this.baseUrl}/api/v1/users/search?query=${encodeURIComponent(username)}&limit=10`;
-      console.log(`🔗 Search API URL: ${searchUrl}`);
+      // Use the addresses API instead of search API
+      const userkey = `service:x.com:username:${username}`;
+      const addressesUrl = `${this.baseUrl}/api/v1/addresses/${userkey}`;
+      console.log(`🔗 Addresses API URL: ${addressesUrl}`);
       
-      const response = await fetch(searchUrl, {
+      const response = await fetch(addressesUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -215,25 +217,25 @@ export class EthosService {
         }
       });
       
-      console.log(`📡 Search API response status: ${response.status} ${response.statusText}`);
+      console.log(`📡 Addresses API response status: ${response.status} ${response.statusText}`);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.log(`❌ Search API error: ${response.status} ${response.statusText}`);
+        console.log(`❌ Addresses API error: ${response.status} ${response.statusText}`);
         console.log(`❌ Error details:`, errorText);
         
         return {
           success: false,
           hasProfile: false,
-          error: `Search API error: ${response.status}`
+          error: `Addresses API error: ${response.status}`
         };
       }
       
       const data = await response.json();
-      console.log(`📡 Search API response data:`, JSON.stringify(data, null, 2));
+      console.log(`📡 Addresses API response data:`, JSON.stringify(data, null, 2));
       
-      if (!data.ok || !data.data || !data.data.values) {
-        console.log(`⚠️ Unexpected search API response structure`);
+      if (!data.ok || !data.data) {
+        console.log(`⚠️ Unexpected addresses API response structure`);
         return {
           success: false,
           hasProfile: false,
@@ -241,34 +243,20 @@ export class EthosService {
         };
       }
       
-      // Look for an exact username match (case-insensitive)
-      const normalizedUsername = username.toLowerCase();
-      console.log(`🔍 Looking for username match: "${normalizedUsername}"`);
+      // Check if user has a real profile by looking at the addresses
+      // If they don't have a profile, they'll have the zero address
+      const hasValidProfile = data.data.profileId !== undefined && data.data.profileId !== null;
       
-      const matchingUser = data.data.values.find((user: any) => 
-        user.username && user.username.toLowerCase() === normalizedUsername
-      );
+      // Additional check: if primaryAddress is the zero address, they don't have a real profile
+      const isZeroAddress = data.data.primaryAddress === "0x0000000000000000000000000000000000000000";
+      const hasRealProfile = hasValidProfile && !isZeroAddress;
       
-      if (!matchingUser) {
-        console.log(`❌ No exact username match found for ${username}`);
-        return {
-          success: true,
-          hasProfile: false,
-          error: 'User not found in search results'
-        };
-      }
-      
-      console.log(`✅ Found matching user:`, matchingUser);
-      
-      // Check if the user has a profileId (indicates a valid profile)
-      const hasValidProfile = matchingUser.profileId && matchingUser.profileId > 0;
-      
-      console.log(`📊 Profile check result: hasProfile=${hasValidProfile}, profileId=${matchingUser.profileId}`);
+      console.log(`📊 Profile check result: hasProfile=${hasRealProfile}, profileId=${data.data.profileId}, primaryAddress=${data.data.primaryAddress}`);
       
       return {
         success: true,
-        hasProfile: hasValidProfile,
-        profileId: matchingUser.profileId || undefined
+        hasProfile: hasRealProfile,
+        profileId: data.data.profileId || undefined
       };
       
     } catch (error) {
