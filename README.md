@@ -254,6 +254,27 @@ When a tweet is saved as a review, it includes:
 // Correctly identifies: command="save", target="targetUser"
 ```
 
+**Improved Command Parsing (v2024.1):**
+- **Strict command validation**: Only processes commands that appear immediately after mentions
+- **Mention order validation**: Ensures @ethosAgent is the last mention in the initial group
+- **Prevents casual mention processing**: Ignores phrases like "@user @ethosAgent thanks for the save!"
+- **Command position requirement**: Commands must be the first word after the mention group
+
+**Examples of what gets IGNORED:**
+```bash
+"@user1 @ethosAgent thanks for the save!"        # "save" is not a command here
+"@user1 @ethosAgent @user2 save positive"        # @ethosAgent not last in mention group  
+"@ethosAgent hey there, can you help save this?" # "save" not immediately after mentions
+```
+
+**Examples of what gets PROCESSED:**
+```bash
+"@user1 @user2 @ethosAgent save positive"        # ✅ Valid command structure
+"@ethosAgent profile"                            # ✅ Simple command  
+"@ethosAgent validate"                           # ✅ Validate command
+"@user1 @ethosAgent save target @user3"          # ✅ Target command with proper structure
+```
+
 **Target Resolution:**
 - **Reply context**: Uses `in_reply_to_user_id` for profile commands
 - **Last mention**: For save target commands, finds last @mention
