@@ -649,22 +649,42 @@ Link to tweet: ${originalTweetLink}`;
           ? Math.round((engagementStats.reputable_repliers / engagementStats.total_repliers) * 100)
           : 0;
 
-        let response = "📊 Tweet engagement quality:\n";
+        // Helper function to get emoji based on percentage
+        const getEmojiForPercentage = (percentage: number): string => {
+          if (percentage < 30) return "🔴";
+          if (percentage < 60) return "🟡";
+          return "🟢";
+        };
+
+        let response = "";
         
         if (engagementStats.total_retweeters > 0) {
-          response += `• ${retweetReputablePercentage}% of retweets from reputable accounts (${engagementStats.reputable_retweeters}/${engagementStats.total_retweeters})\n`;
+          const retweetEmoji = getEmojiForPercentage(retweetReputablePercentage);
+          response += `${retweetEmoji} ${retweetReputablePercentage}% of retweets from reputable accounts (${engagementStats.total_retweeters} unique accounts engaged)\n`;
         }
         
         if (engagementStats.total_repliers > 0) {
-          response += `• ${replyReputablePercentage}% of comments from reputable accounts (${engagementStats.reputable_repliers}/${engagementStats.total_repliers})\n`;
+          const replyEmoji = getEmojiForPercentage(replyReputablePercentage);
+          response += `${replyEmoji} ${replyReputablePercentage}% of comments from reputable accounts (${engagementStats.total_repliers} unique accounts engaged)\n`;
         }
 
-        // Add summary if there are any reputable users
+        // Add reputable users summary
         if (engagementStats.reputable_total > 0) {
-          response += `\n⭐ ${engagementStats.reputable_total} reputable users engaged overall`;
+          response += `\n${engagementStats.reputable_total} reputable Ethos users engaged overall.\n`;
+          
+          // Find the highest scoring reputable user
+          const reputableUsers = engagementStats.users_with_scores.filter(user => user.is_reputable);
+          if (reputableUsers.length > 0) {
+            const highestScorer = reputableUsers.reduce((prev, current) => 
+              (current.ethos_score || 0) > (prev.ethos_score || 0) ? current : prev
+            );
+            response += `Highest reputable engagement: https://app.ethos.network/profile/x/${highestScorer.username}`;
+          }
+        } else {
+          response = response.trim();
         }
 
-        replyText = response.trim();
+        replyText = response;
       }
 
       return {
