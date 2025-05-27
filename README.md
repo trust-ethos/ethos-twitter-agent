@@ -443,7 +443,7 @@ MIT License - feel free to use this code for your own projects!
 - **Ethos Network**: https://ethos.network/
 - **Twitter API**: https://developer.twitter.com/
 - **Deno Deploy**: https://deno.com/deploy
-# Last updated: Comprehensive functionality documentation - Includes all commands (profile, save, save target, help) with examples and technical details
+# Last updated: Comprehensive functionality documentation - Includes all commands (profile, save, save target, validate, help) with examples and technical details
 
 ## 📊 Polling & Control Endpoints
 
