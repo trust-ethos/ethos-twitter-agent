@@ -777,8 +777,8 @@ export class TwitterService {
         const userkey = `service:x.com:username:${username}`;
         const scoreData = data.data[userkey];
         
-        if (scoreData && typeof scoreData.score === 'number') {
-          scoresMap.set(username, scoreData.score);
+        if (scoreData && typeof scoreData === 'number') {
+          scoresMap.set(username, scoreData);
         }
       }
 
@@ -862,4 +862,4 @@ export class TwitterService {
       users_with_scores: usersWithScores
     };
   }
-} 
+}
