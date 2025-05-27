@@ -719,6 +719,25 @@ Link to tweet: ${originalTweetLink}`;
     } catch (error) {
       console.error("❌ Error processing validate command:", error);
       
+      // Handle specific engagement volume errors
+      if (error instanceof Error) {
+        if (error.message === 'ENGAGEMENT_TOO_HIGH_SHARES') {
+          return {
+            success: false,
+            message: "Tweet has too many retweets/quotes to process",
+            replyText: "Sorry, that tweet has too many retweets and quote tweets for me to process right now (>1000). Try a tweet with less engagement."
+          };
+        }
+        
+        if (error.message === 'ENGAGEMENT_TOO_HIGH_COMMENTS') {
+          return {
+            success: false,
+            message: "Tweet has too many comments to process",
+            replyText: "Sorry, that tweet has too many comments for me to process right now (>500). Try a tweet with less engagement."
+          };
+        }
+      }
+      
       return {
         success: false,
         message: "Error processing validate command", 

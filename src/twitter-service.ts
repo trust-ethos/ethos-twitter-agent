@@ -868,10 +868,69 @@ export class TwitterService {
   }
 
   /**
-   * Analyze engagement for a tweet and calculate reputation stats
+   * Get tweet public metrics to check engagement volume
+   */
+  async getTweetMetrics(tweetId: string): Promise<{ retweet_count: number; reply_count: number; quote_count: number; like_count: number } | null> {
+    try {
+      const url = new URL(`https://api.twitter.com/2/tweets/${tweetId}`);
+      url.searchParams.set('tweet.fields', 'public_metrics');
+
+      const response = await this.makeEngagementOAuthRequest(url.toString());
+      
+      if (!response.ok) {
+        console.error(`❌ Failed to fetch tweet metrics: ${response.status} ${response.statusText}`);
+        return null;
+      }
+
+      const data = await response.json();
+      
+      if (data.data?.public_metrics) {
+        return {
+          retweet_count: data.data.public_metrics.retweet_count || 0,
+          reply_count: data.data.public_metrics.reply_count || 0,
+          quote_count: data.data.public_metrics.quote_count || 0,
+          like_count: data.data.public_metrics.like_count || 0
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('❌ Error fetching tweet metrics:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Analyze engagement quality of a tweet by checking Ethos scores of retweeters and repliers
    */
   async analyzeEngagement(tweetId: string): Promise<EngagementStats> {
-    console.log(`\n🔍 === ANALYZING ENGAGEMENT FOR TWEET ${tweetId} ===\n`);
+    console.log(`🔍 === ANALYZING ENGAGEMENT FOR TWEET ${tweetId} ===`);
+
+    // First, check tweet engagement volume to avoid processing massive tweets
+    console.log(`📊 Checking tweet engagement volume...`);
+    const metrics = await this.getTweetMetrics(tweetId);
+    
+    if (metrics) {
+      const totalShares = metrics.retweet_count + metrics.quote_count;
+      const totalComments = metrics.reply_count;
+      
+      console.log(`📊 Tweet metrics: ${metrics.retweet_count} retweets, ${metrics.quote_count} quotes, ${metrics.reply_count} replies, ${metrics.like_count} likes`);
+      
+      // Check if engagement volume is too high
+      if (totalShares > 1000) {
+        console.log(`⚠️ Too many shares (${totalShares}) - exceeds 1000 limit`);
+        throw new Error('ENGAGEMENT_TOO_HIGH_SHARES');
+      }
+      
+      if (totalComments > 500) {
+        console.log(`⚠️ Too many comments (${totalComments}) - exceeds 500 limit`);
+        throw new Error('ENGAGEMENT_TOO_HIGH_COMMENTS');
+      }
+      
+      console.log(`✅ Engagement volume acceptable, proceeding with analysis...`);
+    } else {
+      console.log(`⚠️ Could not fetch tweet metrics, proceeding anyway...`);
+    }
 
     // Get retweeters and repliers sequentially to avoid rate limits
     console.log(`🔄 Fetching retweeters...`);
