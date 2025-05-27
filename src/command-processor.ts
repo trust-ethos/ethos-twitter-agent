@@ -715,7 +715,7 @@ Link to tweet: ${originalTweetLink}`;
           const highestScorer = allScoredUsers.reduce((prev, current) => 
             (current.ethos_score || 0) > (prev.ethos_score || 0) ? current : prev
           );
-          response += `\nMost reputable engager: https://app.ethos.network/profile/x/${highestScorer.username}`;
+          response += `Most reputable engager: https://app.ethos.network/profile/x/${highestScorer.username}`;
         }
 
         replyText = response;
