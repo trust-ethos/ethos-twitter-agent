@@ -695,16 +695,13 @@ Link to tweet: ${originalTweetLink}`;
           response += `${avgEmoji} ${avgScore} avg score of all engagers\n`;
         }
 
-        // Add reputable users summary - always show the count
-        response += `\n${engagementStats.reputable_total} total reputable engagements\n`;
-        
         // Find the highest scoring user (reputable or not)
         const allScoredUsers = engagementStats.users_with_scores.filter(user => user.ethos_score !== undefined && user.ethos_score !== null && user.ethos_score > 0);
         if (allScoredUsers.length > 0) {
           const highestScorer = allScoredUsers.reduce((prev, current) => 
             (current.ethos_score || 0) > (prev.ethos_score || 0) ? current : prev
           );
-          response += `Most reputable engager: https://app.ethos.network/profile/x/${highestScorer.username}`;
+          response += `\nMost reputable engager: https://app.ethos.network/profile/x/${highestScorer.username}`;
         }
 
         replyText = response;
