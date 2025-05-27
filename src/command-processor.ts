@@ -669,7 +669,7 @@ Link to tweet: ${originalTweetLink}`;
           return "🟢";
         };
 
-        let response = "Validated statistics from reputable Ethos profiles:\n";
+        let response = "[BETA FEATURE - MAY BE INACCURATE]\n\nValidated statistics from reputable Ethos profiles:\n";
         
         if (engagementStats.total_retweeters > 0) {
           const retweetEmoji = getEmojiForPercentage(retweetReputablePercentage);
