@@ -57,7 +57,7 @@ if (typeof Deno !== "undefined" && Deno.args) {
     await testWebhook("normal webhook", mockWebhookEvent);
 
     // Test validate command - reply to a tweet
-    await testWebhook("validate command", {
+    await testWebhook("validate command test", {
       data: [
         {
           id: "test_validate_123",
@@ -70,6 +70,108 @@ if (typeof Deno !== "undefined" && Deno.args) {
               id: "1927112991360659848" // Real tweet we tested before
             }
           ]
+        }
+      ],
+      includes: {
+        users: [
+          {
+            id: "user123",
+            username: "testuser",
+            name: "Test User"
+          }
+        ]
+      }
+    });
+
+    // Test improved command parsing - should IGNORE these casual mentions
+    await testWebhook("casual mention test (should be ignored)", {
+      data: [
+        {
+          id: "test_casual_123",
+          text: "@user1 @ethosAgent thanks for the save! That was helpful",
+          author_id: "user123",
+          created_at: "2024-01-15T10:30:00.000Z"
+        }
+      ],
+      includes: {
+        users: [
+          {
+            id: "user123",
+            username: "testuser",
+            name: "Test User"
+          }
+        ]
+      }
+    });
+
+    await testWebhook("wrong mention order test (should be ignored)", {
+      data: [
+        {
+          id: "test_wrong_order_123",
+          text: "@user1 @ethosAgent @user2 save positive",
+          author_id: "user123",
+          created_at: "2024-01-15T10:30:00.000Z"
+        }
+      ],
+      includes: {
+        users: [
+          {
+            id: "user123",
+            username: "testuser",
+            name: "Test User"
+          }
+        ]
+      }
+    });
+
+    // Test valid commands - should WORK
+    await testWebhook("valid save command test", {
+      data: [
+        {
+          id: "test_valid_save_123",
+          text: "@user1 @user2 @ethosAgent save positive",
+          author_id: "user123",
+          created_at: "2024-01-15T10:30:00.000Z",
+          in_reply_to_user_id: "target_user",
+          referenced_tweets: [
+            {
+              type: "replied_to",
+              id: "original_tweet_123"
+            }
+          ]
+        }
+      ],
+      includes: {
+        users: [
+          {
+            id: "user123",
+            username: "testuser",
+            name: "Test User"
+          },
+          {
+            id: "target_user",
+            username: "targetuser",
+            name: "Target User"
+          }
+        ],
+        tweets: [
+          {
+            id: "original_tweet_123",
+            text: "This is a great project!",
+            author_id: "target_user",
+            created_at: "2024-01-15T10:00:00.000Z"
+          }
+        ]
+      }
+    });
+
+    await testWebhook("simple profile command test", {
+      data: [
+        {
+          id: "test_simple_profile_123",
+          text: "@ethosAgent profile",
+          author_id: "user123",
+          created_at: "2024-01-15T10:30:00.000Z"
         }
       ],
       includes: {

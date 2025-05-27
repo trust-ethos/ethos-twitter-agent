@@ -22,6 +22,7 @@ export class CommandProcessor {
    */
   parseCommand(tweet: TwitterTweet, mentionedUser: TwitterUser): Command | null {
     const text = tweet.text.toLowerCase();
+    const originalText = tweet.text;
     
     // Check if this mentions @ethosagent
     if (!text.includes("@ethosagent")) {
@@ -31,39 +32,63 @@ export class CommandProcessor {
     // Define valid commands that we actually support
     const validCommands = ["profile", "save", "help", "validate"];
     
-    // Remove @ethosAgent mentions but preserve other @mentions for command arguments
-    const textWithEthosAgentRemoved = tweet.text.replace(/@ethosagent/gi, '').trim();
+    // Parse the tweet to find mentions and the command structure
+    // Split by whitespace but preserve the original structure
+    const parts = originalText.split(/\s+/);
     
-    if (!textWithEthosAgentRemoved) {
-      return null;
-    }
-
-    const parts = textWithEthosAgentRemoved.split(/\s+/);
-    
-    // Find the first valid command word in the text
-    let commandType = '';
-    let commandIndex = -1;
+    // Find all @mentions at the beginning of the tweet
+    const initialMentions: string[] = [];
+    let firstNonMentionIndex = 0;
     
     for (let i = 0; i < parts.length; i++) {
-      const word = parts[i].toLowerCase();
-      if (validCommands.includes(word)) {
-        commandType = word;
-        commandIndex = i;
+      const part = parts[i];
+      if (part.startsWith('@')) {
+        initialMentions.push(part.toLowerCase());
+        firstNonMentionIndex = i + 1;
+      } else {
+        // Stop when we hit the first non-mention word
         break;
       }
     }
     
-    if (!commandType) {
-      console.log(`ℹ️ Ignoring casual mention (no valid commands found): "${tweet.text}"`);
-      return null; // No valid command found - ignore casual mentions
+    // Check if @ethosagent is mentioned in the initial group
+    const ethosAgentMentioned = initialMentions.some(mention => 
+      mention.includes('@ethosagent')
+    );
+    
+    if (!ethosAgentMentioned) {
+      console.log(`ℹ️ @ethosAgent not in initial mention group: [${initialMentions.join(', ')}]`);
+      return null;
+    }
+    
+    // Check if @ethosagent is the LAST mention in the initial group
+    // (This ensures user is directing the command to us, not just mentioning us casually)
+    const lastMention = initialMentions[initialMentions.length - 1];
+    if (!lastMention.includes('@ethosagent')) {
+      console.log(`ℹ️ @ethosAgent not the last mention in group: [${initialMentions.join(', ')}]. Last: ${lastMention}`);
+      return null;
+    }
+    
+    // Look for a command word immediately after the mentions
+    if (firstNonMentionIndex >= parts.length) {
+      console.log(`ℹ️ No content after mentions: "${originalText}"`);
+      return null;
+    }
+    
+    const potentialCommand = parts[firstNonMentionIndex].toLowerCase();
+    
+    // Check if the first word after mentions is a valid command
+    if (!validCommands.includes(potentialCommand)) {
+      console.log(`ℹ️ Ignoring - first word after mentions is not a command: "${potentialCommand}" in "${originalText}"`);
+      return null;
     }
     
     // Args are everything after the command
-    const args = commandIndex >= 0 ? parts.slice(commandIndex + 1) : [];
+    const args = parts.slice(firstNonMentionIndex + 1);
 
-    console.log(`🎯 Found valid command: ${commandType}`);
+    console.log(`🎯 Found valid command: ${potentialCommand} (after mentions: [${initialMentions.join(', ')}])`);
     return {
-      type: commandType,
+      type: potentialCommand,
       args,
       originalTweet: tweet,
       mentionedUser
