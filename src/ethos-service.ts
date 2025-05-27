@@ -198,14 +198,14 @@ export class EthosService {
 
   /**
    * Check if a user has a valid Ethos profile using the addresses API
-   * @param username - Twitter username (without @)
+   * @param twitterId - Twitter user ID
    */
-  async checkUserProfile(username: string): Promise<EthosUserSearchResponse> {
+  async checkUserProfile(twitterId: string): Promise<EthosUserSearchResponse> {
     try {
-      console.log(`🔍 Checking if user ${username} has an Ethos profile using addresses API...`);
+      console.log(`🔍 Checking if user with Twitter ID ${twitterId} has an Ethos profile using addresses API...`);
       
-      // Use the addresses API instead of search API
-      const userkey = `service:x.com:username:${username}`;
+      // Use the addresses API with Twitter ID instead of username
+      const userkey = `service:x.com:${twitterId}`;
       const addressesUrl = `${this.baseUrl}/api/v1/addresses/${userkey}`;
       console.log(`🔗 Addresses API URL: ${addressesUrl}`);
       

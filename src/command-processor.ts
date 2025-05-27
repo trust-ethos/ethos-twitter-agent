@@ -335,6 +335,7 @@ Learn more about Ethos at https://ethos.network`;
       }
 
       // Parse remaining args to see if this is "save target @username"
+      let targetUserId: string;
       if (remainingArgs.length >= 2 && remainingArgs[0].toLowerCase() === "target") {
         // This is "save target @username" format
         // Find the LAST @mention in the entire original text to handle cases like:
@@ -367,6 +368,18 @@ Learn more about Ethos at https://ethos.network`;
         targetUsername = usernameMatch[1];
         targetName = `@${targetUsername}`;
         saveContext = `saving tweet as review to ${targetName}'s profile as requested by @${mentionerUsername}`;
+        
+        // For target case, we need to look up the user ID from the username
+        // Look for the target user in allUsers by username
+        const targetUser = allUsers?.find(user => user.username.toLowerCase() === targetUsername.toLowerCase());
+        if (!targetUser) {
+          return {
+            success: false,
+            message: "Could not find target user information",
+            replyText: `I couldn't find information about @${targetUsername}. Please make sure they are mentioned in this conversation.`
+          };
+        }
+        targetUserId = targetUser.id;
       } else {
         // This is just "save" (with optional sentiment and extra text we ignore)
         // Save to original tweet author - ignore any extra words after sentiment
@@ -382,6 +395,7 @@ Learn more about Ethos at https://ethos.network`;
         
         targetUsername = originalAuthor.username;
         targetName = originalAuthor.name;
+        targetUserId = originalAuthor.id;
         saveContext = `saving tweet as review to ${targetName} (@${targetUsername})'s profile as requested by @${mentionerUsername}`;
         
         // Log ignored extra text for debugging
@@ -410,8 +424,8 @@ Learn more about Ethos at https://ethos.network`;
       }
 
       // Check if the target user has a valid Ethos profile
-      console.log(`🔍 Validating Ethos profile for target user: ${targetUsername}`);
-      const profileCheck = await this.ethosService.checkUserProfile(targetUsername);
+      console.log(`🔍 Validating Ethos profile for target user: ${targetUsername} (ID: ${targetUserId})`);
+      const profileCheck = await this.ethosService.checkUserProfile(targetUserId);
       
       if (!profileCheck.success) {
         console.log(`❌ Profile validation failed: ${profileCheck.error}`);
