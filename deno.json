@@ -1,14 +1,13 @@
 {
   "tasks": {
-    "start": "deno run --allow-net --allow-env --allow-read --allow-write main.ts",
-    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --watch main.ts",
-    "test": "deno test --allow-net --allow-env --allow-read --allow-write",
-    "test-webhook": "deno run --allow-net test-webhook.ts",
-    "test-all": "deno run --allow-net test-scenarios.ts",
-    "test-ethos": "deno run --allow-net test-ethos-integration.ts",
-    "test-polling": "deno run --allow-net --allow-env --allow-read --allow-write test-polling.ts",
-    "test-persistence": "deno run --allow-net --allow-read --allow-write test-persistence.ts",
-    "setup": "deno run --allow-read --allow-write --allow-env setup-twitter-api.ts"
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write --env main.ts",
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --watch --env main.ts",
+    "test": "deno test --allow-net --allow-env --allow-read --allow-write --env",
+    "test-webhook": "deno run --allow-net --env test-webhook.ts",
+    "test-all": "deno run --allow-net --env test-scenarios.ts",
+    "test-ethos": "deno run --allow-net --env test-ethos-integration.ts",
+    "test-polling": "deno run --allow-net --allow-env --allow-read --allow-write --env test-polling.ts",
+    "test-persistence": "deno run --allow-net --allow-read --allow-write --env test-persistence.ts"
   },
   "cron": [
     {

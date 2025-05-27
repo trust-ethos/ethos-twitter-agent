@@ -38,4 +38,34 @@ export interface CommandResult {
   success: boolean;
   message?: string;
   replyText?: string;
+}
+
+// Engagement Analysis Types
+export interface EngagingUser {
+  id: string;
+  username: string;
+  name: string;
+  profile_image_url?: string;
+  public_metrics?: {
+    followers_count: number;
+    following_count: number;
+    tweet_count: number;
+  };
+  engagement_type: 'retweet' | 'reply';
+}
+
+export interface UserWithEthosScore extends EngagingUser {
+  ethos_score?: number;
+  is_reputable: boolean; // score >= 1600
+}
+
+export interface EngagementStats {
+  total_retweeters: number;
+  total_repliers: number;
+  total_unique_users: number;
+  reputable_retweeters: number;
+  reputable_repliers: number;
+  reputable_total: number;
+  reputable_percentage: number;
+  users_with_scores: UserWithEthosScore[];
 } 

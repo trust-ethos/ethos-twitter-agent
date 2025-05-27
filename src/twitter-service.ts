@@ -1,4 +1,11 @@
-import type { TwitterUser, TwitterTweet } from "./types.ts";
+import type { TwitterUser, TwitterTweet, EngagingUser, UserWithEthosScore, EngagementStats } from "./types.ts";
+
+// Declare global Deno for TypeScript
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 export class TwitterService {
   private clientId?: string;
@@ -559,5 +566,300 @@ export class TwitterService {
       console.error(`❌ Error fetching tweet ${tweetId}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Make an OAuth 1.0a authenticated request for engagement analysis
+   */
+  private async makeEngagementOAuthRequest(method: string, fullUrl: string): Promise<Response> {
+    const [url, queryString] = fullUrl.split('?');
+    const queryParams: Record<string, string> = {};
+    
+    if (queryString) {
+      const urlParams = new URLSearchParams(queryString);
+      for (const [key, value] of urlParams) {
+        queryParams[key] = value;
+      }
+    }
+
+    const authHeader = await this.generateOAuthHeader(method, url, queryParams);
+
+    return fetch(fullUrl, {
+      method,
+      headers: {
+        'Authorization': authHeader,
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  /**
+   * Get users who retweeted a specific tweet with pagination
+   */
+  async getRetweeters(tweetId: string): Promise<EngagingUser[]> {
+    const retweeters: EngagingUser[] = [];
+    let nextToken: string | undefined = undefined;
+    let pageCount = 0;
+    
+    do {
+      pageCount++;
+      console.log(`📄 Fetching retweeters page ${pageCount}${nextToken ? ` (token: ${nextToken.substring(0, 10)}...)` : ''}`);
+      
+      const url = new URL(`https://api.twitter.com/2/tweets/${tweetId}/retweeted_by`);
+      url.searchParams.set('max_results', '100');
+      url.searchParams.set('user.fields', 'username,name,profile_image_url,public_metrics');
+      
+      if (nextToken) {
+        url.searchParams.set('pagination_token', nextToken);
+      }
+
+      try {
+        const response = await this.makeEngagementOAuthRequest("GET", url.toString());
+        
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
+            break;
+          }
+          console.error(`❌ API error on page ${pageCount}: ${response.status} ${response.statusText}`);
+          break;
+        }
+
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+          const pageRetweeters = data.data.map((user: any) => ({
+            ...user,
+            engagement_type: 'retweet' as const
+          }));
+          retweeters.push(...pageRetweeters);
+          console.log(`✅ Page ${pageCount}: Found ${pageRetweeters.length} retweeters`);
+        } else {
+          console.log(`📭 Page ${pageCount}: No retweeters found`);
+        }
+
+        nextToken = data.meta?.next_token;
+        
+        // Rate limiting: wait between requests
+        if (nextToken && pageCount < 50) {
+          await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error fetching retweeters page ${pageCount}:`, error);
+        break;
+      }
+      
+    } while (nextToken && pageCount < 50);
+
+    console.log(`🎯 Total retweeters collected: ${retweeters.length}`);
+    return retweeters;
+  }
+
+  /**
+   * Get users who replied to a specific tweet with pagination
+   */
+  async getRepliers(tweetId: string): Promise<EngagingUser[]> {
+    const repliers: EngagingUser[] = [];
+    let nextToken: string | undefined = undefined;
+    let pageCount = 0;
+    
+    do {
+      pageCount++;
+      console.log(`📄 Fetching replies page ${pageCount}${nextToken ? ` (token: ${nextToken.substring(0, 10)}...)` : ''}`);
+      
+      const url = new URL('https://api.twitter.com/2/tweets/search/recent');
+      url.searchParams.set('query', `conversation_id:${tweetId} -from:ethosAgent`);
+      url.searchParams.set('max_results', '100');
+      url.searchParams.set('tweet.fields', 'author_id,created_at');
+      url.searchParams.set('user.fields', 'username,name,profile_image_url,public_metrics');
+      url.searchParams.set('expansions', 'author_id');
+      
+      if (nextToken) {
+        url.searchParams.set('next_token', nextToken);
+      }
+
+      try {
+        const response = await this.makeEngagementOAuthRequest("GET", url.toString());
+        
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
+            break;
+          }
+          console.error(`❌ API error on page ${pageCount}: ${response.status} ${response.statusText}`);
+          break;
+        }
+
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+          const replyTweets = data.data;
+          const users = data.includes?.users || [];
+          
+          const pageRepliers = replyTweets.map((tweet: any) => {
+            const user = users.find((u: any) => u.id === tweet.author_id);
+            return {
+              id: user?.id || tweet.author_id,
+              username: user?.username || `user_${tweet.author_id}`,
+              name: user?.name || `User ${tweet.author_id}`,
+              profile_image_url: user?.profile_image_url,
+              public_metrics: user?.public_metrics,
+              engagement_type: 'reply' as const
+            };
+          });
+          
+          repliers.push(...pageRepliers);
+          console.log(`✅ Page ${pageCount}: Found ${pageRepliers.length} replies`);
+        } else {
+          console.log(`📭 Page ${pageCount}: No replies found`);
+        }
+
+        nextToken = data.meta?.next_token;
+        
+        // Rate limiting: wait between requests
+        if (nextToken && pageCount < 50) {
+          await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error fetching replies page ${pageCount}:`, error);
+        break;
+      }
+      
+    } while (nextToken && pageCount < 50);
+
+    // Deduplicate repliers by username
+    const uniqueRepliers = Array.from(
+      new Map(repliers.map(user => [user.username, user])).values()
+    );
+
+    console.log(`🎯 Total repliers collected: ${repliers.length}, unique: ${uniqueRepliers.length}`);
+    return uniqueRepliers;
+  }
+
+  /**
+   * Get Ethos scores for multiple usernames using bulk API
+   */
+  async getBulkEthosScores(usernames: string[]): Promise<Map<string, number>> {
+    if (usernames.length === 0) return new Map();
+    
+    console.log(`🚀 Fetching Ethos scores for ${usernames.length} users via bulk API...`);
+    
+    try {
+      const userkeys = usernames.map(username => `service:x.com:username:${username}`);
+      
+      const url = 'https://api.ethos.network/api/v1/score/bulk';
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userkeys })
+      });
+
+      if (!response.ok) {
+        console.error(`❌ Ethos bulk API error: ${response.status} ${response.statusText}`);
+        return new Map();
+      }
+
+      const data = await response.json();
+      
+      if (!data.ok || !data.data) {
+        console.error(`❌ Invalid Ethos bulk API response:`, data);
+        return new Map();
+      }
+
+      const scoresMap = new Map<string, number>();
+      
+      // Process the bulk response
+      for (const username of usernames) {
+        const userkey = `service:x.com:username:${username}`;
+        const scoreData = data.data[userkey];
+        
+        if (scoreData && typeof scoreData.score === 'number') {
+          scoresMap.set(username, scoreData.score);
+        }
+      }
+
+      console.log(`✅ Successfully fetched ${scoresMap.size}/${usernames.length} Ethos scores`);
+      return scoresMap;
+
+    } catch (error) {
+      console.error(`❌ Error fetching bulk Ethos scores:`, error);
+      return new Map();
+    }
+  }
+
+  /**
+   * Analyze engagement for a tweet and calculate reputation stats
+   */
+  async analyzeEngagement(tweetId: string): Promise<EngagementStats> {
+    console.log(`\n🔍 === ANALYZING ENGAGEMENT FOR TWEET ${tweetId} ===\n`);
+
+    // Get retweeters and repliers sequentially to avoid rate limits
+    console.log(`🔄 Fetching retweeters...`);
+    const retweeters = await this.getRetweeters(tweetId);
+    
+    console.log(`🔄 Fetching repliers...`);
+    const repliers = await this.getRepliers(tweetId);
+
+    // Combine and deduplicate users
+    const allUsers = [...retweeters, ...repliers];
+    const uniqueUserMap = new Map<string, EngagingUser>();
+    
+    for (const user of allUsers) {
+      if (!uniqueUserMap.has(user.username)) {
+        uniqueUserMap.set(user.username, user);
+      }
+    }
+
+    const uniqueUsers = Array.from(uniqueUserMap.values());
+    
+    console.log(`\n📊 === FETCHING ETHOS SCORES ===`);
+    console.log(`🔄 Checking Ethos scores for ${uniqueUsers.length} unique users...`);
+
+    // Get all usernames for bulk API call
+    const usernames = uniqueUsers.map(user => user.username);
+    
+    // Get Ethos scores for all users via bulk API
+    const ethosScores = await this.getBulkEthosScores(usernames);
+
+    // Create users with scores array
+    const usersWithScores: UserWithEthosScore[] = uniqueUsers.map(user => {
+      const ethosScore = ethosScores.get(user.username);
+      const isReputable = ethosScore !== undefined && ethosScore >= 1600;
+      
+      return {
+        ...user,
+        ethos_score: ethosScore,
+        is_reputable: isReputable
+      };
+    });
+
+    // Calculate stats for each engagement type
+    const reputableRetweeters = usersWithScores.filter(u => 
+      u.engagement_type === 'retweet' && u.is_reputable
+    ).length;
+    
+    const reputableRepliers = usersWithScores.filter(u => 
+      u.engagement_type === 'reply' && u.is_reputable
+    ).length;
+    
+    const reputableTotal = usersWithScores.filter(u => u.is_reputable).length;
+    const reputablePercentage = uniqueUsers.length > 0 
+      ? Math.round((reputableTotal / uniqueUsers.length) * 100)
+      : 0;
+
+    return {
+      total_retweeters: retweeters.length,
+      total_repliers: repliers.length,
+      total_unique_users: uniqueUsers.length,
+      reputable_retweeters: reputableRetweeters,
+      reputable_repliers: reputableRepliers,
+      reputable_total: reputableTotal,
+      reputable_percentage: reputablePercentage,
+      users_with_scores: usersWithScores
+    };
   }
 } 

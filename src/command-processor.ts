@@ -29,7 +29,7 @@ export class CommandProcessor {
     }
 
     // Define valid commands that we actually support
-    const validCommands = ["profile", "save", "help"];
+    const validCommands = ["profile", "save", "help", "validate"];
     
     // Remove @ethosAgent mentions but preserve other @mentions for command arguments
     const textWithEthosAgentRemoved = tweet.text.replace(/@ethosagent/gi, '').trim();
@@ -87,6 +87,9 @@ export class CommandProcessor {
         case "save":
           return await this.handleSaveCommand(command, allUsers);
         
+        case "validate":
+          return await this.handleValidateCommand(command, allUsers);
+        
         default:
           return {
             success: false,
@@ -99,7 +102,7 @@ export class CommandProcessor {
       
       // Only send Slack notifications for known commands that have unexpected errors
       // Don't spam Slack for unknown commands (people mentioning bot in conversation)
-      const knownCommands = ["profile", "help", "save"];
+      const knownCommands = ["profile", "help", "save", "validate"];
       if (knownCommands.includes(command.type)) {
         // Send Slack notification for unexpected error on known commands
         await this.slackService.notifyError(
@@ -237,6 +240,11 @@ export class CommandProcessor {
    • Reply to any tweet with "@ethosAgent save target @ mention" to save it with neutral sentiment
    • Add sentiment: "@ethosAgent save positive target [@ mention]"
    • Default sentiment is neutral if not specified
+
+**validate** - Analyze engagement quality of a tweet by checking Ethos scores
+   • Reply to any tweet with "@ethosAgent validate" to analyze its engagement
+   • Shows what percentage of retweeters and repliers are reputable (score 1600+)
+   • Helps identify genuine vs bot/fake engagement
 
 **help** - Show this help message
 
@@ -563,6 +571,89 @@ Link to tweet: ${originalTweetLink}`;
       return {
         success: false,
         message: "Error processing save command",
+        replyText: this.getStandardErrorMessage()
+      };
+    }
+  }
+
+  /**
+   * Handle the 'validate' command
+   * Analyzes engagement quality of a tweet by checking Ethos scores
+   */
+  private async handleValidateCommand(command: Command, allUsers?: TwitterUser[]): Promise<CommandResult> {
+    try {
+      const tweet = command.originalTweet;
+      const mentionerUsername = command.mentionedUser.username;
+
+      // Check if this is a reply to another tweet
+      if (!tweet.referenced_tweets || tweet.referenced_tweets.length === 0) {
+        return {
+          success: false,
+          message: "Validate command requires replying to a tweet",
+          replyText: `To validate a tweet's engagement quality, you need to reply to the tweet you want to analyze. Try replying to someone's tweet with "@ethosAgent validate".`
+        };
+      }
+
+      // Find the original tweet that's being replied to
+      const repliedTweet = tweet.referenced_tweets.find(ref => ref.type === "replied_to");
+      if (!repliedTweet) {
+        return {
+          success: false,
+          message: "Could not find replied-to tweet in referenced tweets",
+          replyText: `I couldn't find the tweet you're trying to validate. Please make sure you're replying to a valid tweet.`
+        };
+      }
+
+      const originalTweetId = repliedTweet.id;
+      console.log(`🔍 Processing validate command for tweet: ${originalTweetId} requested by @${mentionerUsername}`);
+
+      // Analyze engagement using TwitterService
+      const engagementStats = await this.twitterService.analyzeEngagement(originalTweetId);
+
+      // Format the response
+      let replyText: string;
+      
+      if (engagementStats.total_retweeters === 0 && engagementStats.total_repliers === 0) {
+        replyText = "📊 No engagement found for this tweet.";
+      } else {
+        const retweetReputablePercentage = engagementStats.total_retweeters > 0 
+          ? Math.round((engagementStats.reputable_retweeters / engagementStats.total_retweeters) * 100)
+          : 0;
+        
+        const replyReputablePercentage = engagementStats.total_repliers > 0 
+          ? Math.round((engagementStats.reputable_repliers / engagementStats.total_repliers) * 100)
+          : 0;
+
+        let response = "📊 Tweet engagement quality:\n";
+        
+        if (engagementStats.total_retweeters > 0) {
+          response += `• ${retweetReputablePercentage}% of retweets from reputable accounts (${engagementStats.reputable_retweeters}/${engagementStats.total_retweeters})\n`;
+        }
+        
+        if (engagementStats.total_repliers > 0) {
+          response += `• ${replyReputablePercentage}% of comments from reputable accounts (${engagementStats.reputable_repliers}/${engagementStats.total_repliers})\n`;
+        }
+
+        // Add summary if there are any reputable users
+        if (engagementStats.reputable_total > 0) {
+          response += `\n⭐ ${engagementStats.reputable_total} reputable users engaged overall`;
+        }
+
+        replyText = response.trim();
+      }
+
+      return {
+        success: true,
+        message: "Validate command processed successfully",
+        replyText
+      };
+
+    } catch (error) {
+      console.error("❌ Error processing validate command:", error);
+      
+      return {
+        success: false,
+        message: "Error processing validate command", 
         replyText: this.getStandardErrorMessage()
       };
     }
