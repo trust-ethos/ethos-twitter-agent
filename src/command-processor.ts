@@ -656,21 +656,39 @@ Link to tweet: ${originalTweetLink}`;
           return "🟢";
         };
 
-        let response = "";
+        // Helper function to get emoji based on average score
+        const getEmojiForAvgScore = (avgScore: number): string => {
+          if (avgScore < 800) return "🔴";
+          if (avgScore < 1200) return "🟡";
+          if (avgScore < 1600) return "⚪️";
+          if (avgScore < 2000) return "🔵";
+          return "🟢";
+        };
+
+        let response = "Validated statistics from Reputable ethos profiles:\n";
         
         if (engagementStats.total_retweeters > 0) {
           const retweetEmoji = getEmojiForPercentage(retweetReputablePercentage);
-          response += `${retweetEmoji} ${retweetReputablePercentage}% of retweets from reputable accounts (${engagementStats.total_retweeters} unique accounts engaged)\n`;
+          response += `${retweetEmoji} ${retweetReputablePercentage}% reputable retweets (${engagementStats.reputable_retweeters} of ${engagementStats.total_retweeters})\n`;
         }
         
         if (engagementStats.total_repliers > 0) {
           const replyEmoji = getEmojiForPercentage(replyReputablePercentage);
-          response += `${replyEmoji} ${replyReputablePercentage}% of comments from reputable accounts (${engagementStats.total_repliers} unique accounts engaged)\n`;
+          response += `${replyEmoji} ${replyReputablePercentage}% reputable comments (${engagementStats.reputable_repliers} of ${engagementStats.total_repliers})\n`;
+        }
+
+        // Calculate and display average score of all engagers
+        const allEngagers = engagementStats.users_with_scores.filter(user => user.ethos_score !== undefined && user.ethos_score !== null);
+        if (allEngagers.length > 0) {
+          const totalScore = allEngagers.reduce((sum, user) => sum + (user.ethos_score || 0), 0);
+          const avgScore = Math.round(totalScore / allEngagers.length);
+          const avgEmoji = getEmojiForAvgScore(avgScore);
+          response += `${avgEmoji} ${avgScore} avg score of all engagers\n`;
         }
 
         // Add reputable users summary
         if (engagementStats.reputable_total > 0) {
-          response += `\n${engagementStats.reputable_total} reputable Ethos users engaged overall.\n`;
+          response += `\n${engagementStats.reputable_total} total reputable engagements\n`;
           
           // Find the highest scoring reputable user
           const reputableUsers = engagementStats.users_with_scores.filter(user => user.is_reputable);
@@ -678,7 +696,7 @@ Link to tweet: ${originalTweetLink}`;
             const highestScorer = reputableUsers.reduce((prev, current) => 
               (current.ethos_score || 0) > (prev.ethos_score || 0) ? current : prev
             );
-            response += `Highest reputable engagement: https://app.ethos.network/profile/x/${highestScorer.username}`;
+            response += `Most reputable engager: https://app.ethos.network/profile/x/${highestScorer.username}`;
           }
         } else {
           response = response.trim();
