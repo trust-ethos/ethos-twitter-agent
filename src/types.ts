@@ -51,7 +51,7 @@ export interface EngagingUser {
     following_count: number;
     tweet_count: number;
   };
-  engagement_type: 'retweet' | 'reply';
+  engagement_type: 'retweet' | 'reply' | 'quote_tweet';
 }
 
 export interface UserWithEthosScore extends EngagingUser {
@@ -62,9 +62,11 @@ export interface UserWithEthosScore extends EngagingUser {
 export interface EngagementStats {
   total_retweeters: number;
   total_repliers: number;
+  total_quote_tweeters: number;
   total_unique_users: number;
   reputable_retweeters: number;
   reputable_repliers: number;
+  reputable_quote_tweeters: number;
   reputable_total: number;
   reputable_percentage: number;
   users_with_scores: UserWithEthosScore[];

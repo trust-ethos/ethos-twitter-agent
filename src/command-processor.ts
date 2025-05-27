@@ -638,11 +638,15 @@ Link to tweet: ${originalTweetLink}`;
       // Format the response
       let replyText: string;
       
-      if (engagementStats.total_retweeters === 0 && engagementStats.total_repliers === 0) {
+      if (engagementStats.total_retweeters === 0 && engagementStats.total_quote_tweeters === 0 && engagementStats.total_repliers === 0) {
         replyText = "📊 No engagement found for this tweet.";
       } else {
         const retweetReputablePercentage = engagementStats.total_retweeters > 0 
           ? Math.round((engagementStats.reputable_retweeters / engagementStats.total_retweeters) * 100)
+          : 0;
+        
+        const quoteReputablePercentage = engagementStats.total_quote_tweeters > 0 
+          ? Math.round((engagementStats.reputable_quote_tweeters / engagementStats.total_quote_tweeters) * 100)
           : 0;
         
         const replyReputablePercentage = engagementStats.total_repliers > 0 
@@ -665,11 +669,16 @@ Link to tweet: ${originalTweetLink}`;
           return "🟢";
         };
 
-        let response = "Validated statistics from Reputable ethos profiles:\n";
+        let response = "Validated statistics from reputable Ethos profiles:\n";
         
         if (engagementStats.total_retweeters > 0) {
           const retweetEmoji = getEmojiForPercentage(retweetReputablePercentage);
           response += `${retweetEmoji} ${retweetReputablePercentage}% reputable retweets (${engagementStats.reputable_retweeters} of ${engagementStats.total_retweeters})\n`;
+        }
+        
+        if (engagementStats.total_quote_tweeters > 0) {
+          const quoteEmoji = getEmojiForPercentage(quoteReputablePercentage);
+          response += `${quoteEmoji} ${quoteReputablePercentage}% reputable quote tweets (${engagementStats.reputable_quote_tweeters} of ${engagementStats.total_quote_tweeters})\n`;
         }
         
         if (engagementStats.total_repliers > 0) {
@@ -688,7 +697,6 @@ Link to tweet: ${originalTweetLink}`;
 
         // Add reputable users summary
         if (engagementStats.reputable_total > 0) {
-          response += `\n${engagementStats.reputable_total} total reputable engagements\n`;
           
           // Find the highest scoring reputable user
           const reputableUsers = engagementStats.users_with_scores.filter(user => user.is_reputable);

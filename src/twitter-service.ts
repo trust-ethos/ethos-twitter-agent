@@ -739,6 +739,82 @@ export class TwitterService {
   }
 
   /**
+   * Get users who quoted a specific tweet with pagination
+   */
+  async getQuoteTweeters(tweetId: string): Promise<EngagingUser[]> {
+    const quoteTweeters: EngagingUser[] = [];
+    let nextToken: string | undefined = undefined;
+    let pageCount = 0;
+    
+    do {
+      pageCount++;
+      console.log(`📄 Fetching quote tweeters page ${pageCount}${nextToken ? ` (token: ${nextToken.substring(0, 10)}...)` : ''}`);
+      
+      const url = new URL(`https://api.twitter.com/2/tweets/${tweetId}/quote_tweets`);
+      url.searchParams.set('max_results', '100');
+      url.searchParams.set('tweet.fields', 'author_id,created_at');
+      url.searchParams.set('user.fields', 'username,name,profile_image_url,public_metrics');
+      url.searchParams.set('expansions', 'author_id');
+      
+      if (nextToken) {
+        url.searchParams.set('pagination_token', nextToken);
+      }
+
+      try {
+        const response = await this.makeEngagementOAuthRequest("GET", url.toString());
+        
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
+            break;
+          }
+          console.error(`❌ API error on page ${pageCount}: ${response.status} ${response.statusText}`);
+          break;
+        }
+
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+          const quoteTweets = data.data;
+          const users = data.includes?.users || [];
+          
+          const pageQuoteTweeters = quoteTweets.map((tweet: any) => {
+            const user = users.find((u: any) => u.id === tweet.author_id);
+            return {
+              id: user?.id || tweet.author_id,
+              username: user?.username || `user_${tweet.author_id}`,
+              name: user?.name || `User ${tweet.author_id}`,
+              profile_image_url: user?.profile_image_url,
+              public_metrics: user?.public_metrics,
+              engagement_type: 'quote_tweet' as const
+            };
+          });
+          
+          quoteTweeters.push(...pageQuoteTweeters);
+          console.log(`✅ Page ${pageCount}: Found ${pageQuoteTweeters.length} quote tweeters`);
+        } else {
+          console.log(`📭 Page ${pageCount}: No quote tweeters found`);
+        }
+
+        nextToken = data.meta?.next_token;
+        
+        // Rate limiting: wait between requests
+        if (nextToken && pageCount < 50) {
+          await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error fetching quote tweeters page ${pageCount}:`, error);
+        break;
+      }
+      
+    } while (nextToken && pageCount < 50);
+
+    console.log(`🎯 Total quote tweeters collected: ${quoteTweeters.length}`);
+    return quoteTweeters;
+  }
+
+  /**
    * Get Ethos scores for multiple usernames using bulk API
    */
   async getBulkEthosScores(usernames: string[]): Promise<Map<string, number>> {
@@ -804,8 +880,12 @@ export class TwitterService {
     console.log(`🔄 Fetching repliers...`);
     const repliers = await this.getRepliers(tweetId);
 
+    // Get quote tweeters
+    console.log(`🔄 Fetching quote tweeters...`);
+    const quoteTweeters = await this.getQuoteTweeters(tweetId);
+
     // Combine and deduplicate users
-    const allUsers = [...retweeters, ...repliers];
+    const allUsers = [...retweeters, ...repliers, ...quoteTweeters];
     const uniqueUserMap = new Map<string, EngagingUser>();
     
     for (const user of allUsers) {
@@ -846,6 +926,10 @@ export class TwitterService {
       u.engagement_type === 'reply' && u.is_reputable
     ).length;
     
+    const reputableQuoteTweeters = usersWithScores.filter(u => 
+      u.engagement_type === 'quote_tweet' && u.is_reputable
+    ).length;
+    
     const reputableTotal = usersWithScores.filter(u => u.is_reputable).length;
     const reputablePercentage = uniqueUsers.length > 0 
       ? Math.round((reputableTotal / uniqueUsers.length) * 100)
@@ -854,9 +938,11 @@ export class TwitterService {
     return {
       total_retweeters: retweeters.length,
       total_repliers: repliers.length,
+      total_quote_tweeters: quoteTweeters.length,
       total_unique_users: uniqueUsers.length,
       reputable_retweeters: reputableRetweeters,
       reputable_repliers: reputableRepliers,
+      reputable_quote_tweeters: reputableQuoteTweeters,
       reputable_total: reputableTotal,
       reputable_percentage: reputablePercentage,
       users_with_scores: usersWithScores
