@@ -120,15 +120,29 @@ Analyze the engagement quality of a tweet by checking the Ethos reputation score
 **Examples:**
 ```
 User replies to a viral tweet with: "@ethosAgent validate"
-Bot responds: "📊 Tweet engagement quality:
-• 14% of retweets from reputable accounts (1/7)
-• 2% of comments from reputable accounts (1/53)
+Bot responds: "🔴 14% of retweets from reputable accounts (7 unique accounts engaged)
+🔴 2% of comments from reputable accounts (53 unique accounts engaged)
 
-⭐ 2 reputable users engaged overall"
+2 reputable Ethos users engaged overall.
+Highest reputable engagement: https://app.ethos.network/profile/x/vitalik"
+
+User replies to a high-quality tweet with: "@ethosAgent validate"  
+Bot responds: "🟢 80% of retweets from reputable accounts (15 unique accounts engaged)
+🟢 65% of comments from reputable accounts (23 unique accounts engaged)
+
+18 reputable Ethos users engaged overall.
+Highest reputable engagement: https://app.ethos.network/profile/x/elonmusk"
 
 User replies to a tweet with no engagement: "@ethosAgent validate"
 Bot responds: "📊 No engagement found for this tweet."
 ```
+
+**Response Format:**
+- **🔴 Red**: Less than 30% reputable engagement (potential bot activity)
+- **🟡 Yellow**: 30-60% reputable engagement (mixed quality)  
+- **🟢 Green**: Over 60% reputable engagement (high quality)
+- **Unique accounts**: Shows total unique users who engaged (not reputable/total ratio)
+- **Highest scorer**: Links to the highest-scoring reputable user's Ethos profile
 
 **Key Features:**
 - **Full pagination**: Captures ALL retweeters and repliers (not just first 100)
