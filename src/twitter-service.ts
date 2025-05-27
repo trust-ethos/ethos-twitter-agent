@@ -875,7 +875,7 @@ export class TwitterService {
       const url = new URL(`https://api.twitter.com/2/tweets/${tweetId}`);
       url.searchParams.set('tweet.fields', 'public_metrics');
 
-      const response = await this.makeEngagementOAuthRequest(url.toString());
+      const response = await this.makeEngagementOAuthRequest("GET", url.toString());
       
       if (!response.ok) {
         console.error(`❌ Failed to fetch tweet metrics: ${response.status} ${response.statusText}`);
