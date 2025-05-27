@@ -105,6 +105,44 @@ Bot responds: "✅ Review saved! I've recorded this tweet as a negative review f
 - Bot intelligently finds the **last @mention** as the target user
 - Ignores earlier @mentions that might be unrelated to the target
 
+### 🔍 Validate Command
+
+Analyze the engagement quality of a tweet by checking the Ethos reputation scores of users who engaged with it.
+
+**Format**: `@ethosAgent validate` (reply to any tweet)
+
+**What it analyzes:**
+- **Retweeters**: Users who retweeted the tweet
+- **Repliers**: Users who replied to the tweet  
+- **Reputation check**: Checks each user's Ethos score (reputable = score ≥ 1600)
+- **Quality metrics**: Shows percentage of engagement from reputable accounts
+
+**Examples:**
+```
+User replies to a viral tweet with: "@ethosAgent validate"
+Bot responds: "📊 Tweet engagement quality:
+• 14% of retweets from reputable accounts (1/7)
+• 2% of comments from reputable accounts (1/53)
+
+⭐ 2 reputable users engaged overall"
+
+User replies to a tweet with no engagement: "@ethosAgent validate"
+Bot responds: "📊 No engagement found for this tweet."
+```
+
+**Key Features:**
+- **Full pagination**: Captures ALL retweeters and repliers (not just first 100)
+- **Bulk scoring**: Efficiently checks Ethos scores for all users at once
+- **Rate limit safe**: Uses conservative 15-second delays between Twitter API calls
+- **Duplicate handling**: Deduplicates users who both retweeted AND replied
+- **Real-time analysis**: Works on any public tweet, regardless of age
+
+**Use Cases:**
+- **Bot detection**: Low reputable engagement % may indicate bot activity
+- **Influence verification**: High reputable engagement % suggests genuine influence
+- **Content quality**: Reputable users engaging suggests valuable content
+- **Trend analysis**: Compare engagement quality across different tweets
+
 ### ❓ Help Command
 
 Show detailed usage instructions.
