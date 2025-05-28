@@ -654,10 +654,10 @@ export class TwitterService {
         // Smart rate limiting: only wait if we're close to the limit and have more pages
         if (nextToken && pageCount < 50) {
           if (remaining <= 1) {
-            // We're out of requests, wait for reset
-            const waitTime = Math.max(0, (resetTime * 1000) - Date.now()) + 1000; // Add 1 second buffer
-            console.log(`⏰ Rate limit almost reached (${remaining} remaining), waiting ${Math.round(waitTime/1000/60)} minutes for reset...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            // We're out of requests, stop this collection and move to next stat
+            console.log(`⏰ Rate limit exhausted (${remaining} remaining), moving to next stat type...`);
+            rateLimited = true;
+            break;
           } else if (remaining <= 2) {
             // Close to limit, add a small delay to be safe
             console.log(`⚠️ Rate limit low (${remaining} remaining), adding 30-second safety delay...`);
@@ -749,10 +749,10 @@ export class TwitterService {
         // Smart rate limiting: only wait if we're close to the limit and have more pages
         if (nextToken && pageCount < 50) {
           if (remaining <= 1) {
-            // We're out of requests, wait for reset
-            const waitTime = Math.max(0, (resetTime * 1000) - Date.now()) + 1000; // Add 1 second buffer
-            console.log(`⏰ Rate limit almost reached (${remaining} remaining), waiting ${Math.round(waitTime/1000/60)} minutes for reset...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            // We're out of requests, stop this collection and move to next stat
+            console.log(`⏰ Rate limit exhausted (${remaining} remaining), moving to next stat type...`);
+            rateLimited = true;
+            break;
           } else if (remaining <= 2) {
             // Close to limit, add a small delay to be safe
             console.log(`⚠️ Rate limit low (${remaining} remaining), adding 30-second safety delay...`);
@@ -848,10 +848,10 @@ export class TwitterService {
         // Smart rate limiting: only wait if we're close to the limit and have more pages
         if (nextToken && pageCount < 50) {
           if (remaining <= 1) {
-            // We're out of requests, wait for reset
-            const waitTime = Math.max(0, (resetTime * 1000) - Date.now()) + 1000; // Add 1 second buffer
-            console.log(`⏰ Rate limit almost reached (${remaining} remaining), waiting ${Math.round(waitTime/1000/60)} minutes for reset...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
+            // We're out of requests, stop this collection and move to next stat
+            console.log(`⏰ Rate limit exhausted (${remaining} remaining), moving to next stat type...`);
+            rateLimited = true;
+            break;
           } else if (remaining <= 2) {
             // Close to limit, add a small delay to be safe
             console.log(`⚠️ Rate limit low (${remaining} remaining), adding 30-second safety delay...`);
@@ -1001,12 +1001,20 @@ export class TwitterService {
     console.log(`🔄 Fetching retweeters...`);
     const retweetersResult = await this.getRetweeters(tweetId);
     
+    // If we're rate limited on retweeters, we might want to still try the other endpoints
+    // as they may have different rate limit pools or the limit may have reset
     console.log(`🔄 Fetching repliers...`);
     const repliersResult = await this.getRepliers(tweetId);
 
     // Get quote tweeters
     console.log(`🔄 Fetching quote tweeters...`);
     const quoteTweetersResult = await this.getQuoteTweeters(tweetId);
+    
+    // Log overall rate limiting status
+    const anyRateLimited = retweetersResult.rateLimited || repliersResult.rateLimited || quoteTweetersResult.rateLimited;
+    if (anyRateLimited) {
+      console.log(`⚠️ Some data collection was rate limited - results may be incomplete`);
+    }
 
     // Combine and deduplicate users
     const allUsers = [...retweetersResult.users, ...repliersResult.users, ...quoteTweetersResult.users];
