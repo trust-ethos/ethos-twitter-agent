@@ -423,9 +423,9 @@ Learn more about Ethos at https://ethos.network`;
         console.log(`🚨 Converted self-review to negative sentiment for @${mentionerUsername}`);
       }
 
-      // Check if the target user has a valid Ethos profile
-      console.log(`🔍 Validating Ethos profile for target user: ${targetUsername} (ID: ${targetUserId})`);
-      const profileCheck = await this.ethosService.checkUserProfile(targetUserId);
+      // Check if the reviewer (person making the save request) has a valid Ethos profile
+      console.log(`🔍 Validating Ethos profile for reviewer: ${mentionerUsername} (ID: ${command.mentionedUser.id})`);
+      const profileCheck = await this.ethosService.checkUserProfile(command.mentionedUser.id);
       
       if (!profileCheck.success) {
         console.log(`❌ Profile validation failed: ${profileCheck.error}`);
@@ -437,15 +437,15 @@ Learn more about Ethos at https://ethos.network`;
       }
       
       if (!profileCheck.hasProfile) {
-        console.log(`❌ User ${targetUsername} does not have a valid Ethos profile`);
+        console.log(`❌ User ${mentionerUsername} does not have a valid Ethos profile`);
         return {
           success: false,
-          message: "Target user does not have an Ethos profile",
+          message: "Reviewer does not have an Ethos profile",
           replyText: "I'm sorry, only users with an Ethos profile can use this functionality"
         };
       }
       
-      console.log(`✅ User ${targetUsername} has a valid Ethos profile (profileId: ${profileCheck.profileId})`);
+      console.log(`✅ User ${mentionerUsername} has a valid Ethos profile (profileId: ${profileCheck.profileId})`);
 
       // Find the original tweet that's being replied to
       let originalTweetId: string;
