@@ -739,7 +739,7 @@ Link to tweet: ${originalTweetLink}`;
           return {
             success: false,
             message: "Tweet has too many retweets/quotes to process",
-            replyText: "Sorry, that tweet has too many retweets and quote tweets for me to process right now (>200). Try a tweet with less engagement."
+            replyText: "Sorry, that tweet has too many retweets and quote tweets for me to process right now (>500). Try a tweet with less engagement."
           };
         }
         
@@ -747,7 +747,7 @@ Link to tweet: ${originalTweetLink}`;
           return {
             success: false,
             message: "Tweet has too many comments to process",
-            replyText: "Sorry, that tweet has too many comments for me to process right now (>100). Try a tweet with less engagement."
+            replyText: "Sorry, that tweet has too many comments for me to process right now (>300). Try a tweet with less engagement."
           };
         }
       }

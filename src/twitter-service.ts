@@ -598,9 +598,8 @@ export class TwitterService {
    * 
    * RATE LIMITS (Twitter API Basic Plan):
    * - GET /2/tweets/:id/retweeted_by: 5 requests per 15 minutes PER USER
-   * - This means 1 request every 3 minutes maximum
-   * - Same limits apply to quote_tweets and search endpoints used for replies
-   * - We use 3-minute delays between requests to stay within limits
+   * - We use HTTP headers to detect when we're close to limits
+   * - Only wait when we actually hit rate limits (429) or run out of requests
    */
   async getRetweeters(tweetId: string): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
     const retweeters: EngagingUser[] = [];
@@ -622,6 +621,10 @@ export class TwitterService {
 
       try {
         const response = await this.makeEngagementOAuthRequest("GET", url.toString());
+        
+        // Check rate limit headers
+        const remaining = parseInt(response.headers.get('x-rate-limit-remaining') || '999');
+        const resetTime = parseInt(response.headers.get('x-rate-limit-reset') || '0');
         
         if (!response.ok) {
           if (response.status === 429) {
@@ -648,9 +651,21 @@ export class TwitterService {
 
         nextToken = data.meta?.next_token;
         
-        // Rate limiting: wait between requests
+        // Smart rate limiting: only wait if we're close to the limit and have more pages
         if (nextToken && pageCount < 50) {
-          await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes (180 seconds) for Basic plan
+          if (remaining <= 1) {
+            // We're out of requests, wait for reset
+            const waitTime = Math.max(0, (resetTime * 1000) - Date.now()) + 1000; // Add 1 second buffer
+            console.log(`⏰ Rate limit almost reached (${remaining} remaining), waiting ${Math.round(waitTime/1000/60)} minutes for reset...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          } else if (remaining <= 2) {
+            // Close to limit, add a small delay to be safe
+            console.log(`⚠️ Rate limit low (${remaining} remaining), adding 30-second safety delay...`);
+            await new Promise(resolve => setTimeout(resolve, 30000));
+          } else {
+            console.log(`✅ Rate limit OK (${remaining} remaining), continuing immediately...`);
+            // No delay needed, continue immediately
+          }
         }
         
       } catch (error) {
@@ -691,6 +706,10 @@ export class TwitterService {
       try {
         const response = await this.makeEngagementOAuthRequest("GET", url.toString());
         
+        // Check rate limit headers
+        const remaining = parseInt(response.headers.get('x-rate-limit-remaining') || '999');
+        const resetTime = parseInt(response.headers.get('x-rate-limit-reset') || '0');
+        
         if (!response.ok) {
           if (response.status === 429) {
             console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
@@ -727,9 +746,21 @@ export class TwitterService {
 
         nextToken = data.meta?.next_token;
         
-        // Rate limiting: wait between requests
+        // Smart rate limiting: only wait if we're close to the limit and have more pages
         if (nextToken && pageCount < 50) {
-          await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes (180 seconds) for Basic plan
+          if (remaining <= 1) {
+            // We're out of requests, wait for reset
+            const waitTime = Math.max(0, (resetTime * 1000) - Date.now()) + 1000; // Add 1 second buffer
+            console.log(`⏰ Rate limit almost reached (${remaining} remaining), waiting ${Math.round(waitTime/1000/60)} minutes for reset...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          } else if (remaining <= 2) {
+            // Close to limit, add a small delay to be safe
+            console.log(`⚠️ Rate limit low (${remaining} remaining), adding 30-second safety delay...`);
+            await new Promise(resolve => setTimeout(resolve, 30000));
+          } else {
+            console.log(`✅ Rate limit OK (${remaining} remaining), continuing immediately...`);
+            // No delay needed, continue immediately
+          }
         }
         
       } catch (error) {
@@ -774,6 +805,10 @@ export class TwitterService {
       try {
         const response = await this.makeEngagementOAuthRequest("GET", url.toString());
         
+        // Check rate limit headers
+        const remaining = parseInt(response.headers.get('x-rate-limit-remaining') || '999');
+        const resetTime = parseInt(response.headers.get('x-rate-limit-reset') || '0');
+        
         if (!response.ok) {
           if (response.status === 429) {
             console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
@@ -810,9 +845,21 @@ export class TwitterService {
 
         nextToken = data.meta?.next_token;
         
-        // Rate limiting: wait between requests
+        // Smart rate limiting: only wait if we're close to the limit and have more pages
         if (nextToken && pageCount < 50) {
-          await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes (180 seconds) for Basic plan
+          if (remaining <= 1) {
+            // We're out of requests, wait for reset
+            const waitTime = Math.max(0, (resetTime * 1000) - Date.now()) + 1000; // Add 1 second buffer
+            console.log(`⏰ Rate limit almost reached (${remaining} remaining), waiting ${Math.round(waitTime/1000/60)} minutes for reset...`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
+          } else if (remaining <= 2) {
+            // Close to limit, add a small delay to be safe
+            console.log(`⚠️ Rate limit low (${remaining} remaining), adding 30-second safety delay...`);
+            await new Promise(resolve => setTimeout(resolve, 30000));
+          } else {
+            console.log(`✅ Rate limit OK (${remaining} remaining), continuing immediately...`);
+            // No delay needed, continue immediately
+          }
         }
         
       } catch (error) {
@@ -928,21 +975,21 @@ export class TwitterService {
       
       console.log(`📊 Tweet metrics: ${metrics.retweet_count} retweets, ${metrics.quote_count} quotes, ${metrics.reply_count} replies, ${metrics.like_count} likes`);
       
-      // Check if engagement volume is too high for Basic plan rate limits
-      // With 5 requests per 15 minutes, we can only process limited data
-      if (totalShares > 200) {
-        console.log(`⚠️ Too many shares (${totalShares}) - exceeds 200 limit for Basic plan`);
+      // Check if engagement volume is too high for rate limiting
+      // With smart rate limiting, we can handle more volume efficiently
+      if (totalShares > 500) {
+        console.log(`⚠️ Too many shares (${totalShares}) - exceeds 500 limit`);
         throw new Error('ENGAGEMENT_TOO_HIGH_SHARES');
       }
       
-      if (totalComments > 100) {
-        console.log(`⚠️ Too many comments (${totalComments}) - exceeds 100 limit for Basic plan`);
+      if (totalComments > 300) {
+        console.log(`⚠️ Too many comments (${totalComments}) - exceeds 300 limit`);
         throw new Error('ENGAGEMENT_TOO_HIGH_COMMENTS');
       }
       
-      // Estimate time required
+      // Estimate time required (much faster now with smart rate limiting)
       const estimatedPages = Math.ceil(totalShares / 100) + Math.ceil(totalComments / 100);
-      const estimatedMinutes = estimatedPages * 3; // 3 minutes per page
+      const estimatedMinutes = Math.max(1, Math.ceil(estimatedPages / 5) * 15); // 5 requests per 15 min window
       console.log(`⏰ Estimated analysis time: ~${estimatedMinutes} minutes (${estimatedPages} pages)`);
       
       console.log(`✅ Engagement volume acceptable, proceeding with analysis...`);
