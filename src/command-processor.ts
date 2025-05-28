@@ -687,17 +687,20 @@ Link to tweet: ${originalTweetLink}`;
         
         if (engagementStats.total_retweeters > 0) {
           const retweetEmoji = getEmojiForPercentage(retweetReputablePercentage);
-          response += `${retweetEmoji} ${retweetReputablePercentage}% reputable retweets (${engagementStats.reputable_retweeters} of ${engagementStats.total_retweeters})\n`;
+          const rateLimitText = engagementStats.retweeters_rate_limited ? " (Rate limited)" : "";
+          response += `${retweetEmoji} ${retweetReputablePercentage}% reputable retweets (${engagementStats.reputable_retweeters} of ${engagementStats.total_retweeters})${rateLimitText}\n`;
         }
         
         if (engagementStats.total_quote_tweeters > 0) {
           const quoteEmoji = getEmojiForPercentage(quoteReputablePercentage);
-          response += `${quoteEmoji} ${quoteReputablePercentage}% reputable quote tweets (${engagementStats.reputable_quote_tweeters} of ${engagementStats.total_quote_tweeters})\n`;
+          const rateLimitText = engagementStats.quote_tweeters_rate_limited ? " (Rate limited)" : "";
+          response += `${quoteEmoji} ${quoteReputablePercentage}% reputable quote tweets (${engagementStats.reputable_quote_tweeters} of ${engagementStats.total_quote_tweeters})${rateLimitText}\n`;
         }
         
         if (engagementStats.total_repliers > 0) {
           const replyEmoji = getEmojiForPercentage(replyReputablePercentage);
-          response += `${replyEmoji} ${replyReputablePercentage}% reputable comments (${engagementStats.reputable_repliers} of ${engagementStats.total_repliers})\n`;
+          const rateLimitText = engagementStats.repliers_rate_limited ? " (Rate limited)" : "";
+          response += `${replyEmoji} ${replyReputablePercentage}% reputable comments (${engagementStats.reputable_repliers} of ${engagementStats.total_repliers})${rateLimitText}\n`;
         }
 
         // Calculate and display average score of all engagers
@@ -736,7 +739,7 @@ Link to tweet: ${originalTweetLink}`;
           return {
             success: false,
             message: "Tweet has too many retweets/quotes to process",
-            replyText: "Sorry, that tweet has too many retweets and quote tweets for me to process right now (>1000). Try a tweet with less engagement."
+            replyText: "Sorry, that tweet has too many retweets and quote tweets for me to process right now (>200). Try a tweet with less engagement."
           };
         }
         
@@ -744,7 +747,7 @@ Link to tweet: ${originalTweetLink}`;
           return {
             success: false,
             message: "Tweet has too many comments to process",
-            replyText: "Sorry, that tweet has too many comments for me to process right now (>500). Try a tweet with less engagement."
+            replyText: "Sorry, that tweet has too many comments for me to process right now (>100). Try a tweet with less engagement."
           };
         }
       }

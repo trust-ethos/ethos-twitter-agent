@@ -70,4 +70,8 @@ export interface EngagementStats {
   reputable_total: number;
   reputable_percentage: number;
   users_with_scores: UserWithEthosScore[];
+  // Rate limit tracking
+  retweeters_rate_limited: boolean;
+  repliers_rate_limited: boolean;
+  quote_tweeters_rate_limited: boolean;
 } 

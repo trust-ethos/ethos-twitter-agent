@@ -595,11 +595,18 @@ export class TwitterService {
 
   /**
    * Get users who retweeted a specific tweet with pagination
+   * 
+   * RATE LIMITS (Twitter API Basic Plan):
+   * - GET /2/tweets/:id/retweeted_by: 5 requests per 15 minutes PER USER
+   * - This means 1 request every 3 minutes maximum
+   * - Same limits apply to quote_tweets and search endpoints used for replies
+   * - We use 3-minute delays between requests to stay within limits
    */
-  async getRetweeters(tweetId: string): Promise<EngagingUser[]> {
+  async getRetweeters(tweetId: string): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
     const retweeters: EngagingUser[] = [];
     let nextToken: string | undefined = undefined;
     let pageCount = 0;
+    let rateLimited = false;
     
     do {
       pageCount++;
@@ -619,6 +626,7 @@ export class TwitterService {
         if (!response.ok) {
           if (response.status === 429) {
             console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
+            rateLimited = true;
             break;
           }
           console.error(`❌ API error on page ${pageCount}: ${response.status} ${response.statusText}`);
@@ -642,7 +650,7 @@ export class TwitterService {
         
         // Rate limiting: wait between requests
         if (nextToken && pageCount < 50) {
-          await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds
+          await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes (180 seconds) for Basic plan
         }
         
       } catch (error) {
@@ -652,17 +660,18 @@ export class TwitterService {
       
     } while (nextToken && pageCount < 50);
 
-    console.log(`🎯 Total retweeters collected: ${retweeters.length}`);
-    return retweeters;
+    console.log(`🎯 Total retweeters collected: ${retweeters.length}${rateLimited ? ' (rate limited)' : ''}`);
+    return { users: retweeters, rateLimited };
   }
 
   /**
    * Get users who replied to a specific tweet with pagination
    */
-  async getRepliers(tweetId: string): Promise<EngagingUser[]> {
+  async getRepliers(tweetId: string): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
     const repliers: EngagingUser[] = [];
     let nextToken: string | undefined = undefined;
     let pageCount = 0;
+    let rateLimited = false;
     
     do {
       pageCount++;
@@ -685,6 +694,7 @@ export class TwitterService {
         if (!response.ok) {
           if (response.status === 429) {
             console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
+            rateLimited = true;
             break;
           }
           console.error(`❌ API error on page ${pageCount}: ${response.status} ${response.statusText}`);
@@ -719,7 +729,7 @@ export class TwitterService {
         
         // Rate limiting: wait between requests
         if (nextToken && pageCount < 50) {
-          await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds
+          await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes (180 seconds) for Basic plan
         }
         
       } catch (error) {
@@ -734,17 +744,18 @@ export class TwitterService {
       new Map(repliers.map(user => [user.username, user])).values()
     );
 
-    console.log(`🎯 Total repliers collected: ${repliers.length}, unique: ${uniqueRepliers.length}`);
-    return uniqueRepliers;
+    console.log(`🎯 Total repliers collected: ${repliers.length}, unique: ${uniqueRepliers.length}${rateLimited ? ' (rate limited)' : ''}`);
+    return { users: uniqueRepliers, rateLimited };
   }
 
   /**
    * Get users who quoted a specific tweet with pagination
    */
-  async getQuoteTweeters(tweetId: string): Promise<EngagingUser[]> {
+  async getQuoteTweeters(tweetId: string): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
     const quoteTweeters: EngagingUser[] = [];
     let nextToken: string | undefined = undefined;
     let pageCount = 0;
+    let rateLimited = false;
     
     do {
       pageCount++;
@@ -766,6 +777,7 @@ export class TwitterService {
         if (!response.ok) {
           if (response.status === 429) {
             console.log(`⏰ Rate limit hit on page ${pageCount}, stopping pagination`);
+            rateLimited = true;
             break;
           }
           console.error(`❌ API error on page ${pageCount}: ${response.status} ${response.statusText}`);
@@ -800,7 +812,7 @@ export class TwitterService {
         
         // Rate limiting: wait between requests
         if (nextToken && pageCount < 50) {
-          await new Promise(resolve => setTimeout(resolve, 15000)); // 15 seconds
+          await new Promise(resolve => setTimeout(resolve, 180000)); // 3 minutes (180 seconds) for Basic plan
         }
         
       } catch (error) {
@@ -810,8 +822,8 @@ export class TwitterService {
       
     } while (nextToken && pageCount < 50);
 
-    console.log(`🎯 Total quote tweeters collected: ${quoteTweeters.length}`);
-    return quoteTweeters;
+    console.log(`🎯 Total quote tweeters collected: ${quoteTweeters.length}${rateLimited ? ' (rate limited)' : ''}`);
+    return { users: quoteTweeters, rateLimited };
   }
 
   /**
@@ -916,16 +928,22 @@ export class TwitterService {
       
       console.log(`📊 Tweet metrics: ${metrics.retweet_count} retweets, ${metrics.quote_count} quotes, ${metrics.reply_count} replies, ${metrics.like_count} likes`);
       
-      // Check if engagement volume is too high
-      if (totalShares > 1000) {
-        console.log(`⚠️ Too many shares (${totalShares}) - exceeds 1000 limit`);
+      // Check if engagement volume is too high for Basic plan rate limits
+      // With 5 requests per 15 minutes, we can only process limited data
+      if (totalShares > 200) {
+        console.log(`⚠️ Too many shares (${totalShares}) - exceeds 200 limit for Basic plan`);
         throw new Error('ENGAGEMENT_TOO_HIGH_SHARES');
       }
       
-      if (totalComments > 500) {
-        console.log(`⚠️ Too many comments (${totalComments}) - exceeds 500 limit`);
+      if (totalComments > 100) {
+        console.log(`⚠️ Too many comments (${totalComments}) - exceeds 100 limit for Basic plan`);
         throw new Error('ENGAGEMENT_TOO_HIGH_COMMENTS');
       }
+      
+      // Estimate time required
+      const estimatedPages = Math.ceil(totalShares / 100) + Math.ceil(totalComments / 100);
+      const estimatedMinutes = estimatedPages * 3; // 3 minutes per page
+      console.log(`⏰ Estimated analysis time: ~${estimatedMinutes} minutes (${estimatedPages} pages)`);
       
       console.log(`✅ Engagement volume acceptable, proceeding with analysis...`);
     } else {
@@ -934,17 +952,17 @@ export class TwitterService {
 
     // Get retweeters and repliers sequentially to avoid rate limits
     console.log(`🔄 Fetching retweeters...`);
-    const retweeters = await this.getRetweeters(tweetId);
+    const retweetersResult = await this.getRetweeters(tweetId);
     
     console.log(`🔄 Fetching repliers...`);
-    const repliers = await this.getRepliers(tweetId);
+    const repliersResult = await this.getRepliers(tweetId);
 
     // Get quote tweeters
     console.log(`🔄 Fetching quote tweeters...`);
-    const quoteTweeters = await this.getQuoteTweeters(tweetId);
+    const quoteTweetersResult = await this.getQuoteTweeters(tweetId);
 
     // Combine and deduplicate users
-    const allUsers = [...retweeters, ...repliers, ...quoteTweeters];
+    const allUsers = [...retweetersResult.users, ...repliersResult.users, ...quoteTweetersResult.users];
     const uniqueUserMap = new Map<string, EngagingUser>();
     
     for (const user of allUsers) {
@@ -995,16 +1013,19 @@ export class TwitterService {
       : 0;
 
     return {
-      total_retweeters: retweeters.length,
-      total_repliers: repliers.length,
-      total_quote_tweeters: quoteTweeters.length,
+      total_retweeters: retweetersResult.users.length,
+      total_repliers: repliersResult.users.length,
+      total_quote_tweeters: quoteTweetersResult.users.length,
       total_unique_users: uniqueUsers.length,
       reputable_retweeters: reputableRetweeters,
       reputable_repliers: reputableRepliers,
       reputable_quote_tweeters: reputableQuoteTweeters,
       reputable_total: reputableTotal,
       reputable_percentage: reputablePercentage,
-      users_with_scores: usersWithScores
+      users_with_scores: usersWithScores,
+      retweeters_rate_limited: retweetersResult.rateLimited,
+      repliers_rate_limited: repliersResult.rateLimited,
+      quote_tweeters_rate_limited: quoteTweetersResult.rateLimited
     };
   }
 }
