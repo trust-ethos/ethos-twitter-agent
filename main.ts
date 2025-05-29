@@ -294,6 +294,58 @@ router.get("/test/storage", async (ctx) => {
   }
 });
 
+// Create sample validation data endpoint
+router.post("/test/create-sample", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    
+    // Create sample validation with proper avatar URLs
+    const sampleValidation = {
+      id: `sample_${Date.now()}`,
+      tweetId: "1234567890123456789",
+      tweetAuthor: "Elon Musk",
+      tweetAuthorHandle: "elonmusk",
+      tweetAuthorAvatar: "https://pbs.twimg.com/profile_images/1683325380441128960/yRsRRjGO_400x400.jpg",
+      requestedBy: "Test User",
+      requestedByHandle: "testuser",
+      requestedByAvatar: "https://pbs.twimg.com/profile_images/1590968738358079488/IY9Gx6Ok_400x400.jpg",
+      timestamp: new Date().toISOString(),
+      tweetUrl: "https://x.com/elonmusk/status/1234567890123456789",
+      engagementStats: {
+        total_retweeters: 150,
+        total_repliers: 75,
+        total_quote_tweeters: 25,
+        total_unique_users: 200,
+        reputable_retweeters: 120,
+        reputable_repliers: 45,
+        reputable_quote_tweeters: 15,
+        reputable_total: 180,
+        reputable_percentage: 72,
+        retweeters_rate_limited: false,
+        repliers_rate_limited: false,
+        quote_tweeters_rate_limited: false,
+      },
+      overallQuality: "high" as const
+    };
+
+    await storageService.storeValidation(sampleValidation);
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Sample validation data created",
+      data: sampleValidation
+    };
+  } catch (error) {
+    console.error("❌ Failed to create sample data:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Failed to create sample data",
+      error: error.message
+    };
+  }
+});
+
 // Polling control endpoints
 router.get("/polling/status", (ctx) => {
   ctx.response.body = {

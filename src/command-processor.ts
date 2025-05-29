@@ -18,6 +18,47 @@ export class CommandProcessor {
   }
 
   /**
+   * Construct proper Twitter profile image URL using user ID
+   * @param userId - Twitter user ID
+   * @param size - Image size (_normal, _bigger, _mini, _400x400)
+   * @returns Properly formatted Twitter profile image URL
+   */
+  private getTwitterAvatarUrl(userId: string, size: '_normal' | '_bigger' | '_mini' | '_400x400' = '_bigger'): string {
+    // For now, we'll use the default Twitter avatar since we don't have the hash
+    // In a real implementation, you'd need to fetch the actual profile image hash
+    // But this provides a fallback that always works
+    return `https://abs.twimg.com/sticky/default_profile_images/default_profile_${size === '_400x400' ? '400x400' : size === '_bigger' ? 'bigger' : size === '_mini' ? 'mini' : 'normal'}.png`;
+  }
+
+  /**
+   * Get profile image URL with proper fallback
+   * @param user - Twitter user object
+   * @param size - Desired image size
+   * @returns Profile image URL
+   */
+  private getProfileImageUrl(user: TwitterUser, size: '_normal' | '_bigger' | '_mini' | '_400x400' = '_bigger'): string {
+    if (user.profile_image_url) {
+      // If we have a profile_image_url, try to use it but fix common issues
+      let url = user.profile_image_url;
+      
+      // Replace _normal with requested size
+      if (url.includes('_normal.')) {
+        url = url.replace('_normal.', `${size}.`);
+      }
+      
+      // Ensure HTTPS
+      if (url.startsWith('http://')) {
+        url = url.replace('http://', 'https://');
+      }
+      
+      return url;
+    }
+    
+    // Fallback to default avatar
+    return this.getTwitterAvatarUrl(user.id, size);
+  }
+
+  /**
    * Parse a mention tweet to extract the command
    */
   parseCommand(tweet: TwitterTweet, mentionedUser: TwitterUser): Command | null {
@@ -693,10 +734,10 @@ Link to tweet: ${originalTweetLink}`;
         tweetId: originalTweetId,
         tweetAuthor: originalAuthor?.name || "Unknown",
         tweetAuthorHandle: originalAuthor?.username || "unknown",
-        tweetAuthorAvatar: originalAuthor?.profile_image_url || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png",
+        tweetAuthorAvatar: originalAuthor ? this.getProfileImageUrl(originalAuthor, '_bigger') : this.getTwitterAvatarUrl('unknown', '_bigger'),
         requestedBy: command.mentionedUser.name,
         requestedByHandle: mentionerUsername,
-        requestedByAvatar: command.mentionedUser.profile_image_url || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png",
+        requestedByAvatar: this.getProfileImageUrl(command.mentionedUser, '_normal'),
         timestamp: new Date().toISOString(),
         tweetUrl: `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`,
         engagementStats: {
