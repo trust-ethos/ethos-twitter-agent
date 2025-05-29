@@ -143,6 +143,28 @@ router.get("/dashboard", async (ctx) => {
         .validators-grid { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         .validator-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #374151; transition: transform 0.2s ease; }
         .validator-avatar:hover { transform: scale(1.1); border-color: #60a5fa; }
+        
+        /* Mobile-responsive card layout */
+        .table-container.mobile-cards { overflow: visible; }
+        .validation-cards { display: none; }
+        .validation-card { background: #374151; margin-bottom: 16px; padding: 16px; border-radius: 8px; border: 1px solid #4b5563; }
+        .validation-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .validation-card-content { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem; }
+        .validation-card-field { display: flex; flex-direction: column; gap: 4px; }
+        .validation-card-label { color: #9ca3af; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .validation-card-value { color: #f9fafb; }
+        .validation-card-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid #4b5563; }
+        
+        /* Media query for mobile devices */
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .stats { grid-template-columns: 1fr; gap: 10px; }
+            .filter-controls { flex-direction: column; align-items: stretch; }
+            .filter-select { width: 100%; }
+            .desktop-table { display: none; }
+            .validation-cards { display: block; }
+            .validators-grid { justify-content: center; }
+        }
     </style>
 </head>
 <body>
@@ -201,7 +223,8 @@ router.get("/dashboard", async (ctx) => {
                     ${authorFilter ? `No validations found for @${authorFilter}.` : 'No validations found. Validations will appear here when users run @ethosAgent validate commands.'}
                 </div>
             ` : `
-                <table>
+                <!-- Desktop Table View -->
+                <table class="desktop-table">
                     <thead>
                         <tr>
                             <th>Tweet Author</th>
@@ -266,6 +289,81 @@ router.get("/dashboard", async (ctx) => {
                         }).join('')}
                     </tbody>
                 </table>
+
+                <!-- Mobile Cards View -->
+                <div class="validation-cards">
+                    ${validations.map(v => {
+                      // Helper function to get emoji based on average score (same as in reply)
+                      const getEmojiForAvgScore = (avgScore) => {
+                        if (avgScore < 800) return "🔴";
+                        if (avgScore < 1200) return "🟡";
+                        if (avgScore < 1600) return "⚪️";
+                        if (avgScore < 2000) return "🔵";
+                        return "🟢";
+                      };
+                      
+                      return `
+                        <div class="validation-card">
+                            <div class="validation-card-header">
+                                <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                <div>
+                                    <div><strong>${v.tweetAuthor}</strong></div>
+                                    <div style="color: #9ca3af;">
+                                        <a href="/dashboard?author=${v.tweetAuthorHandle}" style="color: #9ca3af;">@${v.tweetAuthorHandle}</a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="validation-card-content">
+                                <div class="validation-card-field">
+                                    <div class="validation-card-label">Validator</div>
+                                    <div class="validation-card-value">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">
+                                            <span>@${v.requestedByHandle}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="validation-card-field">
+                                    <div class="validation-card-label">Quality</div>
+                                    <div class="validation-card-value">
+                                        <span class="quality-${v.overallQuality}">
+                                            ${v.overallQuality === 'high' ? '🟢' : v.overallQuality === 'medium' ? '🟡' : '🔴'}
+                                            ${v.engagementStats.reputable_percentage}%
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="validation-card-field">
+                                    <div class="validation-card-label">Avg Score</div>
+                                    <div class="validation-card-value">
+                                        <span class="avg-score">
+                                            ${v.averageScore !== null && v.averageScore !== undefined ? `${getEmojiForAvgScore(v.averageScore)} ${v.averageScore}` : '—'}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="validation-card-field">
+                                    <div class="validation-card-label">Engagement</div>
+                                    <div class="validation-card-value" style="font-size: 0.85rem;">
+                                        <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
+                                        <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
+                                        <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="validation-card-footer">
+                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
+                                    <span style="color: #9ca3af;">${new Date(v.timestamp).toLocaleString()}</span>
+                                    <a href="${v.tweetUrl}" target="_blank" style="color: #60a5fa;">View Tweet</a>
+                                </div>
+                            </div>
+                        </div>
+                      `;
+                    }).join('')}
+                </div>
             `}
         </div>
         
