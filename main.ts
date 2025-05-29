@@ -87,6 +87,23 @@ router.get("/dashboard", async (ctx) => {
       .sort((a, b) => a.handle.localeCompare(b.handle))
       .slice(0, 50); // Limit to first 50 unique authors
 
+    // Calculate top validators
+    const validatorCounts = new Map();
+    allValidations.forEach(v => {
+      const validator = validatorCounts.get(v.requestedByHandle) || {
+        handle: v.requestedByHandle,
+        name: v.requestedBy,
+        avatar: v.requestedByAvatar,
+        count: 0
+      };
+      validator.count++;
+      validatorCounts.set(v.requestedByHandle, validator);
+    });
+    
+    const topValidators = Array.from(validatorCounts.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5); // Top 5 validators
+
     // Simple HTML dashboard
     const html = `
 <!DOCTYPE html>
@@ -123,6 +140,9 @@ router.get("/dashboard", async (ctx) => {
         h1, h2, h3 { color: #f9fafb; }
         p { color: #d1d5db; }
         .filter-info { color: #9ca3af; font-size: 0.9rem; margin-top: 10px; }
+        .validators-grid { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .validator-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #374151; transition: transform 0.2s ease; }
+        .validator-avatar:hover { transform: scale(1.1); border-color: #60a5fa; }
     </style>
 </head>
 <body>
@@ -143,8 +163,18 @@ router.get("/dashboard", async (ctx) => {
                 <p style="margin: 0; color: #9ca3af;">${authorFilter ? `Filtered by @${authorFilter}` : 'All validations'}</p>
             </div>
             <div class="stat-card">
-                <h3>Last Updated</h3>
-                <p style="margin: 0; color: #d1d5db;">${new Date(stats.lastUpdated).toLocaleString()}</p>
+                <h3>Top Validators</h3>
+                <div class="stat-number">${topValidators.length}</div>
+                ${topValidators.length > 0 ? `
+                    <div class="validators-grid">
+                        ${topValidators.map(validator => `
+                            <img src="${validator.avatar}" 
+                                 alt="@${validator.handle}" 
+                                 title="@${validator.handle} - ${validator.count} validation${validator.count !== 1 ? 's' : ''}" 
+                                 class="validator-avatar">
+                        `).join('')}
+                    </div>
+                ` : `<p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 0.9rem;">No validators yet</p>`}
             </div>
         </div>
 
@@ -379,42 +409,77 @@ router.post("/test/create-sample", async (ctx) => {
   try {
     const storageService = commandProcessor['storageService'];
     
-    // Create sample validation with proper avatar URLs
-    const sampleValidation = {
-      id: `sample_${Date.now()}`,
-      tweetId: "1234567890123456789",
-      tweetAuthor: "Elon Musk",
-      tweetAuthorHandle: "elonmusk",
-      tweetAuthorAvatar: "https://pbs.twimg.com/profile_images/1683325380441128960/yRsRRjGO_400x400.jpg",
-      requestedBy: "Test User",
-      requestedByHandle: "testuser",
-      requestedByAvatar: "https://pbs.twimg.com/profile_images/1590968738358079488/IY9Gx6Ok_400x400.jpg",
-      timestamp: new Date().toISOString(),
-      tweetUrl: "https://x.com/elonmusk/status/1234567890123456789",
-      averageScore: 1850, // High quality average score for testing
-      engagementStats: {
-        total_retweeters: 150,
-        total_repliers: 75,
-        total_quote_tweeters: 25,
-        total_unique_users: 200,
-        reputable_retweeters: 120,
-        reputable_repliers: 45,
-        reputable_quote_tweeters: 15,
-        reputable_total: 180,
-        reputable_percentage: 72,
-        retweeters_rate_limited: false,
-        repliers_rate_limited: false,
-        quote_tweeters_rate_limited: false,
+    // Create multiple sample validations with different validators
+    const sampleValidators = [
+      {
+        handle: "vitalik",
+        name: "Vitalik Buterin",
+        avatar: "https://pbs.twimg.com/profile_images/977496875887558661/L86xyLF4_400x400.jpg"
       },
-      overallQuality: "high" as const
-    };
+      {
+        handle: "elonmusk", 
+        name: "Elon Musk",
+        avatar: "https://pbs.twimg.com/profile_images/1683325380441128960/yRsRRjGO_400x400.jpg"
+      },
+      {
+        handle: "naval",
+        name: "Naval",
+        avatar: "https://pbs.twimg.com/profile_images/1296720045988904962/rUgP8ORE_400x400.jpg"
+      },
+      {
+        handle: "balajis",
+        name: "Balaji Srinivasan",
+        avatar: "https://pbs.twimg.com/profile_images/1590968738358079488/IY9Gx6Ok_400x400.jpg"
+      }
+    ];
 
-    await storageService.storeValidation(sampleValidation);
+    const sampleAuthors = [
+      { handle: "sama", name: "Sam Altman", avatar: "https://pbs.twimg.com/profile_images/1784943589584429057/kcGhGGZH_400x400.jpg" },
+      { handle: "pmarca", name: "Marc Andreessen", avatar: "https://pbs.twimg.com/profile_images/1577136786707210241/qX7fLf_z_400x400.jpg" },
+      { handle: "chamath", name: "Chamath Palihapitiya", avatar: "https://pbs.twimg.com/profile_images/1577136786707210241/qX7fLf_z_400x400.jpg" }
+    ];
+
+    // Create 5 validations with different validators and authors
+    for (let i = 0; i < 5; i++) {
+      const validator = sampleValidators[i % sampleValidators.length];
+      const author = sampleAuthors[i % sampleAuthors.length];
+      
+      const sampleValidation = {
+        id: `sample_${Date.now()}_${i}`,
+        tweetId: `123456789012345678${i}`,
+        tweetAuthor: author.name,
+        tweetAuthorHandle: author.handle,
+        tweetAuthorAvatar: author.avatar,
+        requestedBy: validator.name,
+        requestedByHandle: validator.handle,
+        requestedByAvatar: validator.avatar,
+        timestamp: new Date(Date.now() - i * 60000).toISOString(), // Stagger timestamps
+        tweetUrl: `https://x.com/${author.handle}/status/123456789012345678${i}`,
+        averageScore: 1200 + (i * 200), // Varying scores
+        engagementStats: {
+          total_retweeters: 100 + (i * 20),
+          total_repliers: 50 + (i * 10),
+          total_quote_tweeters: 20 + (i * 5),
+          total_unique_users: 150 + (i * 25),
+          reputable_retweeters: 80 + (i * 15),
+          reputable_repliers: 35 + (i * 8),
+          reputable_quote_tweeters: 12 + (i * 3),
+          reputable_total: 127 + (i * 26),
+          reputable_percentage: 70 + (i * 2),
+          retweeters_rate_limited: false,
+          repliers_rate_limited: false,
+          quote_tweeters_rate_limited: false,
+        },
+        overallQuality: i < 2 ? "high" : i < 4 ? "medium" : "low"
+      };
+
+      await storageService.storeValidation(sampleValidation);
+    }
     
     ctx.response.body = {
       status: "success",
-      message: "Sample validation data created",
-      data: sampleValidation
+      message: "Multiple sample validation data created",
+      count: 5
     };
   } catch (error) {
     console.error("❌ Failed to create sample data:", error);
