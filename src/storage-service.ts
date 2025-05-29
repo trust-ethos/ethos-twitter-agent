@@ -94,24 +94,24 @@ export class StorageService {
       const validations: ValidationRecord[] = [];
       
       if (this.kv) {
-        // Get validations sorted by timestamp (newest first)
-        const iter = this.kv.list<ValidationRecord>({ prefix: ["validation"] }, { 
-          limit,
-          reverse: true 
-        });
+        // Get all validations first, then sort by timestamp
+        const iter = this.kv.list<ValidationRecord>({ prefix: ["validation"] });
         
         for await (const entry of iter) {
           validations.push(entry.value);
         }
+        
+        // Sort by timestamp (newest first) and limit
+        validations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        return validations.slice(0, limit);
       } else {
         // Use local fallback
         const sortedValidations = Array.from(this.validationsMap.values())
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
           .slice(0, limit);
         validations.push(...sortedValidations);
+        return validations;
       }
-      
-      return validations;
     } catch (error) {
       console.error("❌ Error getting validations:", error);
       return [];

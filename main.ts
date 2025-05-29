@@ -169,7 +169,7 @@ router.get("/dashboard", async (ctx) => {
                                 </td>
                                 <td>
                                     <span class="avg-score">
-                                        ${v.averageScore !== null ? `${getEmojiForAvgScore(v.averageScore)} ${v.averageScore}` : '—'}
+                                        ${v.averageScore !== null && v.averageScore !== undefined ? `${getEmojiForAvgScore(v.averageScore)} ${v.averageScore}` : '—'}
                                     </span>
                                 </td>
                                 <td style="font-size: 0.9rem;">
