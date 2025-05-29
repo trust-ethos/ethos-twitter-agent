@@ -831,14 +831,8 @@ Link to tweet: ${originalTweetLink}`;
           response += `${avgEmoji} ${averageScore} avg score of all engagers\n`;
         }
 
-        // Find the highest scoring user (reputable or not)
-        const allScoredUsers = engagementStats.users_with_scores.filter(user => user.ethos_score !== undefined && user.ethos_score !== null && user.ethos_score > 0);
-        if (allScoredUsers.length > 0) {
-          const highestScorer = allScoredUsers.reduce((prev, current) => 
-            (current.ethos_score || 0) > (prev.ethos_score || 0) ? current : prev
-          );
-          response += `Most reputable engager: https://app.ethos.network/profile/x/${highestScorer.username}`;
-        }
+        // Link to validation leaderboard
+        response += `You can view the validation leaderboard here: https://ethos-agent-twitter.deno.dev/dashboard`;
 
         replyText = response;
       }
