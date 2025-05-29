@@ -53,6 +53,147 @@ if (usePolling) {
   }
 }
 
+// Dashboard route - serve the dashboard page
+router.get("/dashboard", async (ctx) => {
+  try {
+    // Get validation data from storage
+    const storageService = commandProcessor['storageService'];
+    const validations = await storageService.getRecentValidations(50);
+    const stats = await storageService.getValidationStats();
+
+    // Simple HTML dashboard
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ethos Validations Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #2563eb; }
+        .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        th { background: #f9fafb; font-weight: 600; }
+        .quality-high { color: #16a34a; }
+        .quality-medium { color: #ca8a04; }
+        .quality-low { color: #dc2626; }
+        .empty-state { text-align: center; padding: 40px; color: #6b7280; }
+        a { color: #2563eb; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Ethos Validations Dashboard</h1>
+            <p>Real-time transparency into @ethosAgent validation commands</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Validations</h3>
+                <div class="stat-number">${stats.totalValidations}</div>
+            </div>
+            <div class="stat-card">
+                <h3>Recent Activity</h3>
+                <div class="stat-number">${validations.length}</div>
+                <p style="margin: 0; color: #6b7280;">Last 50 validations</p>
+            </div>
+            <div class="stat-card">
+                <h3>Last Updated</h3>
+                <p style="margin: 0;">${new Date(stats.lastUpdated).toLocaleString()}</p>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #e5e7eb;">Recent Validations</h2>
+            ${validations.length === 0 ? `
+                <div class="empty-state">
+                    No validations found. Validations will appear here when users run @ethosAgent validate commands.
+                </div>
+            ` : `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tweet Author</th>
+                            <th>Validator</th>
+                            <th>Quality</th>
+                            <th>Engagement</th>
+                            <th>Timestamp</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${validations.map(v => `
+                            <tr>
+                                <td>
+                                    <div><strong>${v.tweetAuthor}</strong></div>
+                                    <div style="color: #6b7280;">@${v.tweetAuthorHandle}</div>
+                                </td>
+                                <td>@${v.requestedByHandle}</td>
+                                <td>
+                                    <span class="quality-${v.overallQuality}">
+                                        ${v.overallQuality === 'high' ? '🟢' : v.overallQuality === 'medium' ? '🟡' : '🔴'}
+                                        ${v.engagementStats.reputable_percentage}%
+                                    </span>
+                                </td>
+                                <td style="font-size: 0.9rem;">
+                                    <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
+                                    <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
+                                    <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
+                                </td>
+                                <td>${new Date(v.timestamp).toLocaleString()}</td>
+                                <td><a href="${v.tweetUrl}" target="_blank">View Tweet</a></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `}
+        </div>
+        
+        <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9rem;">
+            <p>This dashboard shows validation commands processed by @ethosAgent on Twitter.</p>
+            <p>Learn more about Ethos at <a href="https://ethos.network">ethos.network</a></p>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-refresh every 30 seconds
+        setTimeout(() => location.reload(), 30000);
+    </script>
+</body>
+</html>`;
+
+    ctx.response.headers.set("Content-Type", "text/html");
+    ctx.response.body = html;
+  } catch (error) {
+    console.error("❌ Dashboard error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "Dashboard temporarily unavailable" };
+  }
+});
+
+// Dashboard API endpoint
+router.get("/api/validations", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    const validations = await storageService.getRecentValidations(50);
+    
+    ctx.response.headers.set("Content-Type", "application/json");
+    ctx.response.body = JSON.stringify(validations);
+  } catch (error) {
+    console.error("❌ API error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "API temporarily unavailable" };
+  }
+});
+
 // Health check endpoint
 router.get("/", (ctx) => {
   ctx.response.body = { status: "Ethos Twitter Agent is running" };
