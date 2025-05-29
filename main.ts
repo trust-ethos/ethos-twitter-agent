@@ -58,8 +58,34 @@ router.get("/dashboard", async (ctx) => {
   try {
     // Get validation data from storage
     const storageService = commandProcessor['storageService'];
-    const validations = await storageService.getRecentValidations(50);
+    const allValidations = await storageService.getRecentValidations(200); // Get more for filtering
     const stats = await storageService.getValidationStats();
+
+    // Get filter parameter
+    const url = new URL(ctx.request.url);
+    const authorFilter = url.searchParams.get('author');
+
+    // Filter validations by author if specified
+    let validations = allValidations;
+    if (authorFilter) {
+      validations = allValidations.filter(v => 
+        v.tweetAuthorHandle.toLowerCase() === authorFilter.toLowerCase()
+      );
+    }
+
+    // Get unique tweet authors for filter dropdown
+    const authorsMap = new Map();
+    allValidations.forEach(v => {
+      if (!authorsMap.has(v.tweetAuthorHandle)) {
+        authorsMap.set(v.tweetAuthorHandle, {
+          handle: v.tweetAuthorHandle,
+          name: v.tweetAuthor
+        });
+      }
+    });
+    const uniqueAuthors = Array.from(authorsMap.values())
+      .sort((a, b) => a.handle.localeCompare(b.handle))
+      .slice(0, 50); // Limit to first 50 unique authors
 
     // Simple HTML dashboard
     const html = `
@@ -76,6 +102,13 @@ router.get("/dashboard", async (ctx) => {
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .stat-card { background: #1f2937; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
         .stat-number { font-size: 2rem; font-weight: bold; color: #60a5fa; }
+        .filter-section { background: #1f2937; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
+        .filter-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .filter-label { font-weight: 600; color: #f9fafb; }
+        .filter-select { background: #374151; border: 1px solid #4b5563; color: #f9fafb; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
+        .filter-select:focus { outline: none; border-color: #60a5fa; }
+        .clear-filter { background: #374151; border: 1px solid #4b5563; color: #f9fafb; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; cursor: pointer; }
+        .clear-filter:hover { background: #4b5563; text-decoration: none; color: #f9fafb; }
         .table-container { background: #1f2937; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid #374151; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #374151; }
@@ -89,6 +122,7 @@ router.get("/dashboard", async (ctx) => {
         .avg-score { font-weight: bold; }
         h1, h2, h3 { color: #f9fafb; }
         p { color: #d1d5db; }
+        .filter-info { color: #9ca3af; font-size: 0.9rem; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -104,21 +138,37 @@ router.get("/dashboard", async (ctx) => {
                 <div class="stat-number">${stats.totalValidations}</div>
             </div>
             <div class="stat-card">
-                <h3>Recent Activity</h3>
+                <h3>Showing Results</h3>
                 <div class="stat-number">${validations.length}</div>
-                <p style="margin: 0; color: #9ca3af;">Last 50 validations</p>
+                <p style="margin: 0; color: #9ca3af;">${authorFilter ? `Filtered by @${authorFilter}` : 'All validations'}</p>
             </div>
             <div class="stat-card">
                 <h3>Last Updated</h3>
                 <p style="margin: 0; color: #d1d5db;">${new Date(stats.lastUpdated).toLocaleString()}</p>
             </div>
         </div>
+
+        <div class="filter-section">
+            <div class="filter-controls">
+                <span class="filter-label">Filter by Tweet Author:</span>
+                <select class="filter-select" onchange="filterByAuthor(this.value)">
+                    <option value="">All Authors (${allValidations.length} validations)</option>
+                    ${uniqueAuthors.map(author => `
+                        <option value="${author.handle}" ${authorFilter === author.handle ? 'selected' : ''}>
+                            @${author.handle} (${author.name})
+                        </option>
+                    `).join('')}
+                </select>
+                ${authorFilter ? `<a href="/dashboard" class="clear-filter">Clear Filter</a>` : ''}
+            </div>
+            ${authorFilter ? `<div class="filter-info">Showing ${validations.length} validation${validations.length !== 1 ? 's' : ''} for @${authorFilter}</div>` : ''}
+        </div>
         
         <div class="table-container">
             <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #374151;">Recent Validations</h2>
             ${validations.length === 0 ? `
                 <div class="empty-state">
-                    No validations found. Validations will appear here when users run @ethosAgent validate commands.
+                    ${authorFilter ? `No validations found for @${authorFilter}.` : 'No validations found. Validations will appear here when users run @ethosAgent validate commands.'}
                 </div>
             ` : `
                 <table>
@@ -151,7 +201,9 @@ router.get("/dashboard", async (ctx) => {
                                         <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                                         <div>
                                             <div><strong>${v.tweetAuthor}</strong></div>
-                                            <div style="color: #9ca3af;">@${v.tweetAuthorHandle}</div>
+                                            <div style="color: #9ca3af;">
+                                                <a href="/dashboard?author=${v.tweetAuthorHandle}" style="color: #9ca3af;">@${v.tweetAuthorHandle}</a>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -194,6 +246,14 @@ router.get("/dashboard", async (ctx) => {
     </div>
     
     <script>
+        function filterByAuthor(authorHandle) {
+            if (authorHandle) {
+                window.location.href = '/dashboard?author=' + authorHandle;
+            } else {
+                window.location.href = '/dashboard';
+            }
+        }
+        
         // Auto-refresh every 30 seconds
         setTimeout(() => location.reload(), 30000);
     </script>
