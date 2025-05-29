@@ -8,9 +8,36 @@ interface SavedTweet {
   reviewScore: "positive" | "negative" | "neutral";
 }
 
+interface ValidationRecord {
+  id: string;
+  tweetId: string;
+  tweetAuthor: string;
+  tweetAuthorHandle: string;
+  requestedBy: string;
+  requestedByHandle: string;
+  timestamp: string;
+  tweetUrl: string;
+  engagementStats: {
+    total_retweeters: number;
+    total_repliers: number;
+    total_quote_tweeters: number;
+    total_unique_users: number;
+    reputable_retweeters: number;
+    reputable_repliers: number;
+    reputable_quote_tweeters: number;
+    reputable_total: number;
+    reputable_percentage: number;
+    retweeters_rate_limited: boolean;
+    repliers_rate_limited: boolean;
+    quote_tweeters_rate_limited: boolean;
+  };
+  overallQuality: "high" | "medium" | "low";
+}
+
 export class StorageService {
   private kv: Deno.Kv | null = null;
   private localStorage: Map<string, SavedTweet> = new Map(); // Fallback for local development
+  private validationsMap: Map<string, ValidationRecord> = new Map(); // Fallback for validations
 
   constructor() {
     this.initializeKV();
@@ -27,6 +54,90 @@ export class StorageService {
     } catch (error) {
       console.log("📂 KV storage not available (using local fallback for development)");
       this.kv = null;
+    }
+  }
+
+  /**
+   * Store a validation result
+   */
+  async storeValidation(validation: ValidationRecord): Promise<void> {
+    try {
+      if (this.kv) {
+        // Store the main validation record
+        await this.kv.set(["validation", validation.id], validation);
+        
+        // Store in time-sorted index for efficient querying
+        await this.kv.set(
+          ["validations_by_time", validation.timestamp, validation.id], 
+          validation.id
+        );
+        
+        console.log(`📊 Stored validation ${validation.id} in KV storage`);
+      } else {
+        // Use local fallback
+        this.validationsMap.set(validation.id, validation);
+        console.log(`📊 Stored validation ${validation.id} in local storage`);
+      }
+    } catch (error) {
+      console.error("❌ Error storing validation:", error);
+    }
+  }
+
+  /**
+   * Get recent validations
+   */
+  async getRecentValidations(limit = 50): Promise<ValidationRecord[]> {
+    try {
+      const validations: ValidationRecord[] = [];
+      
+      if (this.kv) {
+        // Get validations sorted by timestamp (newest first)
+        const iter = this.kv.list<ValidationRecord>({ prefix: ["validation"] }, { 
+          limit,
+          reverse: true 
+        });
+        
+        for await (const entry of iter) {
+          validations.push(entry.value);
+        }
+      } else {
+        // Use local fallback
+        const sortedValidations = Array.from(this.validationsMap.values())
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, limit);
+        validations.push(...sortedValidations);
+      }
+      
+      return validations;
+    } catch (error) {
+      console.error("❌ Error getting validations:", error);
+      return [];
+    }
+  }
+
+  /**
+   * Get validation stats
+   */
+  async getValidationStats(): Promise<{ totalValidations: number; lastUpdated: string }> {
+    try {
+      let totalValidations = 0;
+      
+      if (this.kv) {
+        const iter = this.kv.list({ prefix: ["validation"] });
+        for await (const _ of iter) {
+          totalValidations++;
+        }
+      } else {
+        totalValidations = this.validationsMap.size;
+      }
+
+      return {
+        totalValidations,
+        lastUpdated: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error("❌ Error getting validation stats:", error);
+      return { totalValidations: 0, lastUpdated: new Date().toISOString() };
     }
   }
 

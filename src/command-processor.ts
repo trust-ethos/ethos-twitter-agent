@@ -669,6 +669,56 @@ Link to tweet: ${originalTweetLink}`;
       // Analyze engagement using TwitterService
       const engagementStats = await this.twitterService.analyzeEngagement(originalTweetId);
 
+      // Get original tweet author information for storage
+      const originalTweet = await this.twitterService.getTweetById(originalTweetId);
+      const originalAuthor = allUsers?.find(user => user.id === originalTweet?.author_id);
+
+      // Calculate overall quality based on engagement stats
+      const totalEngagers = engagementStats.total_retweeters + engagementStats.total_repliers + engagementStats.total_quote_tweeters;
+      const totalReputable = engagementStats.reputable_retweeters + engagementStats.reputable_repliers + engagementStats.reputable_quote_tweeters;
+      const reputablePercentage = totalEngagers > 0 ? Math.round((totalReputable / totalEngagers) * 100) : 0;
+      
+      let overallQuality: "high" | "medium" | "low";
+      if (reputablePercentage >= 60) {
+        overallQuality = "high";
+      } else if (reputablePercentage >= 30) {
+        overallQuality = "medium";
+      } else {
+        overallQuality = "low";
+      }
+
+      // Store validation result
+      const validationRecord = {
+        id: `${originalTweetId}_${Date.now()}`,
+        tweetId: originalTweetId,
+        tweetAuthor: originalAuthor?.name || "Unknown",
+        tweetAuthorHandle: originalAuthor?.username || "unknown",
+        requestedBy: command.mentionedUser.name,
+        requestedByHandle: mentionerUsername,
+        timestamp: new Date().toISOString(),
+        tweetUrl: `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`,
+        engagementStats: {
+          total_retweeters: engagementStats.total_retweeters,
+          total_repliers: engagementStats.total_repliers,
+          total_quote_tweeters: engagementStats.total_quote_tweeters,
+          total_unique_users: engagementStats.total_unique_users,
+          reputable_retweeters: engagementStats.reputable_retweeters,
+          reputable_repliers: engagementStats.reputable_repliers,
+          reputable_quote_tweeters: engagementStats.reputable_quote_tweeters,
+          reputable_total: totalReputable,
+          reputable_percentage: reputablePercentage,
+          retweeters_rate_limited: engagementStats.retweeters_rate_limited,
+          repliers_rate_limited: engagementStats.repliers_rate_limited,
+          quote_tweeters_rate_limited: engagementStats.quote_tweeters_rate_limited,
+        },
+        overallQuality
+      };
+
+      // Store the validation (don't await to avoid slowing down response)
+      this.storageService.storeValidation(validationRecord).catch(error => {
+        console.error("❌ Failed to store validation:", error);
+      });
+
       // Format the response
       let replyText: string;
       

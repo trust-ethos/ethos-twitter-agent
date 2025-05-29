@@ -2,14 +2,7 @@
   "lock": false,
   "tasks": {
     "check": "deno fmt --check && deno lint && deno check **/*.ts && deno check **/*.tsx",
-    "cli": "echo \"import '\\$fresh/src/dev/cli.ts'\" | deno run --unstable-kv --allow-net --allow-read --allow-write --allow-env --allow-run --allow-sys -",
-    "manifest": "deno task cli manifest $(pwd)",
-    "start": "deno run -A --unstable-kv main.ts",
-    "dev": "deno run -A --unstable-kv --watch main.ts",
-    "test": "deno test -A --unstable-kv",
-    "dashboard": "cd dashboard && deno task start",
-    "dashboard-build": "cd dashboard && deno task build",
-    "dashboard-preview": "cd dashboard && deno task preview",
+    "start": "deno run -A --unstable-kv --watch=static/,routes/ dev.ts",
     "build": "deno run -A --unstable-kv dev.ts build",
     "preview": "deno run -A --unstable-kv main.ts",
     "update": "deno run -A -r https://fresh.deno.dev/update ."
@@ -27,6 +20,7 @@
   ],
   "imports": {
     "$fresh/": "https://deno.land/x/fresh@1.6.8/",
+    "$std/": "https://deno.land/std@0.208.0/",
     "preact": "https://esm.sh/preact@10.19.6",
     "preact/": "https://esm.sh/preact@10.19.6/",
     "preact-render-to-string": "https://esm.sh/*preact-render-to-string@6.2.2",
@@ -34,8 +28,7 @@
     "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
     "tailwindcss": "npm:tailwindcss@3.3.0",
     "tailwindcss/": "npm:/tailwindcss@3.3.0/",
-    "tailwindcss/plugin": "npm:/tailwindcss@3.3.0/plugin.js",
-    "@std/": "https://deno.land/std@0.208.0/"
+    "tailwindcss/plugin": "npm:/tailwindcss@3.3.0/plugin.js"
   },
   "compilerOptions": {
     "jsx": "react-jsx",
@@ -47,4 +40,4 @@
     ]
   },
   "nodeModulesDir": "auto"
-}
+} 
