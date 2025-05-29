@@ -370,15 +370,35 @@ Learn more about Ethos at https://ethos.network`;
         saveContext = `saving tweet as review to ${targetName}'s profile as requested by @${mentionerUsername}`;
         
         // For target case, we need to look up the user ID from the username
-        // Look for the target user in allUsers by username
-        const targetUser = allUsers?.find(user => user.username.toLowerCase() === targetUsername.toLowerCase());
+        // First try to find them in allUsers (from webhook)
+        let targetUser: TwitterUser | undefined = allUsers?.find(user => user.username.toLowerCase() === targetUsername.toLowerCase());
+        
         if (!targetUser) {
-          return {
-            success: false,
-            message: "Could not find target user information",
-            replyText: `I couldn't find information about @${targetUsername}. Please make sure they are mentioned in this conversation.`
-          };
+          // User not in webhook data, look them up via Twitter API
+          console.log(`🔍 @${targetUsername} not in webhook data, looking up via Twitter API...`);
+          try {
+            const apiUser = await this.twitterService.getUserByUsername(targetUsername);
+            if (!apiUser) {
+              return {
+                success: false,
+                message: "Could not find target user",
+                replyText: `I couldn't find the user @${targetUsername}. Please make sure the username is correct.`
+              };
+            }
+            targetUser = apiUser;
+            console.log(`✅ Found @${targetUsername} via API: ${targetUser.name} (ID: ${targetUser.id})`);
+          } catch (error) {
+            console.error(`❌ Failed to lookup @${targetUsername} via API:`, error);
+            return {
+              success: false,
+              message: "Failed to lookup target user",
+              replyText: `I couldn't find information about @${targetUsername}. Please make sure the username is correct.`
+            };
+          }
+        } else {
+          console.log(`✅ Found @${targetUsername} in webhook data: ${targetUser.name} (ID: ${targetUser.id})`);
         }
+        
         targetUserId = targetUser.id;
       } else {
         // This is just "save" (with optional sentiment and extra text we ignore)
