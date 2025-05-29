@@ -19,6 +19,7 @@ interface ValidationRecord {
   requestedByAvatar: string;
   timestamp: string;
   tweetUrl: string;
+  averageScore: number | null; // Average Ethos score of all engagers, null if no scored users
   engagementStats: {
     total_retweeters: number;
     total_repliers: number;
@@ -158,6 +159,7 @@ export class StorageService {
       requestedByAvatar: "https://pbs.twimg.com/profile_images/1590968738358079488/IY9Gx6Ok_400x400.jpg",
       timestamp: new Date().toISOString(),
       tweetUrl: "https://x.com/elonmusk/status/1234567890123456789",
+      averageScore: 75,
       engagementStats: {
         total_retweeters: 150,
         total_repliers: 75,

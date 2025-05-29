@@ -728,6 +728,14 @@ Link to tweet: ${originalTweetLink}`;
         overallQuality = "low";
       }
 
+      // Calculate average score of all engagers (same logic as in reply)
+      const allEngagers = engagementStats.users_with_scores.filter(user => user.ethos_score !== undefined && user.ethos_score !== null);
+      let averageScore: number | null = null;
+      if (allEngagers.length > 0) {
+        const totalScore = allEngagers.reduce((sum, user) => sum + (user.ethos_score || 0), 0);
+        averageScore = Math.round(totalScore / allEngagers.length);
+      }
+
       // Store validation result
       const validationRecord = {
         id: `${originalTweetId}_${Date.now()}`,
@@ -740,6 +748,7 @@ Link to tweet: ${originalTweetLink}`;
         requestedByAvatar: this.getProfileImageUrl(command.mentionedUser, '_normal'),
         timestamp: new Date().toISOString(),
         tweetUrl: `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`,
+        averageScore,
         engagementStats: {
           total_retweeters: engagementStats.total_retweeters,
           total_repliers: engagementStats.total_repliers,
@@ -817,12 +826,9 @@ Link to tweet: ${originalTweetLink}`;
         }
 
         // Calculate and display average score of all engagers
-        const allEngagers = engagementStats.users_with_scores.filter(user => user.ethos_score !== undefined && user.ethos_score !== null);
-        if (allEngagers.length > 0) {
-          const totalScore = allEngagers.reduce((sum, user) => sum + (user.ethos_score || 0), 0);
-          const avgScore = Math.round(totalScore / allEngagers.length);
-          const avgEmoji = getEmojiForAvgScore(avgScore);
-          response += `${avgEmoji} ${avgScore} avg score of all engagers\n`;
+        if (averageScore !== null) {
+          const avgEmoji = getEmojiForAvgScore(averageScore);
+          response += `${avgEmoji} ${averageScore} avg score of all engagers\n`;
         }
 
         // Find the highest scoring user (reputable or not)

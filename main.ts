@@ -70,22 +70,25 @@ router.get("/dashboard", async (ctx) => {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #111827; color: #f9fafb; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: #1f2937; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .stat-number { font-size: 2rem; font-weight: bold; color: #2563eb; }
-        .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
+        .stat-card { background: #1f2937; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
+        .stat-number { font-size: 2rem; font-weight: bold; color: #60a5fa; }
+        .table-container { background: #1f2937; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid #374151; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-        th { background: #f9fafb; font-weight: 600; }
-        .quality-high { color: #16a34a; }
-        .quality-medium { color: #ca8a04; }
-        .quality-low { color: #dc2626; }
-        .empty-state { text-align: center; padding: 40px; color: #6b7280; }
-        a { color: #2563eb; text-decoration: none; }
-        a:hover { text-decoration: underline; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #374151; }
+        th { background: #374151; font-weight: 600; color: #f9fafb; }
+        .quality-high { color: #10b981; }
+        .quality-medium { color: #f59e0b; }
+        .quality-low { color: #ef4444; }
+        .empty-state { text-align: center; padding: 40px; color: #9ca3af; }
+        a { color: #60a5fa; text-decoration: none; }
+        a:hover { text-decoration: underline; color: #93c5fd; }
+        .avg-score { font-weight: bold; }
+        h1, h2, h3 { color: #f9fafb; }
+        p { color: #d1d5db; }
     </style>
 </head>
 <body>
@@ -103,16 +106,16 @@ router.get("/dashboard", async (ctx) => {
             <div class="stat-card">
                 <h3>Recent Activity</h3>
                 <div class="stat-number">${validations.length}</div>
-                <p style="margin: 0; color: #6b7280;">Last 50 validations</p>
+                <p style="margin: 0; color: #9ca3af;">Last 50 validations</p>
             </div>
             <div class="stat-card">
                 <h3>Last Updated</h3>
-                <p style="margin: 0;">${new Date(stats.lastUpdated).toLocaleString()}</p>
+                <p style="margin: 0; color: #d1d5db;">${new Date(stats.lastUpdated).toLocaleString()}</p>
             </div>
         </div>
         
         <div class="table-container">
-            <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #e5e7eb;">Recent Validations</h2>
+            <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #374151;">Recent Validations</h2>
             ${validations.length === 0 ? `
                 <div class="empty-state">
                     No validations found. Validations will appear here when users run @ethosAgent validate commands.
@@ -124,20 +127,31 @@ router.get("/dashboard", async (ctx) => {
                             <th>Tweet Author</th>
                             <th>Validator</th>
                             <th>Quality</th>
+                            <th>Avg Score</th>
                             <th>Engagement</th>
                             <th>Timestamp</th>
                             <th>Link</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${validations.map(v => `
+                        ${validations.map(v => {
+                          // Helper function to get emoji based on average score (same as in reply)
+                          const getEmojiForAvgScore = (avgScore) => {
+                            if (avgScore < 800) return "🔴";
+                            if (avgScore < 1200) return "🟡";
+                            if (avgScore < 1600) return "⚪️";
+                            if (avgScore < 2000) return "🔵";
+                            return "🟢";
+                          };
+                          
+                          return `
                             <tr>
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 12px;">
                                         <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                                         <div>
                                             <div><strong>${v.tweetAuthor}</strong></div>
-                                            <div style="color: #6b7280;">@${v.tweetAuthorHandle}</div>
+                                            <div style="color: #9ca3af;">@${v.tweetAuthorHandle}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -153,21 +167,27 @@ router.get("/dashboard", async (ctx) => {
                                         ${v.engagementStats.reputable_percentage}%
                                     </span>
                                 </td>
+                                <td>
+                                    <span class="avg-score">
+                                        ${v.averageScore !== null ? `${getEmojiForAvgScore(v.averageScore)} ${v.averageScore}` : '—'}
+                                    </span>
+                                </td>
                                 <td style="font-size: 0.9rem;">
                                     <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
                                     <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
                                     <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
                                 </td>
-                                <td>${new Date(v.timestamp).toLocaleString()}</td>
+                                <td style="font-size: 0.9rem;">${new Date(v.timestamp).toLocaleString()}</td>
                                 <td><a href="${v.tweetUrl}" target="_blank">View Tweet</a></td>
                             </tr>
-                        `).join('')}
+                          `;
+                        }).join('')}
                     </tbody>
                 </table>
             `}
         </div>
         
-        <div style="text-align: center; margin-top: 40px; color: #6b7280; font-size: 0.9rem;">
+        <div style="text-align: center; margin-top: 40px; color: #9ca3af; font-size: 0.9rem;">
             <p>This dashboard shows validation commands processed by @ethosAgent on Twitter.</p>
             <p>Learn more about Ethos at <a href="https://ethos.network">ethos.network</a></p>
         </div>
@@ -311,6 +331,7 @@ router.post("/test/create-sample", async (ctx) => {
       requestedByAvatar: "https://pbs.twimg.com/profile_images/1590968738358079488/IY9Gx6Ok_400x400.jpg",
       timestamp: new Date().toISOString(),
       tweetUrl: "https://x.com/elonmusk/status/1234567890123456789",
+      averageScore: 1850, // High quality average score for testing
       engagementStats: {
         total_retweeters: 150,
         total_repliers: 75,
@@ -439,4 +460,4 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
 }
 
-await app.listen({ port }); 
+await app.listen({ port });
