@@ -13,8 +13,10 @@ interface ValidationRecord {
   tweetId: string;
   tweetAuthor: string;
   tweetAuthorHandle: string;
+  tweetAuthorAvatar: string;
   requestedBy: string;
   requestedByHandle: string;
+  requestedByAvatar: string;
   timestamp: string;
   tweetUrl: string;
   engagementStats: {

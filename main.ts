@@ -133,10 +133,20 @@ router.get("/dashboard", async (ctx) => {
                         ${validations.map(v => `
                             <tr>
                                 <td>
-                                    <div><strong>${v.tweetAuthor}</strong></div>
-                                    <div style="color: #6b7280;">@${v.tweetAuthorHandle}</div>
+                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                        <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                        <div>
+                                            <div><strong>${v.tweetAuthor}</strong></div>
+                                            <div style="color: #6b7280;">@${v.tweetAuthorHandle}</div>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td>@${v.requestedByHandle}</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                        <span>@${v.requestedByHandle}</span>
+                                    </div>
+                                </td>
                                 <td>
                                     <span class="quality-${v.overallQuality}">
                                         ${v.overallQuality === 'high' ? '🟢' : v.overallQuality === 'medium' ? '🟡' : '🔴'}

@@ -693,8 +693,10 @@ Link to tweet: ${originalTweetLink}`;
         tweetId: originalTweetId,
         tweetAuthor: originalAuthor?.name || "Unknown",
         tweetAuthorHandle: originalAuthor?.username || "unknown",
+        tweetAuthorAvatar: originalAuthor?.profile_image_url || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png",
         requestedBy: command.mentionedUser.name,
         requestedByHandle: mentionerUsername,
+        requestedByAvatar: command.mentionedUser.profile_image_url || "https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png",
         timestamp: new Date().toISOString(),
         tweetUrl: `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`,
         engagementStats: {
