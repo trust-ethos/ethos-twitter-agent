@@ -132,18 +132,18 @@ export class TwitterWebhookHandler {
       // Process the command, passing all users from webhook data
       const result = await this.commandProcessor.processCommand(command, event.includes?.users);
 
-      if (result.success && result.replyText) {
-        console.log(`✅ Command processed successfully, replying...`);
+      if (result.replyText) {
+        console.log(`${result.success ? '✅' : '⚠️'} Command processed ${result.success ? 'successfully' : 'with error'}, replying...`);
         
-        // Reply to the tweet
+        // Reply to the tweet (for both successful and failed commands that have replyText)
         try {
           const replyResult = await this.twitterService.replyToTweet(tweet.id, result.replyText);
           
           if (replyResult.success) {
             console.log(`📤 Replied successfully to @${author.username}`);
             
-            // Send Slack notification for successful response
-            if (command.type === 'profile') {
+            // Send Slack notification for successful response (only for successful commands)
+            if (result.success && command.type === 'profile') {
               // For profile commands, we need to determine who was analyzed
               const isReply = tweet.in_reply_to_user_id;
               let targetUser = author.username; // default to self-analysis
@@ -188,16 +188,18 @@ export class TwitterWebhookHandler {
             tweet.text
           );
         }
-      } else {
+      } else if (!result.success) {
         console.log(`❌ Command processing failed: ${result.message}`);
         
-        // Send Slack notification for command processing failure
+        // Send Slack notification for command processing failure (only when no replyText)
         await this.slackService.notifyError(
           `${command.type} command processing`,
           result.message,
           `@${author.username}`,
           tweet.text
         );
+      } else {
+        console.log(`✅ Command processed successfully but no reply needed`);
       }
 
     } catch (error) {
