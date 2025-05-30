@@ -236,7 +236,8 @@ router.get("/dashboard", async (ctx) => {
                                 </div>
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement Details</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reputable (1600+)</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ethos Active</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                         </tr>
@@ -291,11 +292,11 @@ router.get("/dashboard", async (ctx) => {
                                     </span>
                                 </td>
                                 <td style="font-size: 0.9rem;">
-                                    <div><strong>Reputable (1600+):</strong></div>
                                     <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
                                     <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
                                     <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
-                                    <div style="margin-top: 8px;"><strong>Ethos Active:</strong></div>
+                                </td>
+                                <td style="font-size: 0.9rem;">
                                     <div>RT: ${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters}</div>
                                     <div>Replies: ${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers}</div>
                                     <div>QT: ${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters}</div>
@@ -371,13 +372,17 @@ router.get("/dashboard", async (ctx) => {
                                 </div>
                                 
                                 <div class="validation-card-field">
-                                    <div class="validation-card-label">Engagement</div>
-                                    <div class="validation-card-value" style="font-size: 0.85rem;">
-                                        <div><strong>Reputable (1600+):</strong></div>
+                                    <div class="validation-card-label">Reputable (1600+)</div>
+                                    <div class="validation-card-value">
                                         <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
                                         <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
                                         <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
-                                        <div style="margin-top: 8px;"><strong>Ethos Active:</strong></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="validation-card-field">
+                                    <div class="validation-card-label">Ethos Active</div>
+                                    <div class="validation-card-value">
                                         <div>RT: ${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters}</div>
                                         <div>Replies: ${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers}</div>
                                         <div>QT: ${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters}</div>
