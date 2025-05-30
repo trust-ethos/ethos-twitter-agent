@@ -1041,11 +1041,13 @@ export class TwitterService {
     const usersWithScores: UserWithEthosScore[] = uniqueUsers.map(user => {
       const ethosScore = ethosScores.get(user.username);
       const isReputable = ethosScore !== undefined && ethosScore >= 1600;
+      const isEthosActive = ethosScore !== undefined; // Has ANY score (even if low)
       
       return {
         ...user,
         ethos_score: ethosScore,
-        is_reputable: isReputable
+        is_reputable: isReputable,
+        is_ethos_active: isEthosActive
       };
     });
 
@@ -1061,10 +1063,29 @@ export class TwitterService {
     const reputableQuoteTweeters = usersWithScores.filter(u => 
       u.engagement_type === 'quote_tweet' && u.is_reputable
     ).length;
+
+    // Calculate Ethos active stats (users with ANY Ethos presence)
+    const ethosActiveRetweeters = usersWithScores.filter(u => 
+      u.engagement_type === 'retweet' && u.is_ethos_active
+    ).length;
+    
+    const ethosActiveRepliers = usersWithScores.filter(u => 
+      u.engagement_type === 'reply' && u.is_ethos_active
+    ).length;
+    
+    const ethosActiveQuoteTweeters = usersWithScores.filter(u => 
+      u.engagement_type === 'quote_tweet' && u.is_ethos_active
+    ).length;
     
     const reputableTotal = usersWithScores.filter(u => u.is_reputable).length;
+    const ethosActiveTotal = usersWithScores.filter(u => u.is_ethos_active).length;
+    
     const reputablePercentage = uniqueUsers.length > 0 
       ? Math.round((reputableTotal / uniqueUsers.length) * 100)
+      : 0;
+    
+    const ethosActivePercentage = uniqueUsers.length > 0 
+      ? Math.round((ethosActiveTotal / uniqueUsers.length) * 100)
       : 0;
 
     return {
@@ -1077,6 +1098,11 @@ export class TwitterService {
       reputable_quote_tweeters: reputableQuoteTweeters,
       reputable_total: reputableTotal,
       reputable_percentage: reputablePercentage,
+      ethos_active_retweeters: ethosActiveRetweeters,
+      ethos_active_repliers: ethosActiveRepliers,
+      ethos_active_quote_tweeters: ethosActiveQuoteTweeters,
+      ethos_active_total: ethosActiveTotal,
+      ethos_active_percentage: ethosActivePercentage,
       users_with_scores: usersWithScores,
       retweeters_rate_limited: retweetersResult.rateLimited,
       repliers_rate_limited: repliersResult.rateLimited,

@@ -30,6 +30,11 @@ interface ValidationRecord {
     reputable_quote_tweeters: number;
     reputable_total: number;
     reputable_percentage: number;
+    ethos_active_retweeters: number;
+    ethos_active_repliers: number;
+    ethos_active_quote_tweeters: number;
+    ethos_active_total: number;
+    ethos_active_percentage: number;
     retweeters_rate_limited: boolean;
     repliers_rate_limited: boolean;
     quote_tweeters_rate_limited: boolean;
@@ -170,6 +175,11 @@ export class StorageService {
         reputable_quote_tweeters: 15,
         reputable_total: 180,
         reputable_percentage: 72,
+        ethos_active_retweeters: 100,
+        ethos_active_repliers: 30,
+        ethos_active_quote_tweeters: 10,
+        ethos_active_total: 140,
+        ethos_active_percentage: 78,
         retweeters_rate_limited: false,
         repliers_rate_limited: false,
         quote_tweeters_rate_limited: false,

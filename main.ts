@@ -278,9 +278,14 @@ router.get("/dashboard", async (ctx) => {
                                     </span>
                                 </td>
                                 <td style="font-size: 0.9rem;">
+                                    <div><strong>Reputable (1600+):</strong></div>
                                     <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
                                     <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
                                     <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
+                                    <div style="margin-top: 8px;"><strong>Ethos Active:</strong></div>
+                                    <div>RT: ${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters}</div>
+                                    <div>Replies: ${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers}</div>
+                                    <div>QT: ${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters}</div>
                                 </td>
                                 <td style="font-size: 0.9rem;">${new Date(v.timestamp).toLocaleString()}</td>
                                 <td><a href="${v.tweetUrl}" target="_blank">View Tweet</a></td>
@@ -347,9 +352,14 @@ router.get("/dashboard", async (ctx) => {
                                 <div class="validation-card-field">
                                     <div class="validation-card-label">Engagement</div>
                                     <div class="validation-card-value" style="font-size: 0.85rem;">
+                                        <div><strong>Reputable (1600+):</strong></div>
                                         <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
                                         <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
                                         <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
+                                        <div style="margin-top: 8px;"><strong>Ethos Active:</strong></div>
+                                        <div>RT: ${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters}</div>
+                                        <div>Replies: ${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers}</div>
+                                        <div>QT: ${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters}</div>
                                     </div>
                                 </div>
                             </div>
@@ -564,6 +574,11 @@ router.post("/test/create-sample", async (ctx) => {
           reputable_quote_tweeters: 12 + (i * 3),
           reputable_total: 127 + (i * 26),
           reputable_percentage: 70 + (i * 2),
+          ethos_active_retweeters: 90 + (i * 18), // Higher than reputable
+          ethos_active_repliers: 40 + (i * 9), // Higher than reputable  
+          ethos_active_quote_tweeters: 15 + (i * 4), // Higher than reputable
+          ethos_active_total: 145 + (i * 31), // Higher than reputable
+          ethos_active_percentage: 85 + (i * 1), // Higher percentage
           retweeters_rate_limited: false,
           repliers_rate_limited: false,
           quote_tweeters_rate_limited: false,

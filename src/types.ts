@@ -57,6 +57,7 @@ export interface EngagingUser {
 export interface UserWithEthosScore extends EngagingUser {
   ethos_score?: number;
   is_reputable: boolean; // score >= 1600
+  is_ethos_active: boolean; // has any Ethos presence (score, reviews, vouches)
 }
 
 export interface EngagementStats {
@@ -69,6 +70,12 @@ export interface EngagementStats {
   reputable_quote_tweeters: number;
   reputable_total: number;
   reputable_percentage: number;
+  // New: Users with ANY Ethos presence (reviews, vouches, scores - even if < 1600)
+  ethos_active_retweeters: number;
+  ethos_active_repliers: number;
+  ethos_active_quote_tweeters: number;
+  ethos_active_total: number;
+  ethos_active_percentage: number;
   users_with_scores: UserWithEthosScore[];
   // Rate limit tracking
   retweeters_rate_limited: boolean;
