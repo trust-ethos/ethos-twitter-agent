@@ -292,14 +292,78 @@ router.get("/dashboard", async (ctx) => {
                                     </span>
                                 </td>
                                 <td style="font-size: 0.9rem;">
-                                    <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
-                                    <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
-                                    <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
+                                    ${(() => {
+                                        const getEmojiForPercentage = (percentage) => {
+                                            if (percentage < 30) return "🔴";
+                                            if (percentage < 60) return "🟡";
+                                            return "🟢";
+                                        };
+                                        
+                                        const rtPct = v.engagementStats.total_retweeters > 0 
+                                            ? Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)
+                                            : 0;
+                                        const repliesPct = v.engagementStats.total_repliers > 0 
+                                            ? Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100)
+                                            : 0;
+                                        const qtPct = v.engagementStats.total_quote_tweeters > 0 
+                                            ? Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)
+                                            : 0;
+                                        
+                                        return `
+                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                <span>${getEmojiForPercentage(rtPct)} RT:</span>
+                                                <span style="font-weight: 600;">${rtPct}%</span>
+                                                <span style="color: #9ca3af;">(${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})</span>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
+                                                <span style="font-weight: 600;">${repliesPct}%</span>
+                                                <span style="color: #9ca3af;">(${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers})</span>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 4px;">
+                                                <span>${getEmojiForPercentage(qtPct)} QT:</span>
+                                                <span style="font-weight: 600;">${qtPct}%</span>
+                                                <span style="color: #9ca3af;">(${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters})</span>
+                                            </div>
+                                        `;
+                                    })()}
                                 </td>
                                 <td style="font-size: 0.9rem;">
-                                    <div>RT: ${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters}</div>
-                                    <div>Replies: ${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers}</div>
-                                    <div>QT: ${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters}</div>
+                                    ${(() => {
+                                        const getEmojiForPercentage = (percentage) => {
+                                            if (percentage < 30) return "🔴";
+                                            if (percentage < 60) return "🟡";
+                                            return "🟢";
+                                        };
+                                        
+                                        const rtPct = v.engagementStats.total_retweeters > 0 
+                                            ? Math.round(((v.engagementStats.ethos_active_retweeters || 0) / v.engagementStats.total_retweeters) * 100)
+                                            : 0;
+                                        const repliesPct = v.engagementStats.total_repliers > 0 
+                                            ? Math.round(((v.engagementStats.ethos_active_repliers || 0) / v.engagementStats.total_repliers) * 100)
+                                            : 0;
+                                        const qtPct = v.engagementStats.total_quote_tweeters > 0 
+                                            ? Math.round(((v.engagementStats.ethos_active_quote_tweeters || 0) / v.engagementStats.total_quote_tweeters) * 100)
+                                            : 0;
+                                        
+                                        return `
+                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                <span>${getEmojiForPercentage(rtPct)} RT:</span>
+                                                <span style="font-weight: 600;">${rtPct}%</span>
+                                                <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters})</span>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
+                                                <span style="font-weight: 600;">${repliesPct}%</span>
+                                                <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers})</span>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 4px;">
+                                                <span>${getEmojiForPercentage(qtPct)} QT:</span>
+                                                <span style="font-weight: 600;">${qtPct}%</span>
+                                                <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters})</span>
+                                            </div>
+                                        `;
+                                    })()}
                                 </td>
                                 <td style="font-size: 0.9rem;">${new Date(v.timestamp).toLocaleString()}</td>
                                 <td><a href="${v.tweetUrl}" target="_blank">View Tweet</a></td>
@@ -374,18 +438,82 @@ router.get("/dashboard", async (ctx) => {
                                 <div class="validation-card-field">
                                     <div class="validation-card-label">Reputable (1600+)</div>
                                     <div class="validation-card-value">
-                                        <div>RT: ${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters}</div>
-                                        <div>Replies: ${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers}</div>
-                                        <div>QT: ${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters}</div>
+                                        ${(() => {
+                                            const getEmojiForPercentage = (percentage) => {
+                                                if (percentage < 30) return "🔴";
+                                                if (percentage < 60) return "🟡";
+                                                return "🟢";
+                                            };
+                                            
+                                            const rtPct = v.engagementStats.total_retweeters > 0 
+                                                ? Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)
+                                                : 0;
+                                            const repliesPct = v.engagementStats.total_repliers > 0 
+                                                ? Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100)
+                                                : 0;
+                                            const qtPct = v.engagementStats.total_quote_tweeters > 0 
+                                                ? Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)
+                                                : 0;
+                                            
+                                            return `
+                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                    <span>${getEmojiForPercentage(rtPct)} RT:</span>
+                                                    <span style="font-weight: 600;">${rtPct}%</span>
+                                                    <span style="color: #9ca3af;">(${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})</span>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                    <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
+                                                    <span style="font-weight: 600;">${repliesPct}%</span>
+                                                    <span style="color: #9ca3af;">(${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers})</span>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 4px;">
+                                                    <span>${getEmojiForPercentage(qtPct)} QT:</span>
+                                                    <span style="font-weight: 600;">${qtPct}%</span>
+                                                    <span style="color: #9ca3af;">(${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters})</span>
+                                                </div>
+                                            `;
+                                        })()}
                                     </div>
                                 </div>
                                 
                                 <div class="validation-card-field">
                                     <div class="validation-card-label">Ethos Active</div>
                                     <div class="validation-card-value">
-                                        <div>RT: ${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters}</div>
-                                        <div>Replies: ${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers}</div>
-                                        <div>QT: ${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters}</div>
+                                        ${(() => {
+                                            const getEmojiForPercentage = (percentage) => {
+                                                if (percentage < 30) return "🔴";
+                                                if (percentage < 60) return "🟡";
+                                                return "🟢";
+                                            };
+                                            
+                                            const rtPct = v.engagementStats.total_retweeters > 0 
+                                                ? Math.round(((v.engagementStats.ethos_active_retweeters || 0) / v.engagementStats.total_retweeters) * 100)
+                                                : 0;
+                                            const repliesPct = v.engagementStats.total_repliers > 0 
+                                                ? Math.round(((v.engagementStats.ethos_active_repliers || 0) / v.engagementStats.total_repliers) * 100)
+                                                : 0;
+                                            const qtPct = v.engagementStats.total_quote_tweeters > 0 
+                                                ? Math.round(((v.engagementStats.ethos_active_quote_tweeters || 0) / v.engagementStats.total_quote_tweeters) * 100)
+                                                : 0;
+                                            
+                                            return `
+                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                    <span>${getEmojiForPercentage(rtPct)} RT:</span>
+                                                    <span style="font-weight: 600;">${rtPct}%</span>
+                                                    <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters})</span>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                                    <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
+                                                    <span style="font-weight: 600;">${repliesPct}%</span>
+                                                    <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers})</span>
+                                                </div>
+                                                <div style="display: flex; align-items: center; gap: 4px;">
+                                                    <span>${getEmojiForPercentage(qtPct)} QT:</span>
+                                                    <span style="font-weight: 600;">${qtPct}%</span>
+                                                    <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters})</span>
+                                                </div>
+                                            `;
+                                        })()}
                                     </div>
                                 </div>
                             </div>
