@@ -50,6 +50,7 @@ interface SavedTweet {
 interface DashboardData {
   validations: ValidationRecord[];
   savedTweets: SavedTweet[];
+  currentTab: string;
   stats: {
     totalValidations: number;
     totalSavedTweets: number;
@@ -59,10 +60,10 @@ interface DashboardData {
 
 export const handler: Handlers<DashboardData> = {
   async GET(req, ctx) {
+    const url = new URL(req.url);
+    const tab = url.searchParams.get("tab") || "validations";
+    
     try {
-      const url = new URL(req.url);
-      const tab = url.searchParams.get("tab") || "validations";
-
       // Open the same KV database that the bot uses
       const kv = await Deno.openKv();
       
@@ -178,6 +179,7 @@ export const handler: Handlers<DashboardData> = {
       return ctx.render({
         validations,
         savedTweets,
+        currentTab: tab,
         stats: {
           totalValidations,
           totalSavedTweets: savedTweets.length,
@@ -241,6 +243,7 @@ export const handler: Handlers<DashboardData> = {
       return ctx.render({
         validations: sampleValidations,
         savedTweets: sampleSavedTweets,
+        currentTab: tab,
         stats: {
           totalValidations: sampleValidations.length,
           totalSavedTweets: sampleSavedTweets.length,
@@ -252,7 +255,7 @@ export const handler: Handlers<DashboardData> = {
 };
 
 export default function Dashboard({ data }: PageProps<DashboardData>) {
-  const { validations, savedTweets, stats } = data;
+  const { validations, savedTweets, currentTab, stats } = data;
 
   const getQualityEmoji = (quality: string) => {
     switch (quality) {
@@ -295,10 +298,6 @@ export default function Dashboard({ data }: PageProps<DashboardData>) {
       </span>
     );
   };
-
-  // Get current tab from URL
-  const currentTab = typeof window !== 'undefined' ? 
-    new URLSearchParams(window.location.search).get('tab') || 'validations' : 'validations';
 
   return (
     <>
