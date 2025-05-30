@@ -833,39 +833,54 @@ Link to tweet: ${originalTweetLink}`;
         const weightedQualityDisplayScore = Math.round(weightedQualityScore);
         const qualityEmoji = getEmojiForPercentage(weightedQualityDisplayScore);
 
-        // More compact response format
+        // Vertical listing response format (easier to read)
         let response = `Ethos Social Validation Score: ${qualityEmoji} ${weightedQualityDisplayScore}%\n\n`;
         
-        // Compact engagement stats - horizontal format
-        const engagementLines: string[] = [];
+        response += "Reputable profile scoring\n";
         
         if (engagementStats.total_retweeters > 0) {
-          const reputableEmoji = getEmojiForPercentage(retweetReputablePercentage);
-          const ethosEmoji = getEmojiForPercentage(retweetEthosActivePercentage);
+          const retweetEmoji = getEmojiForPercentage(retweetReputablePercentage);
           const rateLimitText = engagementStats.retweeters_rate_limited ? " (Rate limited)" : "";
-          engagementLines.push(`RT: ${reputableEmoji} ${retweetReputablePercentage}% reputable, ${ethosEmoji} ${retweetEthosActivePercentage}% active (${engagementStats.total_retweeters} total)${rateLimitText}`);
-        }
-        
-        if (engagementStats.total_repliers > 0) {
-          const reputableEmoji = getEmojiForPercentage(replyReputablePercentage);
-          const ethosEmoji = getEmojiForPercentage(replyEthosActivePercentage);
-          const rateLimitText = engagementStats.repliers_rate_limited ? " (Rate limited)" : "";
-          engagementLines.push(`Replies: ${reputableEmoji} ${replyReputablePercentage}% reputable, ${ethosEmoji} ${replyEthosActivePercentage}% active (${engagementStats.total_repliers} total)${rateLimitText}`);
+          response += `${retweetEmoji} ${retweetReputablePercentage}% reputable retweets (${engagementStats.reputable_retweeters} of ${engagementStats.total_retweeters})${rateLimitText}\n`;
         }
         
         if (engagementStats.total_quote_tweeters > 0) {
-          const reputableEmoji = getEmojiForPercentage(quoteReputablePercentage);
-          const ethosEmoji = getEmojiForPercentage(quoteEthosActivePercentage);
+          const quoteEmoji = getEmojiForPercentage(quoteReputablePercentage);
           const rateLimitText = engagementStats.quote_tweeters_rate_limited ? " (Rate limited)" : "";
-          engagementLines.push(`QT: ${reputableEmoji} ${quoteReputablePercentage}% reputable, ${ethosEmoji} ${quoteEthosActivePercentage}% active (${engagementStats.total_quote_tweeters} total)${rateLimitText}`);
+          response += `${quoteEmoji} ${quoteReputablePercentage}% reputable quote tweets (${engagementStats.reputable_quote_tweeters} of ${engagementStats.total_quote_tweeters})${rateLimitText}\n`;
+        }
+        
+        if (engagementStats.total_repliers > 0) {
+          const replyEmoji = getEmojiForPercentage(replyReputablePercentage);
+          const rateLimitText = engagementStats.repliers_rate_limited ? " (Rate limited)" : "";
+          response += `${replyEmoji} ${replyReputablePercentage}% reputable comments (${engagementStats.reputable_repliers} of ${engagementStats.total_repliers})${rateLimitText}\n`;
         }
 
-        response += engagementLines.join('\n');
+        // Add Ethos activity section
+        response += "\nEthos activity (engagement from profiles with some Ethos review or vouch)\n";
+        
+        if (engagementStats.total_retweeters > 0) {
+          const retweetEmoji = getEmojiForPercentage(retweetEthosActivePercentage);
+          const rateLimitText = engagementStats.retweeters_rate_limited ? " (Rate limited)" : "";
+          response += `${retweetEmoji} ${retweetEthosActivePercentage}% retweets from accounts with Ethos activity (${engagementStats.ethos_active_retweeters} of ${engagementStats.total_retweeters})${rateLimitText}\n`;
+        }
+        
+        if (engagementStats.total_quote_tweeters > 0) {
+          const quoteEmoji = getEmojiForPercentage(quoteEthosActivePercentage);
+          const rateLimitText = engagementStats.quote_tweeters_rate_limited ? " (Rate limited)" : "";
+          response += `${quoteEmoji} ${quoteEthosActivePercentage}% quote tweets from accounts with Ethos activity (${engagementStats.ethos_active_quote_tweeters} of ${engagementStats.total_quote_tweeters})${rateLimitText}\n`;
+        }
+        
+        if (engagementStats.total_repliers > 0) {
+          const replyEmoji = getEmojiForPercentage(replyEthosActivePercentage);
+          const rateLimitText = engagementStats.repliers_rate_limited ? " (Rate limited)" : "";
+          response += `${replyEmoji} ${replyEthosActivePercentage}% comments from accounts with Ethos activity (${engagementStats.ethos_active_repliers} of ${engagementStats.total_repliers})${rateLimitText}\n`;
+        }
 
         // Add average score if available
         if (averageScore !== null) {
           const avgEmoji = getEmojiForAvgScore(averageScore);
-          response += `\n\n${avgEmoji} ${averageScore} avg score of all engagers`;
+          response += `\n${avgEmoji} ${averageScore} avg score of all engagers`;
         }
 
         // Link to validation leaderboard
