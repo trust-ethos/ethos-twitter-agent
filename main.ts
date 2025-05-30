@@ -53,17 +53,18 @@ if (usePolling) {
   }
 }
 
-// Dashboard route - serve the dashboard page
+// Dashboard route - serve the tabbed dashboard page
 router.get("/dashboard", async (ctx) => {
   try {
+    // Get tab parameter
+    const url = new URL(ctx.request.url);
+    const tab = url.searchParams.get("tab") || "validations";
+    const authorFilter = url.searchParams.get('author');
+
     // Get validation data from storage
     const storageService = commandProcessor['storageService'];
-    const allValidations = await storageService.getRecentValidations(200); // Get more for filtering
+    const allValidations = await storageService.getRecentValidations(200);
     const stats = await storageService.getValidationStats();
-
-    // Get filter parameter
-    const url = new URL(ctx.request.url);
-    const authorFilter = url.searchParams.get('author');
 
     // Filter validations by author if specified
     let validations = allValidations;
@@ -71,6 +72,49 @@ router.get("/dashboard", async (ctx) => {
       validations = allValidations.filter(v => 
         v.tweetAuthorHandle.toLowerCase() === authorFilter.toLowerCase()
       );
+    }
+
+    // Get saved tweets from Ethos API
+    let savedTweets = [];
+    try {
+      const ethosResponse = await fetch("https://api.ethos.network/api/v1/reviews", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          authorAddress: "0x792cCe0d4230FF69FA69F466Ef62B8f81eB619d7",
+          limit: 50,
+          offset: 0
+        })
+      });
+      
+      if (ethosResponse.ok) {
+        const ethosData = await ethosResponse.json();
+        console.log("🔍 Fetched saved tweets from Ethos API:", ethosData.reviews?.length || 0);
+        
+        if (ethosData.reviews && Array.isArray(ethosData.reviews)) {
+          savedTweets = ethosData.reviews.map((review, index) => {
+            const metadata = JSON.parse(review.metadata || '{}');
+            return {
+              id: review.id || index,
+              subject: review.subject || "Unknown",
+              author: review.author || "Unknown", 
+              comment: review.comment || "",
+              score: review.score || "neutral",
+              createdAt: review.createdAt || Date.now(),
+              metadata: review.metadata || "",
+              tweetUrl: metadata.tweetUrl,
+              savedBy: metadata.savedBy,
+              savedByHandle: metadata.savedByHandle,
+              targetUser: metadata.targetUser,
+              targetUserHandle: metadata.targetUserHandle,
+            };
+          }).slice(0, 50);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Failed to fetch saved tweets:", error);
     }
 
     // Get unique tweet authors for filter dropdown
@@ -85,7 +129,7 @@ router.get("/dashboard", async (ctx) => {
     });
     const uniqueAuthors = Array.from(authorsMap.values())
       .sort((a, b) => a.handle.localeCompare(b.handle))
-      .slice(0, 50); // Limit to first 50 unique authors
+      .slice(0, 50);
 
     // Calculate top validators
     const validatorCounts = new Map();
@@ -102,20 +146,70 @@ router.get("/dashboard", async (ctx) => {
     
     const topValidators = Array.from(validatorCounts.values())
       .sort((a, b) => b.count - a.count)
-      .slice(0, 5); // Top 5 validators
+      .slice(0, 5);
 
-    // Simple HTML dashboard
+    // Format date helper
+    const formatDate = (timestamp) => {
+      const date = typeof timestamp === 'number' ? new Date(timestamp * 1000) : new Date(timestamp);
+      return date.toLocaleString();
+    };
+
+    // Helper functions
+    const getQualityEmoji = (quality) => {
+      switch (quality) {
+        case "high": return "🟢";
+        case "medium": return "🟡";
+        case "low": return "🔴";
+        default: return "⚪";
+      }
+    };
+
+    const getSentimentEmoji = (score) => {
+      switch (score) {
+        case "positive": return "👍";
+        case "negative": return "👎"; 
+        case "neutral": return "⚪";
+        default: return "⚪";
+      }
+    };
+
+    const getEmojiForAvgScore = (avgScore) => {
+      if (avgScore < 800) return "🔴";
+      if (avgScore < 1200) return "🟡";
+      if (avgScore < 1600) return "⚪️";
+      if (avgScore < 2000) return "🔵";
+      return "🟢";
+    };
+
+    const getEmojiForPercentage = (percentage) => {
+      if (percentage < 30) return "🔴";
+      if (percentage < 60) return "🟡";
+      return "🟢";
+    };
+
+    // Enhanced HTML dashboard with tabs
     const html = `
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Ethos Validations Dashboard</title>
+    <title>Ethos Agent Dashboard</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #111827; color: #f9fafb; }
         .container { max-width: 1400px; margin: 0 auto; }
         .header { background: #1f2937; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
+        
+        /* Tab navigation */
+        .tabs { background: #1f2937; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; overflow: hidden; }
+        .tab-nav { display: flex; border-bottom: 1px solid #374151; }
+        .tab-button { background: none; border: none; color: #9ca3af; padding: 15px 25px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s; }
+        .tab-button:hover { background: #374151; color: #f9fafb; }
+        .tab-button.active { background: #60a5fa; color: #111827; font-weight: 600; }
+        .tab-content { padding: 20px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
         .stat-card { background: #1f2937; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
         .stat-number { font-size: 2rem; font-weight: bold; color: #60a5fa; }
@@ -144,400 +238,247 @@ router.get("/dashboard", async (ctx) => {
         .validator-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #374151; transition: transform 0.2s ease; }
         .validator-avatar:hover { transform: scale(1.1); border-color: #60a5fa; }
         
-        /* Mobile-responsive card layout */
-        .table-container.mobile-cards { overflow: visible; }
-        .validation-cards { display: none; }
-        .validation-card { background: #374151; margin-bottom: 16px; padding: 16px; border-radius: 8px; border: 1px solid #4b5563; }
-        .validation-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-        .validation-card-content { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.9rem; }
-        .validation-card-field { display: flex; flex-direction: column; gap: 4px; }
-        .validation-card-label { color: #9ca3af; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .validation-card-value { color: #f9fafb; }
-        .validation-card-footer { margin-top: 12px; padding-top: 12px; border-top: 1px solid #4b5563; }
-        
-        /* Media query for mobile devices */
+        /* Mobile responsive */
         @media (max-width: 768px) {
             .container { padding: 10px; }
             .stats { grid-template-columns: 1fr; gap: 10px; }
             .filter-controls { flex-direction: column; align-items: stretch; }
             .filter-select { width: 100%; }
-            .desktop-table { display: none; }
-            .validation-cards { display: block; }
-            .validators-grid { justify-content: center; }
+            .tab-nav { flex-direction: column; }
+            .tab-button { text-align: left; }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 Ethos Validations Dashboard</h1>
-            <p>Real-time transparency into @ethosAgent validation commands</p>
+            <h1>📊 Ethos Agent Dashboard</h1>
+            <p>Real-time transparency into @ethosAgent commands</p>
         </div>
         
-        <div class="stats">
-            <div class="stat-card">
-                <h3>Total Validations</h3>
-                <div class="stat-number">${stats.totalValidations}</div>
+        <div class="tabs">
+            <div class="tab-nav">
+                <button class="tab-button ${tab === 'validations' ? 'active' : ''}" onclick="switchTab('validations')">
+                    Validations (${stats.totalValidations})
+                </button>
+                <button class="tab-button ${tab === 'saved' ? 'active' : ''}" onclick="switchTab('saved')">
+                    Saved Tweets (${savedTweets.length})
+                </button>
             </div>
-            <div class="stat-card">
-                <h3>Showing Results</h3>
-                <div class="stat-number">${validations.length}</div>
-                <p style="margin: 0; color: #9ca3af;">${authorFilter ? `Filtered by @${authorFilter}` : 'All validations'}</p>
-            </div>
-            <div class="stat-card">
-                <h3>Top Validators</h3>
-                <div class="stat-number">${topValidators.length}</div>
-                ${topValidators.length > 0 ? `
-                    <div class="validators-grid">
-                        ${topValidators.map(validator => `
-                            <img src="${validator.avatar}" 
-                                 alt="@${validator.handle}" 
-                                 title="@${validator.handle} - ${validator.count} validation${validator.count !== 1 ? 's' : ''}" 
-                                 class="validator-avatar">
-                        `).join('')}
-                    </div>
-                ` : `<p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 0.9rem;">No validators yet</p>`}
-            </div>
-        </div>
-
-        <div class="filter-section">
-            <div class="filter-controls">
-                <span class="filter-label">Filter by Tweet Author:</span>
-                <select class="filter-select" onchange="filterByAuthor(this.value)">
-                    <option value="">All Authors (${allValidations.length} validations)</option>
-                    ${uniqueAuthors.map(author => `
-                        <option value="${author.handle}" ${authorFilter === author.handle ? 'selected' : ''}>
-                            @${author.handle} (${author.name})
-                        </option>
-                    `).join('')}
-                </select>
-                ${authorFilter ? `<a href="/dashboard" class="clear-filter">Clear Filter</a>` : ''}
-            </div>
-            ${authorFilter ? `<div class="filter-info">Showing ${validations.length} validation${validations.length !== 1 ? 's' : ''} for @${authorFilter}</div>` : ''}
-        </div>
-        
-        <div class="table-container">
-            <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #374151;">Recent Validations</h2>
-            ${validations.length === 0 ? `
-                <div class="empty-state">
-                    ${authorFilter ? `No validations found for @${authorFilter}.` : 'No validations found. Validations will appear here when users run @ethosAgent validate commands.'}
-                </div>
-            ` : `
-                <!-- Desktop Table View -->
-                <table class="desktop-table">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tweet Author</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validator</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Quality Score
-                                <div style="font-size: 0.7rem; font-weight: normal; text-transform: none; margin-top: 2px;">
-                                    60% reputable + 40% ethos active
-                                </div>
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reputable (1600+)</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ethos Active</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${validations.map(v => {
-                          // Helper function to get emoji based on average score (same as in reply)
-                          const getEmojiForAvgScore = (avgScore) => {
-                            if (avgScore < 800) return "🔴";
-                            if (avgScore < 1200) return "🟡";
-                            if (avgScore < 1600) return "⚪️";
-                            if (avgScore < 2000) return "🔵";
-                            return "🟢";
-                          };
-                          
-                          return `
-                            <tr>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                        <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                        <div>
-                                            <div><strong>${v.tweetAuthor}</strong></div>
-                                            <div style="color: #9ca3af;">
-                                                <a href="/dashboard?author=${v.tweetAuthorHandle}" style="color: #9ca3af;">@${v.tweetAuthorHandle}</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
-                                        <span>@${v.requestedByHandle}</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="quality-${v.overallQuality}">
-                                        ${v.overallQuality === 'high' ? '🟢' : v.overallQuality === 'medium' ? '🟡' : '🔴'}
-                                        ${(() => {
-                                            const reputablePct = v.engagementStats.reputable_percentage;
-                                            const ethosActivePct = v.engagementStats.ethos_active_percentage;
-                                            const weightedScore = Math.round((reputablePct * 0.6) + (ethosActivePct * 0.4));
-                                            return `${weightedScore}%`;
-                                        })()}
-                                    </span>
-                                    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 2px;">
-                                        ${v.engagementStats.reputable_percentage}% reputable + ${v.engagementStats.ethos_active_percentage}% active
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="avg-score">
-                                        ${v.averageScore !== null && v.averageScore !== undefined ? `${getEmojiForAvgScore(v.averageScore)} ${v.averageScore}` : '—'}
-                                    </span>
-                                </td>
-                                <td style="font-size: 0.9rem;">
-                                    ${(() => {
-                                        const getEmojiForPercentage = (percentage) => {
-                                            if (percentage < 30) return "🔴";
-                                            if (percentage < 60) return "🟡";
-                                            return "🟢";
-                                        };
-                                        
-                                        const rtPct = v.engagementStats.total_retweeters > 0 
-                                            ? Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)
-                                            : 0;
-                                        const repliesPct = v.engagementStats.total_repliers > 0 
-                                            ? Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100)
-                                            : 0;
-                                        const qtPct = v.engagementStats.total_quote_tweeters > 0 
-                                            ? Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)
-                                            : 0;
-                                        
-                                        return `
-                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                <span>${getEmojiForPercentage(rtPct)} RT:</span>
-                                                <span style="font-weight: 600;">${rtPct}%</span>
-                                                <span style="color: #9ca3af;">(${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})</span>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
-                                                <span style="font-weight: 600;">${repliesPct}%</span>
-                                                <span style="color: #9ca3af;">(${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers})</span>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 4px;">
-                                                <span>${getEmojiForPercentage(qtPct)} QT:</span>
-                                                <span style="font-weight: 600;">${qtPct}%</span>
-                                                <span style="color: #9ca3af;">(${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters})</span>
-                                            </div>
-                                        `;
-                                    })()}
-                                </td>
-                                <td style="font-size: 0.9rem;">
-                                    ${(() => {
-                                        const getEmojiForPercentage = (percentage) => {
-                                            if (percentage < 30) return "🔴";
-                                            if (percentage < 60) return "🟡";
-                                            return "🟢";
-                                        };
-                                        
-                                        const rtPct = v.engagementStats.total_retweeters > 0 
-                                            ? Math.round(((v.engagementStats.ethos_active_retweeters || 0) / v.engagementStats.total_retweeters) * 100)
-                                            : 0;
-                                        const repliesPct = v.engagementStats.total_repliers > 0 
-                                            ? Math.round(((v.engagementStats.ethos_active_repliers || 0) / v.engagementStats.total_repliers) * 100)
-                                            : 0;
-                                        const qtPct = v.engagementStats.total_quote_tweeters > 0 
-                                            ? Math.round(((v.engagementStats.ethos_active_quote_tweeters || 0) / v.engagementStats.total_quote_tweeters) * 100)
-                                            : 0;
-                                        
-                                        return `
-                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                <span>${getEmojiForPercentage(rtPct)} RT:</span>
-                                                <span style="font-weight: 600;">${rtPct}%</span>
-                                                <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters})</span>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
-                                                <span style="font-weight: 600;">${repliesPct}%</span>
-                                                <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers})</span>
-                                            </div>
-                                            <div style="display: flex; align-items: center; gap: 4px;">
-                                                <span>${getEmojiForPercentage(qtPct)} QT:</span>
-                                                <span style="font-weight: 600;">${qtPct}%</span>
-                                                <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters})</span>
-                                            </div>
-                                        `;
-                                    })()}
-                                </td>
-                                <td style="font-size: 0.9rem;">${new Date(v.timestamp).toLocaleString()}</td>
-                                <td><a href="${v.tweetUrl}" target="_blank">View Tweet</a></td>
-                            </tr>
-                          `;
-                        }).join('')}
-                    </tbody>
-                </table>
-
-                <!-- Mobile Cards View -->
-                <div class="validation-cards">
-                    ${validations.map(v => {
-                      // Helper function to get emoji based on average score (same as in reply)
-                      const getEmojiForAvgScore = (avgScore) => {
-                        if (avgScore < 800) return "🔴";
-                        if (avgScore < 1200) return "🟡";
-                        if (avgScore < 1600) return "⚪️";
-                        if (avgScore < 2000) return "🔵";
-                        return "🟢";
-                      };
-                      
-                      return `
-                        <div class="validation-card">
-                            <div class="validation-card-header">
-                                <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                                <div>
-                                    <div><strong>${v.tweetAuthor}</strong></div>
-                                    <div style="color: #9ca3af;">
-                                        <a href="/dashboard?author=${v.tweetAuthorHandle}" style="color: #9ca3af;">@${v.tweetAuthorHandle}</a>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="validation-card-content">
-                                <div class="validation-card-field">
-                                    <div class="validation-card-label">Validator</div>
-                                    <div class="validation-card-value">
-                                        <div style="display: flex; align-items: center; gap: 8px;">
-                                            <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover;">
-                                            <span>@${v.requestedByHandle}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="validation-card-field">
-                                    <div class="validation-card-label">Quality</div>
-                                    <div class="validation-card-value">
-                                        <span class="quality-${v.overallQuality}">
-                                            ${v.overallQuality === 'high' ? '🟢' : v.overallQuality === 'medium' ? '🟡' : '🔴'}
-                                            ${(() => {
-                                                const reputablePct = v.engagementStats.reputable_percentage;
-                                                const ethosActivePct = v.engagementStats.ethos_active_percentage;
-                                                const weightedScore = Math.round((reputablePct * 0.6) + (ethosActivePct * 0.4));
-                                                return `${weightedScore}%`;
-                                            })()}
-                                        </span>
-                                        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 2px;">
-                                            ${v.engagementStats.reputable_percentage}% reputable + ${v.engagementStats.ethos_active_percentage}% active
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="validation-card-field">
-                                    <div class="validation-card-label">Avg Score</div>
-                                    <div class="validation-card-value">
-                                        <span class="avg-score">
-                                            ${v.averageScore !== null && v.averageScore !== undefined ? `${getEmojiForAvgScore(v.averageScore)} ${v.averageScore}` : '—'}
-                                        </span>
-                                    </div>
-                                </div>
-                                
-                                <div class="validation-card-field">
-                                    <div class="validation-card-label">Reputable (1600+)</div>
-                                    <div class="validation-card-value">
-                                        ${(() => {
-                                            const getEmojiForPercentage = (percentage) => {
-                                                if (percentage < 30) return "🔴";
-                                                if (percentage < 60) return "🟡";
-                                                return "🟢";
-                                            };
-                                            
-                                            const rtPct = v.engagementStats.total_retweeters > 0 
-                                                ? Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)
-                                                : 0;
-                                            const repliesPct = v.engagementStats.total_repliers > 0 
-                                                ? Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100)
-                                                : 0;
-                                            const qtPct = v.engagementStats.total_quote_tweeters > 0 
-                                                ? Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)
-                                                : 0;
-                                            
-                                            return `
-                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                    <span>${getEmojiForPercentage(rtPct)} RT:</span>
-                                                    <span style="font-weight: 600;">${rtPct}%</span>
-                                                    <span style="color: #9ca3af;">(${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})</span>
-                                                </div>
-                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                    <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
-                                                    <span style="font-weight: 600;">${repliesPct}%</span>
-                                                    <span style="color: #9ca3af;">(${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers})</span>
-                                                </div>
-                                                <div style="display: flex; align-items: center; gap: 4px;">
-                                                    <span>${getEmojiForPercentage(qtPct)} QT:</span>
-                                                    <span style="font-weight: 600;">${qtPct}%</span>
-                                                    <span style="color: #9ca3af;">(${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters})</span>
-                                                </div>
-                                            `;
-                                        })()}
-                                    </div>
-                                </div>
-                                
-                                <div class="validation-card-field">
-                                    <div class="validation-card-label">Ethos Active</div>
-                                    <div class="validation-card-value">
-                                        ${(() => {
-                                            const getEmojiForPercentage = (percentage) => {
-                                                if (percentage < 30) return "🔴";
-                                                if (percentage < 60) return "🟡";
-                                                return "🟢";
-                                            };
-                                            
-                                            const rtPct = v.engagementStats.total_retweeters > 0 
-                                                ? Math.round(((v.engagementStats.ethos_active_retweeters || 0) / v.engagementStats.total_retweeters) * 100)
-                                                : 0;
-                                            const repliesPct = v.engagementStats.total_repliers > 0 
-                                                ? Math.round(((v.engagementStats.ethos_active_repliers || 0) / v.engagementStats.total_repliers) * 100)
-                                                : 0;
-                                            const qtPct = v.engagementStats.total_quote_tweeters > 0 
-                                                ? Math.round(((v.engagementStats.ethos_active_quote_tweeters || 0) / v.engagementStats.total_quote_tweeters) * 100)
-                                                : 0;
-                                            
-                                            return `
-                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                    <span>${getEmojiForPercentage(rtPct)} RT:</span>
-                                                    <span style="font-weight: 600;">${rtPct}%</span>
-                                                    <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_retweeters || 0}/${v.engagementStats.total_retweeters})</span>
-                                                </div>
-                                                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                                    <span>${getEmojiForPercentage(repliesPct)} Replies:</span>
-                                                    <span style="font-weight: 600;">${repliesPct}%</span>
-                                                    <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_repliers || 0}/${v.engagementStats.total_repliers})</span>
-                                                </div>
-                                                <div style="display: flex; align-items: center; gap: 4px;">
-                                                    <span>${getEmojiForPercentage(qtPct)} QT:</span>
-                                                    <span style="font-weight: 600;">${qtPct}%</span>
-                                                    <span style="color: #9ca3af;">(${v.engagementStats.ethos_active_quote_tweeters || 0}/${v.engagementStats.total_quote_tweeters})</span>
-                                                </div>
-                                            `;
-                                        })()}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="validation-card-footer">
-                                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;">
-                                    <span style="color: #9ca3af;">${new Date(v.timestamp).toLocaleString()}</span>
-                                    <a href="${v.tweetUrl}" target="_blank" style="color: #60a5fa;">View Tweet</a>
-                                </div>
-                            </div>
+            
+            <div class="tab-content">
+                <!-- Validations Tab -->
+                <div id="validations-tab" class="tab-panel ${tab === 'validations' ? 'active' : ''}">
+                    <div class="stats">
+                        <div class="stat-card">
+                            <h3>Total Validations</h3>
+                            <div class="stat-number">${stats.totalValidations}</div>
                         </div>
-                      `;
-                    }).join('')}
+                        <div class="stat-card">
+                            <h3>Showing Results</h3>
+                            <div class="stat-number">${validations.length}</div>
+                            <p style="margin: 0; color: #9ca3af;">${authorFilter ? `Filtered by @${authorFilter}` : 'All validations'}</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Top Validators</h3>
+                            <div class="stat-number">${topValidators.length}</div>
+                            ${topValidators.length > 0 ? `
+                                <div class="validators-grid">
+                                    ${topValidators.map(validator => `
+                                        <img src="${validator.avatar}" 
+                                             alt="@${validator.handle}" 
+                                             title="@${validator.handle} - ${validator.count} validation${validator.count !== 1 ? 's' : ''}" 
+                                             class="validator-avatar">
+                                    `).join('')}
+                                </div>
+                            ` : `<p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 0.9rem;">No validators yet</p>`}
+                        </div>
+                    </div>
+
+                    ${authorFilter ? '' : `
+                    <div class="filter-section">
+                        <div class="filter-controls">
+                            <span class="filter-label">Filter by Tweet Author:</span>
+                            <select class="filter-select" onchange="filterByAuthor(this.value)">
+                                <option value="">All Authors (${allValidations.length} validations)</option>
+                                ${uniqueAuthors.map(author => `
+                                    <option value="${author.handle}" ${authorFilter === author.handle ? 'selected' : ''}>
+                                        @${author.handle} (${author.name})
+                                    </option>
+                                `).join('')}
+                            </select>
+                            ${authorFilter ? `<a href="/dashboard" class="clear-filter">Clear Filter</a>` : ''}
+                        </div>
+                        ${authorFilter ? `<div class="filter-info">Showing ${validations.length} validation${validations.length !== 1 ? 's' : ''} for @${authorFilter}</div>` : ''}
+                    </div>
+                    `}
+                    
+                    <div class="table-container">
+                        <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #374151;">Recent Validations</h2>
+                        ${validations.length === 0 ? `
+                            <div class="empty-state">
+                                ${authorFilter ? `No validations found for @${authorFilter}.` : 'No validations found. Validations will appear here when users run @ethosAgent validate commands.'}
+                            </div>
+                        ` : `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tweet Author</th>
+                                        <th>Validator</th>
+                                        <th>Quality Score</th>
+                                        <th>Avg Score</th>
+                                        <th>Reputable (1600+)</th>
+                                        <th>Ethos Active</th>
+                                        <th>Timestamp</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${validations.map(v => {
+                                      // Calculate weighted quality score for display
+                                      const reputablePct = v.engagementStats.reputable_percentage || 0;
+                                      const ethosActivePct = v.engagementStats.ethos_active_percentage || 0;
+                                      const weightedScore = Math.round((reputablePct * 0.6) + (ethosActivePct * 0.4));
+                                      const qualityEmoji = getQualityEmoji(v.overallQuality);
+                                      const avgScoreEmoji = v.averageScore ? getEmojiForAvgScore(v.averageScore) : "—";
+                                      
+                                      return `
+                                        <tr>
+                                            <td>
+                                                <div style="display: flex; align-items: center; gap: 10px;">
+                                                    <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" 
+                                                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                                    <div>
+                                                        <strong>${v.tweetAuthor}</strong><br>
+                                                        <a href="/dashboard?author=${v.tweetAuthorHandle}" style="color: #9ca3af;">@${v.tweetAuthorHandle}</a>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" 
+                                                         style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                                                    @${v.requestedByHandle}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <strong>${qualityEmoji} ${weightedScore}%</strong><br>
+                                                <span style="color: #9ca3af; font-size: 0.8rem;">
+                                                    ${reputablePct}% reputable + ${ethosActivePct}% active
+                                                </span>
+                                            </td>
+                                            <td>
+                                                ${v.averageScore ? `${avgScoreEmoji} ${v.averageScore}` : '—'}
+                                            </td>
+                                            <td>
+                                                ${v.engagementStats.total_retweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100))} RT: ${Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)}% (${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})<br>` : ''}
+                                                ${v.engagementStats.total_repliers > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100))} Replies: ${Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100)}% (${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers})<br>` : ''}
+                                                ${v.engagementStats.total_quote_tweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100))} QT: ${Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)}% (${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters})` : ''}
+                                            </td>
+                                            <td>
+                                                ${v.engagementStats.total_retweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_retweeters / v.engagementStats.total_retweeters) * 100))} RT: ${Math.round((v.engagementStats.ethos_active_retweeters / v.engagementStats.total_retweeters) * 100)}% (${v.engagementStats.ethos_active_retweeters}/${v.engagementStats.total_retweeters})<br>` : ''}
+                                                ${v.engagementStats.total_repliers > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_repliers / v.engagementStats.total_repliers) * 100))} Replies: ${Math.round((v.engagementStats.ethos_active_repliers / v.engagementStats.total_repliers) * 100)}% (${v.engagementStats.ethos_active_repliers}/${v.engagementStats.total_repliers})<br>` : ''}
+                                                ${v.engagementStats.total_quote_tweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100))} QT: ${Math.round((v.engagementStats.ethos_active_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)}% (${v.engagementStats.ethos_active_quote_tweeters}/${v.engagementStats.total_quote_tweeters})` : ''}
+                                            </td>
+                                            <td>${new Date(v.timestamp).toLocaleString()}</td>
+                                            <td><a href="${v.tweetUrl}" target="_blank">View Tweet</a></td>
+                                        </tr>
+                                      `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        `}
+                    </div>
                 </div>
-            `}
+                
+                <!-- Saved Tweets Tab -->
+                <div id="saved-tab" class="tab-panel ${tab === 'saved' ? 'active' : ''}">
+                    <div class="stats">
+                        <div class="stat-card">
+                            <h3>Total Saved Tweets</h3>
+                            <div class="stat-number">${savedTweets.length}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Last Updated</h3>
+                            <div class="stat-number" style="font-size: 1.2rem;">${new Date().toLocaleTimeString()}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #374151;">Recent Saved Tweets</h2>
+                        ${savedTweets.length === 0 ? `
+                            <div class="empty-state">
+                                No saved tweets found. Saved tweets will appear here when users run @ethosAgent save commands.
+                            </div>
+                        ` : `
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Target User</th>
+                                        <th>Saved By</th>
+                                        <th>Sentiment</th>
+                                        <th>Content Preview</th>
+                                        <th>Saved At</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${savedTweets.map(tweet => {
+                                      return `
+                                        <tr>
+                                            <td>
+                                                <strong>${tweet.subject || 'Unknown'}</strong><br>
+                                                <span style="color: #9ca3af;">@${tweet.targetUserHandle || 'unknown'}</span>
+                                            </td>
+                                            <td>
+                                                <span style="color: #9ca3af;">@${tweet.savedByHandle || 'unknown'}</span>
+                                            </td>
+                                            <td>
+                                                <span style="font-size: 1.2rem;">${getSentimentEmoji(tweet.score)}</span><br>
+                                                <span style="color: #9ca3af; font-size: 0.9rem;">${tweet.score}</span>
+                                            </td>
+                                            <td>
+                                                <div style="max-width: 300px; overflow: hidden;">
+                                                    ${tweet.comment.length > 100 ? tweet.comment.substring(0, 100) + '...' : tweet.comment}
+                                                </div>
+                                            </td>
+                                            <td>${formatDate(tweet.createdAt)}</td>
+                                            <td>
+                                                ${tweet.tweetUrl ? `<a href="${tweet.tweetUrl}" target="_blank">View Tweet</a>` : 'N/A'}
+                                            </td>
+                                        </tr>
+                                      `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        `}
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div style="text-align: center; margin-top: 40px; color: #9ca3af; font-size: 0.9rem;">
-            <p>This dashboard shows validation commands processed by @ethosAgent on Twitter.</p>
-            <p>Learn more about Ethos at <a href="https://ethos.network">ethos.network</a></p>
+        <div style="text-align: center; margin-top: 40px; padding: 20px; color: #9ca3af; font-size: 0.9rem;">
+            <p>This dashboard shows validation commands and saved tweets processed by @ethosAgent on Twitter.</p>
+            <p>Learn more about Ethos at <a href="https://ethos.network" target="_blank">ethos.network</a></p>
         </div>
     </div>
-    
+
     <script>
+        function switchTab(tabName) {
+            // Update URL
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabName);
+            window.history.pushState(null, '', url);
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(\`[onclick="switchTab('\${tabName}')"]\`).classList.add('active');
+            
+            // Update tab panels
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
         function filterByAuthor(authorHandle) {
             if (authorHandle) {
                 window.location.href = '/dashboard?author=' + authorHandle;
@@ -546,7 +487,7 @@ router.get("/dashboard", async (ctx) => {
             }
         }
         
-        // Auto-refresh every 30 seconds
+        // Auto refresh every 30 seconds
         setTimeout(() => location.reload(), 30000);
     </script>
 </body>
