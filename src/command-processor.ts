@@ -714,15 +714,21 @@ Link to tweet: ${originalTweetLink}`;
       const originalTweet = await this.twitterService.getTweetById(originalTweetId);
       const originalAuthor = allUsers?.find(user => user.id === originalTweet?.author_id);
 
-      // Calculate overall quality based on engagement stats
+      // Calculate overall quality based on weighted engagement stats
       const totalEngagers = engagementStats.total_retweeters + engagementStats.total_repliers + engagementStats.total_quote_tweeters;
       const totalReputable = engagementStats.reputable_retweeters + engagementStats.reputable_repliers + engagementStats.reputable_quote_tweeters;
+      const totalEthosActive = engagementStats.ethos_active_retweeters + engagementStats.ethos_active_repliers + engagementStats.ethos_active_quote_tweeters;
+      
       const reputablePercentage = totalEngagers > 0 ? Math.round((totalReputable / totalEngagers) * 100) : 0;
+      const ethosActivePercentage = totalEngagers > 0 ? Math.round((totalEthosActive / totalEngagers) * 100) : 0;
+      
+      // Weighted quality score: 60% reputable + 40% ethos activity
+      const weightedQualityScore = (reputablePercentage * 0.6) + (ethosActivePercentage * 0.4);
       
       let overallQuality: "high" | "medium" | "low";
-      if (reputablePercentage >= 60) {
+      if (weightedQualityScore >= 60) {
         overallQuality = "high";
-      } else if (reputablePercentage >= 30) {
+      } else if (weightedQualityScore >= 30) {
         overallQuality = "medium";
       } else {
         overallQuality = "low";
@@ -762,8 +768,8 @@ Link to tweet: ${originalTweetLink}`;
           ethos_active_retweeters: engagementStats.ethos_active_retweeters,
           ethos_active_repliers: engagementStats.ethos_active_repliers,
           ethos_active_quote_tweeters: engagementStats.ethos_active_quote_tweeters,
-          ethos_active_total: engagementStats.ethos_active_total,
-          ethos_active_percentage: engagementStats.ethos_active_percentage,
+          ethos_active_total: totalEthosActive,
+          ethos_active_percentage: ethosActivePercentage,
           retweeters_rate_limited: engagementStats.retweeters_rate_limited,
           repliers_rate_limited: engagementStats.repliers_rate_limited,
           quote_tweeters_rate_limited: engagementStats.quote_tweeters_rate_limited,

@@ -225,15 +225,20 @@ router.get("/dashboard", async (ctx) => {
             ` : `
                 <!-- Desktop Table View -->
                 <table class="desktop-table">
-                    <thead>
+                    <thead class="bg-gray-50">
                         <tr>
-                            <th>Tweet Author</th>
-                            <th>Validator</th>
-                            <th>Quality</th>
-                            <th>Avg Score</th>
-                            <th>Engagement</th>
-                            <th>Timestamp</th>
-                            <th>Link</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tweet Author</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Validator</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Quality Score
+                                <div style="font-size: 0.7rem; font-weight: normal; text-transform: none; margin-top: 2px;">
+                                    60% reputable + 40% ethos active
+                                </div>
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement Details</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -269,8 +274,16 @@ router.get("/dashboard", async (ctx) => {
                                 <td>
                                     <span class="quality-${v.overallQuality}">
                                         ${v.overallQuality === 'high' ? '🟢' : v.overallQuality === 'medium' ? '🟡' : '🔴'}
-                                        ${v.engagementStats.reputable_percentage}%
+                                        ${(() => {
+                                            const reputablePct = v.engagementStats.reputable_percentage;
+                                            const ethosActivePct = v.engagementStats.ethos_active_percentage;
+                                            const weightedScore = Math.round((reputablePct * 0.6) + (ethosActivePct * 0.4));
+                                            return `${weightedScore}%`;
+                                        })()}
                                     </span>
+                                    <div style="font-size: 0.75rem; color: #6b7280; margin-top: 2px;">
+                                        ${v.engagementStats.reputable_percentage}% reputable + ${v.engagementStats.ethos_active_percentage}% active
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="avg-score">
@@ -335,8 +348,16 @@ router.get("/dashboard", async (ctx) => {
                                     <div class="validation-card-value">
                                         <span class="quality-${v.overallQuality}">
                                             ${v.overallQuality === 'high' ? '🟢' : v.overallQuality === 'medium' ? '🟡' : '🔴'}
-                                            ${v.engagementStats.reputable_percentage}%
+                                            ${(() => {
+                                                const reputablePct = v.engagementStats.reputable_percentage;
+                                                const ethosActivePct = v.engagementStats.ethos_active_percentage;
+                                                const weightedScore = Math.round((reputablePct * 0.6) + (ethosActivePct * 0.4));
+                                                return `${weightedScore}%`;
+                                            })()}
                                         </span>
+                                        <div style="font-size: 0.75rem; color: #6b7280; margin-top: 2px;">
+                                            ${v.engagementStats.reputable_percentage}% reputable + ${v.engagementStats.ethos_active_percentage}% active
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -573,17 +594,26 @@ router.post("/test/create-sample", async (ctx) => {
           reputable_repliers: 35 + (i * 8),
           reputable_quote_tweeters: 12 + (i * 3),
           reputable_total: 127 + (i * 26),
-          reputable_percentage: 70 + (i * 2),
+          reputable_percentage: 70 + (i * 2), // 70%, 72%, 74%, 76%, 78%
           ethos_active_retweeters: 90 + (i * 18), // Higher than reputable
           ethos_active_repliers: 40 + (i * 9), // Higher than reputable  
           ethos_active_quote_tweeters: 15 + (i * 4), // Higher than reputable
           ethos_active_total: 145 + (i * 31), // Higher than reputable
-          ethos_active_percentage: 85 + (i * 1), // Higher percentage
+          ethos_active_percentage: 85 + (i * 1), // 85%, 86%, 87%, 88%, 89%
           retweeters_rate_limited: false,
           repliers_rate_limited: false,
           quote_tweeters_rate_limited: false,
         },
-        overallQuality: i < 2 ? "high" : i < 4 ? "medium" : "low"
+        overallQuality: (() => {
+          // Calculate weighted score: 60% reputable + 40% ethos active
+          const reputablePct = 70 + (i * 2);
+          const ethosActivePct = 85 + (i * 1);
+          const weightedScore = (reputablePct * 0.6) + (ethosActivePct * 0.4);
+          
+          if (weightedScore >= 60) return "high";
+          if (weightedScore >= 30) return "medium";
+          return "low";
+        })()
       };
 
       await storageService.storeValidation(sampleValidation);
