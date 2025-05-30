@@ -467,9 +467,9 @@ Learn more about Ethos at https://ethos.network`;
 
       console.log(`💾 Processing save command: ${saveContext}`);
 
-      // 🚨 ANTI-ABUSE: Check if user is trying to review themselves
-      if (targetUsername.toLowerCase() === mentionerUsername.toLowerCase()) {
-        console.log(`🚨 Self-review abuse detected: @${mentionerUsername} trying to review themselves as ${reviewScore}`);
+      // 🚨 ANTI-ABUSE: Check if user is trying to review themselves with positive sentiment
+      if (targetUsername.toLowerCase() === mentionerUsername.toLowerCase() && reviewScore === "positive") {
+        console.log(`🚨 Self-review abuse detected: @${mentionerUsername} trying to review themselves positively`);
         
         // Override their intended sentiment to negative
         reviewScore = "negative";
@@ -478,10 +478,12 @@ Learn more about Ethos at https://ethos.network`;
         await this.slackService.notifyError(
           "self-review abuse attempt", 
           `@${mentionerUsername} tried to review themselves positively`, 
-          `Original sentiment: ${command.args.includes('positive') ? 'positive' : command.args.includes('negative') ? 'negative' : 'neutral'}, converted to negative`
+          `Original sentiment: positive, converted to negative`
         );
         
-        console.log(`🚨 Converted self-review to negative sentiment for @${mentionerUsername}`);
+        console.log(`🚨 Converted positive self-review to negative sentiment for @${mentionerUsername}`);
+      } else if (targetUsername.toLowerCase() === mentionerUsername.toLowerCase()) {
+        console.log(`ℹ️ Self-review detected but allowing ${reviewScore} sentiment for @${mentionerUsername}`);
       }
 
       // Check if the reviewer (person making the save request) has a valid Ethos profile
@@ -559,18 +561,19 @@ Learn more about Ethos at https://ethos.network`;
       // Get original tweet author information
       const originalAuthor = allUsers?.find(user => user.id === originalTweet.author_id);
       
-      // 🚨 ANTI-ABUSE: Create custom title and description for self-reviews
+      // 🚨 ANTI-ABUSE: Create custom title and description for converted positive self-reviews
       let reviewTitle: string;
       let reviewDescription: string;
       
       const isSelfReview = targetUsername.toLowerCase() === mentionerUsername.toLowerCase();
+      const isConvertedPositiveSelfReview = isSelfReview && reviewScore === "negative" && command.args.includes('positive');
       const originalTweetLink = `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`;
       
-      if (isSelfReview) {
-        // Use anti-abuse message for self-reviews
+      if (isConvertedPositiveSelfReview) {
+        // Use anti-abuse message for converted positive self-reviews
         reviewTitle = "User tried to abuse Ethos and review themself positively through my code";
         reviewDescription = "Please don't do that again, anon.";
-        console.log(`🚨 Using anti-abuse title and description for self-review by @${mentionerUsername}`);
+        console.log(`🚨 Using anti-abuse title and description for converted positive self-review by @${mentionerUsername}`);
       } else {
         // Create the normal title: first 120 characters of tweet 
         reviewTitle = originalTweet.text.length > 120 
@@ -834,7 +837,7 @@ Link to tweet: ${originalTweetLink}`;
         const qualityEmoji = getEmojiForPercentage(weightedQualityDisplayScore);
 
         // Vertical listing response format (easier to read)
-        let response = `Ethos Social Validation Score: ${qualityEmoji} ${weightedQualityDisplayScore}%\n\n`;
+        let response = `Ethos social validation score: ${qualityEmoji} ${weightedQualityDisplayScore}%\n\n`;
         
         response += "Reputable profile scoring\n";
         
@@ -884,7 +887,7 @@ Link to tweet: ${originalTweetLink}`;
         }
 
         // Link to validation leaderboard
-        response += `\n\nView dashboard: https://ethos-agent-twitter.deno.dev/dashboard`;
+        response += `\n\nview all validations: https://ethos-agent-twitter.deno.dev/dashboard`;
 
         replyText = response;
       }
