@@ -32,6 +32,75 @@ export class TwitterService {
   }
 
   /**
+   * Construct Twitter profile image URL directly from user ID
+   * Based on Twitter's URL structure: https://pbs.twimg.com/profile_images/{USER_ID}/{HASH}_{SIZE}.jpg
+   * Since we don't have the hash, we'll try to construct it or use a fallback
+   */
+  private constructProfileImageUrl(userId: string, size: '_normal' | '_bigger' | '_mini' | '_400x400' = '_bigger'): string {
+    // For most Twitter profile images, the URL structure is:
+    // https://pbs.twimg.com/profile_images/{USER_ID}/{HASH}_{SIZE}.jpg
+    // Since we don't have the hash, we can try common patterns or fallback to default
+    
+    // Try to construct a realistic URL - Twitter often uses the user ID as part of the hash
+    // But without the actual hash, we'll fallback to the default profile image
+    // This ensures we always have a valid image URL
+    
+    const sizeMap = {
+      '_normal': 'normal',
+      '_bigger': 'bigger', 
+      '_mini': 'mini',
+      '_400x400': '400x400'
+    };
+    
+    const sizeStr = sizeMap[size] || 'bigger';
+    return `https://abs.twimg.com/sticky/default_profile_images/default_profile_${sizeStr}.png`;
+  }
+
+  /**
+   * Extract user ID from a Twitter profile image URL if possible
+   * Example: https://pbs.twimg.com/profile_images/1921591153318649856/kNBT_rn1_x96.jpg
+   * Returns: 1921591153318649856
+   */
+  private extractUserIdFromProfileUrl(profileImageUrl: string): string | null {
+    try {
+      const match = profileImageUrl.match(/\/profile_images\/(\d+)\//);
+      return match ? match[1] : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get optimized profile image URL - if we have a real Twitter profile image URL, 
+   * we can resize it without making additional API calls
+   */
+  getOptimizedProfileImageUrl(user: TwitterUser, size: '_normal' | '_bigger' | '_mini' | '_400x400' = '_bigger'): string {
+    if (user.profile_image_url && user.profile_image_url.includes('pbs.twimg.com/profile_images/')) {
+      // We have a real Twitter profile image URL, so we can manipulate the size directly
+      let url = user.profile_image_url;
+      
+      // Replace any existing size with the requested size
+      url = url.replace(/_normal\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+      url = url.replace(/_bigger\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+      url = url.replace(/_mini\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+      url = url.replace(/_400x400\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+      
+      // If no size was found in the URL, append the size before the extension
+      if (!url.includes(size)) {
+        url = url.replace(/\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+      }
+      
+      // Ensure HTTPS
+      url = url.replace(/^http:/, 'https:');
+      
+      return url;
+    }
+    
+    // Fallback to constructed URL or default
+    return this.constructProfileImageUrl(user.id, size);
+  }
+
+  /**
    * Check if the service has the minimum required credentials
    */
   hasMinimumCredentials(): boolean {
@@ -63,13 +132,14 @@ export class TwitterService {
         id: `mock_${username}`,
         username: username,
         name: username.charAt(0).toUpperCase() + username.slice(1),
-        profile_image_url: "https://via.placeholder.com/400x400"
+        profile_image_url: this.constructProfileImageUrl(`mock_${username}`)
       };
     }
 
     try {
       console.log(`🔍 Fetching user info for: ${username}`);
       
+      // We still request profile_image_url to get the real hash, then we can optimize it later
       const response = await fetch(`https://api.twitter.com/2/users/by/username/${username}?user.fields=profile_image_url`, {
         headers: {
           'Authorization': `Bearer ${this.bearerToken}`,
@@ -110,13 +180,14 @@ export class TwitterService {
         id: userId,
         username: `user_${userId}`,
         name: `User ${userId}`,
-        profile_image_url: "https://via.placeholder.com/400x400"
+        profile_image_url: this.constructProfileImageUrl(userId)
       };
     }
 
     try {
       console.log(`🔍 Fetching user info for ID: ${userId}`);
       
+      // We still request profile_image_url to get the real hash, then we can optimize it later
       const response = await fetch(`https://api.twitter.com/2/users/${userId}?user.fields=profile_image_url`, {
         headers: {
           'Authorization': `Bearer ${this.bearerToken}`,
@@ -432,6 +503,7 @@ export class TwitterService {
         return null;
       }
 
+      // Request profile_image_url to get the real hash, then we can optimize it later
       const response = await fetch(
         'https://api.twitter.com/2/users/me?user.fields=name,username,profile_image_url',
         {
@@ -490,6 +562,7 @@ export class TwitterService {
         query,
         max_results: validMaxResults.toString(),
         'tweet.fields': 'created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets',
+        // Request profile_image_url to get real URLs, then we can optimize them later
         'user.fields': 'id,username,name,profile_image_url',
         expansions: 'author_id,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id'
       });
@@ -513,6 +586,7 @@ export class TwitterService {
       }
 
       const data = await response.json();
+      
       console.log(`🔍 Found ${data.data?.length || 0} new mentions`);
       return data;
     } catch (error) {
@@ -613,6 +687,7 @@ export class TwitterService {
       
       const url = new URL(`https://api.twitter.com/2/tweets/${tweetId}/retweeted_by`);
       url.searchParams.set('max_results', '100');
+      // Request profile_image_url to get real URLs with hash
       url.searchParams.set('user.fields', 'username,name,profile_image_url,public_metrics');
       
       if (nextToken) {
@@ -641,7 +716,11 @@ export class TwitterService {
         if (data.data && data.data.length > 0) {
           const pageRetweeters = data.data.map((user: any) => ({
             ...user,
-            engagement_type: 'retweet' as const
+            engagement_type: 'retweet' as const,
+            // Optimize the profile image URL for consistent sizing
+            profile_image_url: user.profile_image_url ? 
+              this.getOptimizedProfileImageUrl(user, '_normal') : 
+              this.constructProfileImageUrl(user.id, '_normal')
           }));
           retweeters.push(...pageRetweeters);
           console.log(`✅ Page ${pageCount}: Found ${pageRetweeters.length} retweeters`);
@@ -696,6 +775,7 @@ export class TwitterService {
       url.searchParams.set('query', `conversation_id:${tweetId} -from:ethosAgent`);
       url.searchParams.set('max_results', '100');
       url.searchParams.set('tweet.fields', 'author_id,created_at');
+      // Request profile_image_url to get real URLs with hash
       url.searchParams.set('user.fields', 'username,name,profile_image_url,public_metrics');
       url.searchParams.set('expansions', 'author_id');
       
@@ -732,7 +812,10 @@ export class TwitterService {
               id: user?.id || tweet.author_id,
               username: user?.username || `user_${tweet.author_id}`,
               name: user?.name || `User ${tweet.author_id}`,
-              profile_image_url: user?.profile_image_url,
+              // Optimize the profile image URL for consistent sizing
+              profile_image_url: user?.profile_image_url ? 
+                this.getOptimizedProfileImageUrl(user, '_normal') : 
+                this.constructProfileImageUrl(user?.id || tweet.author_id, '_normal'),
               public_metrics: user?.public_metrics,
               engagement_type: 'reply' as const
             };
@@ -795,6 +878,7 @@ export class TwitterService {
       const url = new URL(`https://api.twitter.com/2/tweets/${tweetId}/quote_tweets`);
       url.searchParams.set('max_results', '100');
       url.searchParams.set('tweet.fields', 'author_id,created_at');
+      // Request profile_image_url to get real URLs with hash
       url.searchParams.set('user.fields', 'username,name,profile_image_url,public_metrics');
       url.searchParams.set('expansions', 'author_id');
       
@@ -831,7 +915,10 @@ export class TwitterService {
               id: user?.id || tweet.author_id,
               username: user?.username || `user_${tweet.author_id}`,
               name: user?.name || `User ${tweet.author_id}`,
-              profile_image_url: user?.profile_image_url,
+              // Optimize the profile image URL for consistent sizing
+              profile_image_url: user?.profile_image_url ? 
+                this.getOptimizedProfileImageUrl(user, '_normal') : 
+                this.constructProfileImageUrl(user?.id || tweet.author_id, '_normal'),
               public_metrics: user?.public_metrics,
               engagement_type: 'quote_tweet' as const
             };

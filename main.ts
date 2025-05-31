@@ -739,19 +739,31 @@ router.get("/dashboard", async (ctx) => {
                 const getTwitterProfileImage = (handle, avatar) => {
                     // If we have a valid Twitter image URL, use it
                     if (avatar && avatar.includes('twimg.com') && !avatar.includes('default_profile')) {
+                        // Convert _normal to _bigger for author images, keep _normal for validator images
+                        if (avatar.includes('_normal.')) {
+                            return avatar.replace('_normal.', '_bigger.');
+                        }
                         return avatar;
                     }
                     
-                    // Try to construct a Twitter profile image URL
-                    // Twitter profile images follow the pattern: https://pbs.twimg.com/profile_images/{id}/{hash}_{size}.{ext}
-                    // Since we don't have the ID/hash, we'll try a different approach
-                    
-                    // For now, return a reliable fallback that always works
+                    // If no profile image available, fall back to default
                     return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png';
                 };
                 
+                const getValidatorProfileImage = (handle, avatar) => {
+                    // For validators, keep the smaller _normal size
+                    if (avatar && avatar.includes('twimg.com') && !avatar.includes('default_profile')) {
+                        if (avatar.includes('_bigger.')) {
+                            return avatar.replace('_bigger.', '_normal.');
+                        }
+                        return avatar;
+                    }
+                    
+                    return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
+                };
+                
                 const authorAvatar = getTwitterProfileImage(validation.tweetAuthorHandle, validation.tweetAuthorAvatar);
-                const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar);
+                const validatorAvatar = getValidatorProfileImage(validation.requestedByHandle, validation.requestedByAvatar);
                 
                 return \`
                     <tr class="hover:ethos-bg-elevated transition-colors">

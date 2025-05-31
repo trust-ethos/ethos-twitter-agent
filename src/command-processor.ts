@@ -37,6 +37,12 @@ export class CommandProcessor {
    * @returns Profile image URL
    */
   private getProfileImageUrl(user: TwitterUser, size: '_normal' | '_bigger' | '_mini' | '_400x400' = '_bigger'): string {
+    // Use the TwitterService optimization method if available
+    if (this.twitterService.getOptimizedProfileImageUrl) {
+      return this.twitterService.getOptimizedProfileImageUrl(user, size);
+    }
+    
+    // Fallback to original logic
     if (user.profile_image_url) {
       // If we have a profile_image_url, try to use it but fix common issues
       let url = user.profile_image_url;
