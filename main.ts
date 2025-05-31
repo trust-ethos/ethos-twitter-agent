@@ -679,6 +679,127 @@ router.get("/test/storage", async (ctx) => {
   }
 });
 
+// Test tweet validation endpoint
+router.get("/test/validate/:tweetId", async (ctx) => {
+  try {
+    const tweetId = ctx.params.tweetId;
+    console.log(`🧪 Testing validation for tweet ID: ${tweetId}`);
+    
+    // Analyze engagement using TwitterService
+    const engagementStats = await twitterService.analyzeEngagement(tweetId);
+    
+    // Calculate overall quality based on weighted engagement stats
+    const totalEngagers = engagementStats.total_retweeters + engagementStats.total_repliers + engagementStats.total_quote_tweeters;
+    const totalReputable = engagementStats.reputable_retweeters + engagementStats.reputable_repliers + engagementStats.reputable_quote_tweeters;
+    const totalEthosActive = engagementStats.ethos_active_retweeters + engagementStats.ethos_active_repliers + engagementStats.ethos_active_quote_tweeters;
+    
+    const reputablePercentage = totalEngagers > 0 ? Math.round((totalReputable / totalEngagers) * 100) : 0;
+    const ethosActivePercentage = totalEngagers > 0 ? Math.round((totalEthosActive / totalEngagers) * 100) : 0;
+    
+    // Weighted quality score: 60% reputable + 40% ethos active
+    const weightedQualityScore = (reputablePercentage * 0.6) + (ethosActivePercentage * 0.4);
+    
+    let overallQuality: "high" | "medium" | "low";
+    if (weightedQualityScore >= 60) {
+      overallQuality = "high";
+    } else if (weightedQualityScore >= 30) {
+      overallQuality = "medium";
+    } else {
+      overallQuality = "low";
+    }
+
+    // Calculate average score of all engagers
+    const allEngagers = engagementStats.users_with_scores.filter(user => user.ethos_score !== undefined && user.ethos_score !== null);
+    let averageScore: number | null = null;
+    if (allEngagers.length > 0) {
+      const totalScore = allEngagers.reduce((sum, user) => sum + (user.ethos_score || 0), 0);
+      averageScore = Math.round(totalScore / allEngagers.length);
+    }
+
+    // Get original tweet details
+    const originalTweet = await twitterService.getTweetById(tweetId);
+    
+    ctx.response.body = {
+      status: "success",
+      tweetId: tweetId,
+      tweetUrl: `https://x.com/user/status/${tweetId}`,
+      originalTweet: originalTweet ? {
+        text: originalTweet.text,
+        author_id: originalTweet.author_id,
+        created_at: originalTweet.created_at,
+        public_metrics: originalTweet.public_metrics
+      } : null,
+      engagementStats: {
+        total_retweeters: engagementStats.total_retweeters,
+        total_repliers: engagementStats.total_repliers,
+        total_quote_tweeters: engagementStats.total_quote_tweeters,
+        total_unique_users: engagementStats.total_unique_users,
+        reputable_retweeters: engagementStats.reputable_retweeters,
+        reputable_repliers: engagementStats.reputable_repliers,
+        reputable_quote_tweeters: engagementStats.reputable_quote_tweeters,
+        reputable_total: totalReputable,
+        reputable_percentage: reputablePercentage,
+        ethos_active_retweeters: engagementStats.ethos_active_retweeters,
+        ethos_active_repliers: engagementStats.ethos_active_repliers,
+        ethos_active_quote_tweeters: engagementStats.ethos_active_quote_tweeters,
+        ethos_active_total: totalEthosActive,
+        ethos_active_percentage: ethosActivePercentage,
+        retweeters_rate_limited: engagementStats.retweeters_rate_limited,
+        repliers_rate_limited: engagementStats.repliers_rate_limited,
+        quote_tweeters_rate_limited: engagementStats.quote_tweeters_rate_limited,
+      },
+      qualityAnalysis: {
+        weightedQualityScore: Math.round(weightedQualityScore),
+        overallQuality: overallQuality,
+        averageScore: averageScore
+      },
+      userBreakdown: {
+        totalUsersWithScores: allEngagers.length,
+        scoreDistribution: {
+          under800: allEngagers.filter(u => (u.ethos_score || 0) < 800).length,
+          "800to1200": allEngagers.filter(u => (u.ethos_score || 0) >= 800 && (u.ethos_score || 0) < 1200).length,
+          "1200to1600": allEngagers.filter(u => (u.ethos_score || 0) >= 1200 && (u.ethos_score || 0) < 1600).length,
+          "1600to2000": allEngagers.filter(u => (u.ethos_score || 0) >= 1600 && (u.ethos_score || 0) < 2000).length,
+          over2000: allEngagers.filter(u => (u.ethos_score || 0) >= 2000).length,
+        }
+      },
+      detailedUsers: engagementStats.users_with_scores.slice(0, 10) // First 10 users for debugging
+    };
+  } catch (error) {
+    console.error("❌ Tweet validation test failed:", error);
+    
+    // Handle specific engagement volume errors
+    if (error instanceof Error) {
+      if (error.message === 'ENGAGEMENT_TOO_HIGH_SHARES') {
+        ctx.response.status = 400;
+        ctx.response.body = {
+          status: "error",
+          message: "Tweet has too many retweets/quotes to process (>500)",
+          error: error.message
+        };
+        return;
+      }
+      
+      if (error.message === 'ENGAGEMENT_TOO_HIGH_COMMENTS') {
+        ctx.response.status = 400;
+        ctx.response.body = {
+          status: "error", 
+          message: "Tweet has too many comments to process (>300)",
+          error: error.message
+        };
+        return;
+      }
+    }
+    
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Tweet validation test failed",
+      error: error.message
+    };
+  }
+});
+
 // Create sample validation data endpoint
 router.post("/test/create-sample", async (ctx) => {
   try {
@@ -857,6 +978,7 @@ if (usePolling) {
   console.log(`🧪 Test endpoints:`);
   console.log(`   GET  http://localhost:${port}/test/twitter - Test API credentials`);
   console.log(`   GET  http://localhost:${port}/test/user/:username - Test user lookup`);
+  console.log(`   GET  http://localhost:${port}/test/validate/:tweetId - Test tweet validation`);
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
   console.log(`   POST http://localhost:${port}/polling/start - Start polling`);
   console.log(`   POST http://localhost:${port}/polling/stop - Stop polling`);
@@ -871,6 +993,7 @@ if (usePolling) {
   console.log(`🧪 Test endpoints:`);
   console.log(`   GET  http://localhost:${port}/test/twitter - Test API credentials`);
   console.log(`   GET  http://localhost:${port}/test/user/:username - Test user lookup`);
+  console.log(`   GET  http://localhost:${port}/test/validate/:tweetId - Test tweet validation`);
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
 }
 
