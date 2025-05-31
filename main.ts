@@ -534,9 +534,15 @@ router.get("/dashboard", async (ctx) => {
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="totalEngagement">
+                                    <th class="cursor-pointer select-none" data-sort="reputableEngagement">
                                         <div class="flex items-center space-x-1">
-                                            <span>Total Engagement</span>
+                                            <span>Reputable Engagement</span>
+                                            <span class="sort-icon sort-none"></span>
+                                        </div>
+                                    </th>
+                                    <th class="cursor-pointer select-none" data-sort="ethosActiveEngagement">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Ethos Active Engagement</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
@@ -796,7 +802,7 @@ router.get("/dashboard", async (ctx) => {
                 }
             } catch (error) {
                 console.error('❌ Error loading validations:', error);
-                tableBody.innerHTML = '<tr><td colspan="7" class="p-12 text-center text-muted-foreground">Error loading data: ' + error.message + '</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="8" class="p-12 text-center text-muted-foreground">Error loading data: ' + error.message + '</td></tr>';
                 
                 // Also show error in stats
                 document.getElementById('total-validations').textContent = 'Error';
@@ -905,9 +911,17 @@ router.get("/dashboard", async (ctx) => {
                     '<td>' + scoreBadge + '</td>' +
                     '<td>' +
                         '<div>' +
-                            '<div class="font-medium">' + validation.engagementStats.total_unique_users.toLocaleString() + '</div>' +
+                            '<div class="font-medium">' + validation.engagementStats.reputable_total.toLocaleString() + '</div>' +
                             '<div class="text-sm text-muted-foreground">' +
-                                validation.engagementStats.total_retweeters + 'RT • ' + validation.engagementStats.total_repliers + 'replies • ' + validation.engagementStats.total_quote_tweeters + 'QT' +
+                                validation.engagementStats.reputable_retweeters + 'RT • ' + validation.engagementStats.reputable_repliers + 'replies • ' + validation.engagementStats.reputable_quote_tweeters + 'QT' +
+                            '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div>' +
+                            '<div class="font-medium">' + validation.engagementStats.ethos_active_total.toLocaleString() + '</div>' +
+                            '<div class="text-sm text-muted-foreground">' +
+                                validation.engagementStats.ethos_active_retweeters + 'RT • ' + validation.engagementStats.ethos_active_repliers + 'replies • ' + validation.engagementStats.ethos_active_quote_tweeters + 'QT' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
@@ -1144,7 +1158,16 @@ router.get("/api/validations", async (ctx) => {
           aVal = aQuality;
           bVal = bQuality;
           break;
+        case 'reputableEngagement':
+          aVal = a.engagementStats.reputable_total;
+          bVal = b.engagementStats.reputable_total;
+          break;
+        case 'ethosActiveEngagement':
+          aVal = a.engagementStats.ethos_active_total;
+          bVal = b.engagementStats.ethos_active_total;
+          break;
         case 'totalEngagement':
+          // Legacy support - fallback to total unique users
           aVal = a.engagementStats.total_unique_users;
           bVal = b.engagementStats.total_unique_users;
           break;
