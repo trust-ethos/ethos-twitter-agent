@@ -77,6 +77,7 @@ router.get("/dashboard", async (ctx) => {
     // Get saved tweets from Ethos API
     let savedTweets = [];
     try {
+      console.log("🔄 Fetching saved tweets from Ethos API...");
       const ethosResponse = await fetch("https://api.ethos.network/api/v1/reviews", {
         method: "POST",
         headers: {
@@ -89,29 +90,100 @@ router.get("/dashboard", async (ctx) => {
         })
       });
       
+      console.log("📡 Ethos API response status:", ethosResponse.status, ethosResponse.statusText);
+      
       if (ethosResponse.ok) {
         const ethosData = await ethosResponse.json();
-        console.log("🔍 Fetched saved tweets from Ethos API:", ethosData.reviews?.length || 0);
+        console.log("🔍 Ethos API response data keys:", Object.keys(ethosData));
+        console.log("🔍 Data structure:", ethosData.data ? Object.keys(ethosData.data) : "No data key");
         
-        if (ethosData.reviews && Array.isArray(ethosData.reviews)) {
-          savedTweets = ethosData.reviews.map((review, index) => {
-            const metadata = JSON.parse(review.metadata || '{}');
+        // Fix: Use data.values instead of reviews
+        const reviews = ethosData.data?.values || [];
+        console.log("🔍 Found reviews count:", reviews.length);
+        
+        if (Array.isArray(reviews) && reviews.length > 0) {
+          // Filter for Twitter-related reviews by checking metadata for Twitter info
+          const twitterReviews = reviews.filter(review => {
+            try {
+              const metadata = JSON.parse(review.metadata || '{}');
+              // Look for Twitter-related metadata like tweetUrl, savedBy, etc.
+              return metadata.tweetUrl || 
+                     metadata.savedBy || 
+                     metadata.savedByHandle || 
+                     metadata.targetUserHandle ||
+                     (metadata.description && metadata.description.includes('Original tweet saved by'));
+            } catch (e) {
+              // If metadata parsing fails, skip this review
+              return false;
+            }
+          });
+          
+          console.log("🔍 Twitter-related reviews found:", twitterReviews.length);
+          
+          savedTweets = twitterReviews.map((review, index) => {
+            let metadata = {};
+            let savedByHandle = "unknown";
+            let tweetUrl = "";
+            let authorUserId = "";
+            let originalTweetText = "";
+            
+            try {
+              metadata = JSON.parse(review.metadata || '{}');
+              console.log(`🔍 Review ${review.id} metadata:`, JSON.stringify(metadata, null, 2));
+              
+              // Parse the description field to extract Twitter information
+              if (metadata.description) {
+                // Extract @username who saved it: "Original tweet saved by @username:"
+                const savedByMatch = metadata.description.match(/Original tweet saved by @(\w+):/);
+                if (savedByMatch) {
+                  savedByHandle = savedByMatch[1];
+                }
+                
+                // Extract tweet URL: "Link to tweet: https://x.com/..."
+                const tweetUrlMatch = metadata.description.match(/Link to tweet: (https:\/\/x\.com\/\S+)/);
+                if (tweetUrlMatch) {
+                  tweetUrl = tweetUrlMatch[1];
+                }
+                
+                // Extract author user ID: "Author user id: 123456"
+                const authorIdMatch = metadata.description.match(/Author user id: (\d+)/);
+                if (authorIdMatch) {
+                  authorUserId = authorIdMatch[1];
+                }
+                
+                // Extract original tweet text (between quotes after saved by @username:)
+                const tweetTextMatch = metadata.description.match(/Original tweet saved by @\w+: "([^"]+)"/);
+                if (tweetTextMatch) {
+                  originalTweetText = tweetTextMatch[1];
+                }
+              }
+            } catch (e) {
+              console.warn("Failed to parse metadata for review", review.id);
+            }
+            
             return {
               id: review.id || index,
               subject: review.subject || "Unknown",
               author: review.author || "Unknown", 
-              comment: review.comment || "",
+              comment: originalTweetText || review.comment || "",
               score: review.score || "neutral",
               createdAt: review.createdAt || Date.now(),
               metadata: review.metadata || "",
-              tweetUrl: metadata.tweetUrl,
-              savedBy: metadata.savedBy,
-              savedByHandle: metadata.savedByHandle,
-              targetUser: metadata.targetUser,
-              targetUserHandle: metadata.targetUserHandle,
+              tweetUrl: tweetUrl,
+              savedBy: savedByHandle,
+              savedByHandle: savedByHandle,
+              targetUser: review.subject || "Unknown",
+              targetUserHandle: "unknown", // We don't have the target username in this format
             };
           }).slice(0, 50);
+          
+          console.log("✅ Processed Twitter saved tweets:", savedTweets.length);
+        } else {
+          console.log("⚠️ No reviews found in data.values array");
         }
+      } else {
+        const errorText = await ethosResponse.text();
+        console.error("❌ Ethos API error:", ethosResponse.status, errorText);
       }
     } catch (error) {
       console.error("❌ Failed to fetch saved tweets:", error);
