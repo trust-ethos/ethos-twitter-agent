@@ -1312,6 +1312,65 @@ router.get("/test/validate/:tweetId", async (ctx) => {
   }
 });
 
+// Test endpoint to create a realistic validation from a different user
+router.post("/test/create-real-validation", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    
+    // Create a realistic validation that looks like it came from a real user (not @airdroppatron)
+    const testValidation = {
+      id: `test_${Date.now()}_real_user`,
+      tweetId: `189${Date.now()}`, // Realistic tweet ID format
+      tweetAuthor: "Vitalik Buterin",
+      tweetAuthorHandle: "VitalikButerin",
+      tweetAuthorAvatar: "https://pbs.twimg.com/profile_images/977496875887558661/L86xyLF4_400x400.jpg",
+      requestedBy: "Naval Ravikant",
+      requestedByHandle: "naval",
+      requestedByAvatar: "https://pbs.twimg.com/profile_images/1296720045988904962/rUgP8ORE_400x400.jpg",
+      timestamp: new Date().toISOString(),
+      tweetUrl: `https://x.com/VitalikButerin/status/189${Date.now()}`,
+      averageScore: 1750, // High quality score
+      engagementStats: {
+        total_retweeters: 245,
+        total_repliers: 89,
+        total_quote_tweeters: 34,
+        total_unique_users: 368,
+        reputable_retweeters: 189,
+        reputable_repliers: 67,
+        reputable_quote_tweeters: 28,
+        reputable_total: 284,
+        reputable_percentage: 77,
+        ethos_active_retweeters: 201,
+        ethos_active_repliers: 73,
+        ethos_active_quote_tweeters: 31,
+        ethos_active_total: 305,
+        ethos_active_percentage: 83,
+        retweeters_rate_limited: false,
+        repliers_rate_limited: false,
+        quote_tweeters_rate_limited: false,
+      },
+      overallQuality: "high" as "high" | "medium" | "low"
+    };
+
+    await storageService.storeValidation(testValidation);
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Test validation created from realistic user",
+      validation: testValidation,
+      note: "This simulates what the dashboard would look like with validation data from real users (not @airdroppatron)"
+    };
+  } catch (error) {
+    console.error("❌ Failed to create test validation:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Failed to create test validation",
+      error: error.message
+    };
+  }
+});
+
 // Create sample validation data endpoint
 router.post("/test/create-sample", async (ctx) => {
   try {
