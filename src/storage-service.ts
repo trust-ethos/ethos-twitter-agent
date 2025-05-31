@@ -82,6 +82,88 @@ export class StorageService {
    */
   async storeValidation(validation: ValidationRecord): Promise<void> {
     try {
+      // First try to save to PostgreSQL database
+      if (this.database) {
+        try {
+          // Convert ValidationRecord to database format
+          const tweetId = Number(validation.tweetId);
+          const analysisDate = new Date(validation.timestamp);
+          
+          // Generate simple numeric IDs for users (Twitter uses snowflake IDs which are large numbers)
+          // We'll use a simple hash-based approach for consistent IDs
+          const generateUserId = (username: string): number => {
+            let hash = 0;
+            for (let i = 0; i < username.length; i++) {
+              const char = username.charCodeAt(i);
+              hash = ((hash << 5) - hash) + char;
+              hash = hash & hash; // Convert to 32-bit integer
+            }
+            return Math.abs(hash);
+          };
+
+          const authorId = generateUserId(validation.tweetAuthorHandle);
+          const requesterId = generateUserId(validation.requestedByHandle);
+          
+          // Step 1: Ensure tweet author exists in twitter_users table
+          await this.database.upsertTwitterUser({
+            id: authorId,
+            username: validation.tweetAuthorHandle,
+            display_name: validation.tweetAuthor,
+            profile_image_url: validation.tweetAuthorAvatar || null
+          });
+
+          // Step 2: Ensure requester exists in twitter_users table  
+          await this.database.upsertTwitterUser({
+            id: requesterId,
+            username: validation.requestedByHandle,
+            display_name: validation.requestedBy,
+            profile_image_url: validation.requestedByAvatar || null
+          });
+
+          // Step 3: Ensure tweet exists in tweets table
+          await this.database.upsertTweet({
+            id: tweetId,
+            author_id: authorId,
+            content: `Tweet being validated (ID: ${validation.tweetId})`,
+            published_at: analysisDate // Use analysis date as fallback
+          });
+
+          // Step 4: Now save the validation
+          const dbValidation = {
+            tweet_id: tweetId,
+            validation_key: validation.id,
+            total_unique_users: validation.engagementStats.total_unique_users,
+            reputable_users: validation.engagementStats.reputable_total,
+            ethos_active_users: validation.engagementStats.ethos_active_total,
+            reputable_percentage: validation.engagementStats.reputable_percentage,
+            ethos_active_percentage: validation.engagementStats.ethos_active_percentage,
+            analysis_started_at: analysisDate,
+            analysis_completed_at: analysisDate,
+            rate_limited: validation.engagementStats.retweeters_rate_limited || 
+                         validation.engagementStats.repliers_rate_limited || 
+                         validation.engagementStats.quote_tweeters_rate_limited,
+            incomplete_data: false,
+            engagement_data: {
+              ...validation.engagementStats,
+              averageScore: validation.averageScore,
+              overallQuality: validation.overallQuality,
+              tweetAuthor: validation.tweetAuthor,
+              tweetAuthorHandle: validation.tweetAuthorHandle,
+              requestedBy: validation.requestedBy,
+              requestedByHandle: validation.requestedByHandle,
+              tweetUrl: validation.tweetUrl
+            }
+          };
+
+          await this.database.saveValidation(dbValidation);
+          console.log(`📊 Stored validation ${validation.id} in PostgreSQL database`);
+        } catch (dbError) {
+          console.error("❌ Failed to save validation to database:", dbError);
+          // Continue with KV storage as fallback
+        }
+      }
+
+      // Also store in KV storage (existing functionality)
       if (this.kv) {
         // Store the main validation record
         await this.kv.set(["validation", validation.id], validation);
