@@ -197,6 +197,55 @@ export class StorageService {
    */
   async getRecentValidations(limit = 50): Promise<ValidationRecord[]> {
     try {
+      // First try to get from PostgreSQL database
+      if (this.database) {
+        try {
+          const dbValidations = await this.database.getLatestValidations(limit);
+          
+          // Convert database format to ValidationRecord format
+          const validations: ValidationRecord[] = dbValidations.map(dbVal => ({
+            id: dbVal.validation_key,
+            tweetId: dbVal.tweet_id.toString(),
+            tweetAuthor: dbVal.engagement_data?.tweetAuthor || dbVal.author_display_name || "Unknown",
+            tweetAuthorHandle: dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username || "unknown",
+            tweetAuthorAvatar: dbVal.engagement_data?.tweetAuthorAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png',
+            requestedBy: dbVal.engagement_data?.requestedBy || "Unknown",
+            requestedByHandle: dbVal.engagement_data?.requestedByHandle || "unknown", 
+            requestedByAvatar: dbVal.engagement_data?.requestedByAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+            timestamp: dbVal.created_at,
+            tweetUrl: dbVal.engagement_data?.tweetUrl || `https://x.com/${dbVal.author_username}/status/${dbVal.tweet_id}`,
+            averageScore: dbVal.engagement_data?.averageScore || null,
+            engagementStats: {
+              total_retweeters: dbVal.engagement_data?.total_retweeters || 0,
+              total_repliers: dbVal.engagement_data?.total_repliers || 0,
+              total_quote_tweeters: dbVal.engagement_data?.total_quote_tweeters || 0,
+              total_unique_users: dbVal.total_unique_users,
+              reputable_retweeters: dbVal.engagement_data?.reputable_retweeters || 0,
+              reputable_repliers: dbVal.engagement_data?.reputable_repliers || 0,
+              reputable_quote_tweeters: dbVal.engagement_data?.reputable_quote_tweeters || 0,
+              reputable_total: dbVal.reputable_users,
+              reputable_percentage: parseFloat(dbVal.reputable_percentage.toString()),
+              ethos_active_retweeters: dbVal.engagement_data?.ethos_active_retweeters || 0,
+              ethos_active_repliers: dbVal.engagement_data?.ethos_active_repliers || 0,
+              ethos_active_quote_tweeters: dbVal.engagement_data?.ethos_active_quote_tweeters || 0,
+              ethos_active_total: dbVal.ethos_active_users,
+              ethos_active_percentage: parseFloat(dbVal.ethos_active_percentage.toString()),
+              retweeters_rate_limited: dbVal.engagement_data?.retweeters_rate_limited || false,
+              repliers_rate_limited: dbVal.engagement_data?.repliers_rate_limited || false,
+              quote_tweeters_rate_limited: dbVal.engagement_data?.quote_tweeters_rate_limited || false,
+            },
+            overallQuality: dbVal.engagement_data?.overallQuality as "high" | "medium" | "low" || "medium"
+          }));
+          
+          console.log(`📊 Retrieved ${validations.length} validations from PostgreSQL database`);
+          return validations;
+        } catch (dbError) {
+          console.error("❌ Failed to get validations from database:", dbError);
+          // Fall through to KV storage
+        }
+      }
+
+      // Fallback to KV storage (existing logic)
       const validations: ValidationRecord[] = [];
       
       if (this.kv) {
@@ -209,6 +258,7 @@ export class StorageService {
         
         // Sort by timestamp (newest first) and limit
         validations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        console.log(`📊 Retrieved ${validations.length} validations from KV storage`);
         return validations.slice(0, limit);
       } else {
         // Use local fallback
@@ -216,6 +266,7 @@ export class StorageService {
           .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
           .slice(0, limit);
         validations.push(...sortedValidations);
+        console.log(`📊 Retrieved ${validations.length} validations from local storage`);
         return validations;
       }
     } catch (error) {
@@ -229,6 +280,22 @@ export class StorageService {
    */
   async getValidationStats(): Promise<{ totalValidations: number; lastUpdated: string }> {
     try {
+      // First try to get from PostgreSQL database
+      if (this.database) {
+        try {
+          const stats = await this.database.getStats();
+          console.log(`📊 Retrieved validation stats from PostgreSQL database: ${stats.validations} validations`);
+          return {
+            totalValidations: stats.validations || 0,
+            lastUpdated: new Date().toISOString()
+          };
+        } catch (dbError) {
+          console.error("❌ Failed to get validation stats from database:", dbError);
+          // Fall through to KV storage
+        }
+      }
+
+      // Fallback to KV storage
       let totalValidations = 0;
       
       if (this.kv) {
@@ -236,8 +303,10 @@ export class StorageService {
         for await (const _ of iter) {
           totalValidations++;
         }
+        console.log(`📊 Retrieved validation stats from KV storage: ${totalValidations} validations`);
       } else {
         totalValidations = this.validationsMap.size;
+        console.log(`📊 Retrieved validation stats from local storage: ${totalValidations} validations`);
       }
 
       return {
