@@ -1470,6 +1470,63 @@ router.post("/cron/poll-mentions", async (ctx) => {
 router.get("/webhook/twitter", webhookHandler.handleChallengeRequest.bind(webhookHandler));
 router.post("/webhook/twitter", webhookHandler.handleWebhook.bind(webhookHandler));
 
+// Database schema inspection endpoint
+router.get("/debug/database-schema", async (ctx) => {
+  try {
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
+    
+    // Get table info for key tables
+    const tableInfo = await Promise.all([
+      db.client`SELECT COUNT(*) as count FROM tweet_validations`,
+      db.client`SELECT COUNT(*) as count FROM tweets WHERE content LIKE 'Tweet being validated%'`,
+      db.client`SELECT COUNT(*) as count FROM twitter_users`,
+      db.client`SELECT validation_key, tweet_id, total_unique_users, reputable_percentage, ethos_active_percentage, created_at FROM tweet_validations ORDER BY created_at DESC LIMIT 5`,
+      db.client`SELECT id, content, author_id, created_at FROM tweets WHERE content LIKE 'Tweet being validated%' ORDER BY created_at DESC LIMIT 5`
+    ]);
+
+    ctx.response.body = {
+      status: "success",
+      message: "Database schema information",
+      tables: {
+        tweet_validations: {
+          description: "🎯 MAIN TABLE: Real validation data with engagement stats",
+          count: parseInt(tableInfo[0][0].count),
+          sample_records: tableInfo[3]
+        },
+        tweets: {
+          description: "📋 DEPENDENCY TABLE: Placeholder data for foreign keys",
+          validation_placeholder_count: parseInt(tableInfo[1][0].count),
+          sample_records: tableInfo[4]
+        },
+        twitter_users: {
+          description: "👥 USER TABLE: Twitter user information",
+          count: parseInt(tableInfo[2][0].count)
+        }
+      },
+      explanation: {
+        validation_flow: [
+          "1. User runs 'validate' command on a tweet",
+          "2. System creates placeholder entry in 'tweets' table (for foreign key)",
+          "3. System creates user entries in 'twitter_users' table",
+          "4. 🎯 System stores REAL validation data in 'tweet_validations' table",
+          "5. Dashboard reads from 'tweet_validations' via storage service"
+        ],
+        data_location: "Real validation data is in 'tweet_validations' table, NOT 'tweets' table"
+      },
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Schema inspection failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Schema inspection failed",
+      error: error.message
+    };
+  }
+});
+
 // Add router to app
 app.use(router.routes());
 app.use(router.allowedMethods());
