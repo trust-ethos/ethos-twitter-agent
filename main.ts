@@ -77,9 +77,8 @@ if (usePolling) {
 // Dashboard route - serve the tabbed dashboard page
 router.get("/dashboard", async (ctx) => {
   try {
-    // Get tab parameter
+    // Get tab parameter (simplified since only validations now)
     const url = new URL(ctx.request.url);
-    const tab = url.searchParams.get("tab") || "validations";
     const authorFilter = url.searchParams.get('author');
 
     // Get validation data from storage
@@ -93,121 +92,6 @@ router.get("/dashboard", async (ctx) => {
       validations = allValidations.filter(v => 
         v.tweetAuthorHandle.toLowerCase() === authorFilter.toLowerCase()
       );
-    }
-
-    // Get saved tweets from Ethos API
-    let savedTweets = [];
-    try {
-      console.log("🔄 Fetching saved tweets from Ethos API...");
-      const ethosResponse = await fetch("https://api.ethos.network/api/v1/reviews", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          authorAddress: "0x792cCe0d4230FF69FA69F466Ef62B8f81eB619d7",
-          limit: 50,
-          offset: 0
-        })
-      });
-      
-      console.log("📡 Ethos API response status:", ethosResponse.status, ethosResponse.statusText);
-      
-      if (ethosResponse.ok) {
-        const ethosData = await ethosResponse.json();
-        console.log("🔍 Ethos API response data keys:", Object.keys(ethosData));
-        console.log("🔍 Data structure:", ethosData.data ? Object.keys(ethosData.data) : "No data key");
-        
-        // Fix: Use data.values instead of reviews
-        const reviews = ethosData.data?.values || [];
-        console.log("🔍 Found reviews count:", reviews.length);
-        
-        if (Array.isArray(reviews) && reviews.length > 0) {
-          // Filter for Twitter-related reviews by checking metadata for Twitter info
-          const twitterReviews = reviews.filter(review => {
-            try {
-              const metadata = JSON.parse(review.metadata || '{}');
-              // Look for Twitter-related metadata like tweetUrl, savedBy, etc.
-              return metadata.tweetUrl || 
-                     metadata.savedBy || 
-                     metadata.savedByHandle || 
-                     metadata.targetUserHandle ||
-                     (metadata.description && metadata.description.includes('Original tweet saved by'));
-            } catch (e) {
-              // If metadata parsing fails, skip this review
-              return false;
-            }
-          });
-          
-          console.log("🔍 Twitter-related reviews found:", twitterReviews.length);
-          
-          savedTweets = twitterReviews.map((review, index) => {
-            let metadata = {};
-            let savedByHandle = "unknown";
-            let tweetUrl = "";
-            let authorUserId = "";
-            let originalTweetText = "";
-            
-            try {
-              metadata = JSON.parse(review.metadata || '{}');
-              console.log(`🔍 Review ${review.id} metadata:`, JSON.stringify(metadata, null, 2));
-              
-              // Parse the description field to extract Twitter information
-              if (metadata.description) {
-                // Extract @username who saved it: "Original tweet saved by @username:"
-                const savedByMatch = metadata.description.match(/Original tweet saved by @(\w+):/);
-                if (savedByMatch) {
-                  savedByHandle = savedByMatch[1];
-                }
-                
-                // Extract tweet URL: "Link to tweet: https://x.com/..."
-                const tweetUrlMatch = metadata.description.match(/Link to tweet: (https:\/\/x\.com\/\S+)/);
-                if (tweetUrlMatch) {
-                  tweetUrl = tweetUrlMatch[1];
-                }
-                
-                // Extract author user ID: "Author user id: 123456"
-                const authorIdMatch = metadata.description.match(/Author user id: (\d+)/);
-                if (authorIdMatch) {
-                  authorUserId = authorIdMatch[1];
-                }
-                
-                // Extract original tweet text (between quotes after saved by @username:)
-                const tweetTextMatch = metadata.description.match(/Original tweet saved by @\w+: "([^"]+)"/);
-                if (tweetTextMatch) {
-                  originalTweetText = tweetTextMatch[1];
-                }
-              }
-            } catch (e) {
-              console.warn("Failed to parse metadata for review", review.id);
-            }
-            
-            return {
-              id: review.id || index,
-              subject: review.subject || "Unknown",
-              author: review.author || "Unknown", 
-              comment: originalTweetText || review.comment || "",
-              score: review.score || "neutral",
-              createdAt: review.createdAt || Date.now(),
-              metadata: review.metadata || "",
-              tweetUrl: tweetUrl,
-              savedBy: savedByHandle,
-              savedByHandle: savedByHandle,
-              targetUser: review.subject || "Unknown",
-              targetUserHandle: "unknown", // We don't have the target username in this format
-            };
-          }).slice(0, 50);
-          
-          console.log("✅ Processed Twitter saved tweets:", savedTweets.length);
-        } else {
-          console.log("⚠️ No reviews found in data.values array");
-        }
-      } else {
-        const errorText = await ethosResponse.text();
-        console.error("❌ Ethos API error:", ethosResponse.status, errorText);
-      }
-    } catch (error) {
-      console.error("❌ Failed to fetch saved tweets:", error);
     }
 
     // Get unique tweet authors for filter dropdown
@@ -351,17 +235,14 @@ router.get("/dashboard", async (ctx) => {
         
         <div class="tabs">
             <div class="tab-nav">
-                <button class="tab-button ${tab === 'validations' ? 'active' : ''}" onclick="switchTab('validations')">
+                <button class="tab-button active">
                     Validations (${stats.totalValidations})
-                </button>
-                <button class="tab-button ${tab === 'saved' ? 'active' : ''}" onclick="switchTab('saved')">
-                    Saved Tweets (${savedTweets.length})
                 </button>
             </div>
             
             <div class="tab-content">
                 <!-- Validations Tab -->
-                <div id="validations-tab" class="tab-panel ${tab === 'validations' ? 'active' : ''}">
+                <div id="validations-tab" class="tab-panel active">
                     <div class="stats">
                         <div class="stat-card">
                             <h3>Total Validations</h3>
@@ -443,25 +324,27 @@ router.get("/dashboard", async (ctx) => {
                                                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
                                                     <div>
                                                         <strong>${v.tweetAuthor}</strong><br>
-                                                        <a href="/dashboard?author=${v.tweetAuthorHandle}" style="color: #9ca3af;">@${v.tweetAuthorHandle}</a>
+                                                        <span style="color: #9ca3af;">@${v.tweetAuthorHandle}</span>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
-                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                <div style="display: flex; align-items: center; gap: 10px;">
                                                     <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" 
-                                                         style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
-                                                    @${v.requestedByHandle}
+                                                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                                                    <div>
+                                                        <strong>${v.requestedBy}</strong><br>
+                                                        <span style="color: #9ca3af;">@${v.requestedByHandle}</span>
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td>
-                                                <strong>${qualityEmoji} ${weightedScore}%</strong><br>
-                                                <span style="color: #9ca3af; font-size: 0.8rem;">
-                                                    ${reputablePct}% reputable + ${ethosActivePct}% active
-                                                </span>
+                                            <td style="text-align: center;">
+                                                <span style="font-size: 1.2rem;">${qualityEmoji}</span><br>
+                                                <strong class="quality-${v.overallQuality}">${v.overallQuality.toUpperCase()}</strong>
                                             </td>
-                                            <td>
-                                                ${v.averageScore ? `${avgScoreEmoji} ${v.averageScore}` : '—'}
+                                            <td style="text-align: center;">
+                                                <span style="font-size: 1.2rem;">${avgScoreEmoji}</span><br>
+                                                <span class="avg-score">${weightedScore}%</span>
                                             </td>
                                             <td>
                                                 ${v.engagementStats.total_retweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100))} RT: ${Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)}% (${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})<br>` : ''}
@@ -483,95 +366,16 @@ router.get("/dashboard", async (ctx) => {
                         `}
                     </div>
                 </div>
-                
-                <!-- Saved Tweets Tab -->
-                <div id="saved-tab" class="tab-panel ${tab === 'saved' ? 'active' : ''}">
-                    <div class="stats">
-                        <div class="stat-card">
-                            <h3>Total Saved Tweets</h3>
-                            <div class="stat-number">${savedTweets.length}</div>
-                        </div>
-                        <div class="stat-card">
-                            <h3>Last Updated</h3>
-                            <div class="stat-number" style="font-size: 1.2rem;">${new Date().toLocaleTimeString()}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="table-container">
-                        <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #374151;">Recent Saved Tweets</h2>
-                        ${savedTweets.length === 0 ? `
-                            <div class="empty-state">
-                                No saved tweets found. Saved tweets will appear here when users run @ethosAgent save commands.
-                            </div>
-                        ` : `
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Target User</th>
-                                        <th>Saved By</th>
-                                        <th>Sentiment</th>
-                                        <th>Content Preview</th>
-                                        <th>Saved At</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${savedTweets.map(tweet => {
-                                      return `
-                                        <tr>
-                                            <td>
-                                                <strong>${tweet.subject || 'Unknown'}</strong><br>
-                                                <span style="color: #9ca3af;">@${tweet.targetUserHandle || 'unknown'}</span>
-                                            </td>
-                                            <td>
-                                                <span style="color: #9ca3af;">@${tweet.savedByHandle || 'unknown'}</span>
-                                            </td>
-                                            <td>
-                                                <span style="font-size: 1.2rem;">${getSentimentEmoji(tweet.score)}</span><br>
-                                                <span style="color: #9ca3af; font-size: 0.9rem;">${tweet.score}</span>
-                                            </td>
-                                            <td>
-                                                <div style="max-width: 300px; overflow: hidden;">
-                                                    ${tweet.comment.length > 100 ? tweet.comment.substring(0, 100) + '...' : tweet.comment}
-                                                </div>
-                                            </td>
-                                            <td>${formatDate(tweet.createdAt)}</td>
-                                            <td>
-                                                ${tweet.tweetUrl ? `<a href="${tweet.tweetUrl}" target="_blank">View Tweet</a>` : 'N/A'}
-                                            </td>
-                                        </tr>
-                                      `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        `}
-                    </div>
-                </div>
             </div>
         </div>
         
         <div style="text-align: center; margin-top: 40px; padding: 20px; color: #9ca3af; font-size: 0.9rem;">
-            <p>This dashboard shows validation commands and saved tweets processed by @ethosAgent on Twitter.</p>
+            <p>This dashboard shows validation commands processed by @ethosAgent on Twitter.</p>
             <p>Learn more about Ethos at <a href="https://ethos.network" target="_blank">ethos.network</a></p>
         </div>
     </div>
 
     <script>
-        function switchTab(tabName) {
-            // Update URL
-            const url = new URL(window.location);
-            url.searchParams.set('tab', tabName);
-            window.history.pushState(null, '', url);
-            
-            // Update tab buttons
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-            document.querySelector(\`[onclick="switchTab('\${tabName}')"]\`).classList.add('active');
-            
-            // Update tab panels
-            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
-            document.getElementById(tabName + '-tab').classList.add('active');
-        }
-        
         function filterByAuthor(authorHandle) {
             if (authorHandle) {
                 window.location.href = '/dashboard?author=' + authorHandle;
