@@ -957,6 +957,33 @@ router.get("/test/saved-tweets", async (ctx) => {
   }
 });
 
+// Test database validations endpoint
+router.get("/test/database-validations", async (ctx) => {
+  try {
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
+    
+    // Get latest validations from database
+    const validations = await db.getLatestValidations(10);
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Database validations retrieved successfully", 
+      data: validations,
+      total: validations.length,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Database validations test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Database validations test failed",
+      error: error.message
+    };
+  }
+});
+
 // Test saving a tweet endpoint 
 router.post("/test/save-tweet", async (ctx) => {
   try {
