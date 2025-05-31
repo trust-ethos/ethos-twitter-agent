@@ -101,7 +101,8 @@ router.get("/dashboard", async (ctx) => {
       averageScore: allValidations.length > 0 ? 
         Math.round(allValidations.reduce((sum, v) => sum + (v.averageScore || 0), 0) / allValidations.length) : 
         0,
-      systemStatus: 'Healthy'
+      systemStatus: 'Healthy',
+      uniqueValidators: new Set(validations.map(v => v.requestedByHandle)).size
     };
 
     // For testing purposes, use actual validation data or create sample data
@@ -420,22 +421,30 @@ router.get("/dashboard", async (ctx) => {
                     </div>
                 </div>
 
-                <!-- Average Score -->
+                <!-- Top Validators -->
                 <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="ethos-text-tertiary text-sm font-medium">Avg Quality Score</p>
-                            <p class="text-2xl font-bold ethos-text-base">${stats.averageScore}%</p>
+                            <p class="ethos-text-tertiary text-sm font-medium">Top Validators</p>
+                            <p class="text-2xl font-bold ethos-text-base">${stats.uniqueValidators}</p>
                         </div>
                         <div class="p-3 bg-purple-500 rounded-full">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                             </svg>
                         </div>
                     </div>
                     <div class="mt-4">
-                        <div class="w-full ethos-bg-base rounded-full h-2">
-                            <div class="ethos-primary-bg h-2 rounded-full" style="width: ${stats.averageScore}%"></div>
+                        <div class="flex -space-x-2">
+                            <!-- Show recent validator avatars as facepile -->
+                            ${validationData.slice(0, 4).map((validation, index) => `
+                                <img class="h-8 w-8 rounded-full border-2 border-white object-cover" 
+                                     src="${validation.requestedByAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'}" 
+                                     alt="Validator ${index + 1}" 
+                                     onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'"
+                                     style="z-index: ${10 - index};">
+                            `).join('')}
+                            ${validationData.length > 4 ? `<div class="h-8 w-8 rounded-full border-2 border-white ethos-bg-elevated flex items-center justify-center text-xs ethos-text-secondary font-medium">+${validationData.length - 4}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -474,7 +483,7 @@ router.get("/dashboard", async (ctx) => {
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Author</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Validator</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Quality Score</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Top Validators</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Avg Ethos Score</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Reputable Engagement</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Ethos Activity</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Date</th>
@@ -533,17 +542,11 @@ router.get("/dashboard", async (ctx) => {
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <div class="flex -space-x-2">
-                                                    ${topValidators.map((avatar, index) => `
-                                                        <img class="h-8 w-8 rounded-full border-2 border-white object-cover" 
-                                                             src="${avatar}" 
-                                                             alt="Validator ${index + 1}" 
-                                                             onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'"
-                                                             style="z-index: ${10 - index};">
-                                                    `).join('')}
-                                                    ${topValidators.length === 0 ? '<span class="text-xs ethos-text-tertiary">No validators</span>' : ''}
+                                                <span class="text-lg mr-2">${validation.averageScore >= 1800 ? "🟢" : validation.averageScore >= 1500 ? "🟡" : "🔴"}</span>
+                                                <div>
+                                                    <div class="text-sm font-medium ethos-text-base">${validation.averageScore}</div>
+                                                    <div class="text-xs ethos-text-tertiary">Average Score</div>
                                                 </div>
-                                                ${topValidators.length > 0 ? `<span class="ml-2 text-xs ethos-text-tertiary">+${Math.max(0, (validation.engagementStats.total_retweeters || 0) + (validation.engagementStats.total_repliers || 0) + (validation.engagementStats.total_quote_tweeters || 0) - 2)} others</span>` : ''}
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
