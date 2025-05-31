@@ -1,143 +1,183 @@
 import { Handlers } from "$fresh/server.ts";
+import { neon } from "@neondatabase/serverless";
 
 interface SavedTweet {
-  id: number;
-  subject: string;
+  id: string;
+  tweetUrl: string;
+  content: string;
   author: string;
-  comment: string;
-  score: "positive" | "negative" | "neutral";
-  createdAt: number;
-  metadata: string;
-  tweetUrl?: string;
-  savedBy?: string;
-  savedByHandle?: string;
-  targetUser?: string;
-  targetUserHandle?: string;
+  authorHandle: string;
+  savedBy: string;
+  savedByHandle: string;
+  sentiment: string;
+  createdAt: string;
+  ethosReviewId?: string;
+}
+
+// Function to get database instance (same as used in main app)
+function getDatabase() {
+  const DATABASE_URL = Deno.env.get("DATABASE_URL");
+  if (!DATABASE_URL) {
+    console.log("⚠️ DATABASE_URL not found in environment variables");
+    return null;
+  }
+  
+  try {
+    // Create a simple database client using neon/serverless
+    const sql = neon(DATABASE_URL);
+    
+    return {
+      async getSavedTweets(limit: number, offset: number) {
+        return await sql`
+          SELECT * FROM saved_tweets 
+          ORDER BY created_at DESC 
+          LIMIT ${limit} OFFSET ${offset}
+        `;
+      }
+    };
+  } catch (error) {
+    console.error("❌ Failed to initialize database:", error);
+    return null;
+  }
 }
 
 export const handler: Handlers = {
-  async GET(_req) {
+  async GET(req) {
+    console.log("🔍 Fetching saved tweets from multiple sources...");
+    
+    // First, try to get saved tweets from our database
+    let databaseTweets: SavedTweet[] = [];
+    const database = getDatabase();
+    
+    if (database) {
+      try {
+        console.log("🗄️ Fetching saved tweets from database...");
+        const dbSavedTweets = await database.getSavedTweets(50, 0);
+        
+        databaseTweets = dbSavedTweets.map((dbTweet: any) => ({
+          id: `db_${dbTweet.id}`,
+          tweetUrl: dbTweet.tweet_url || `https://x.com/user/status/${dbTweet.tweet_id}`,
+          content: dbTweet.original_content || "Tweet saved via @ethosAgent",
+          author: dbTweet.author_username || "Unknown",
+          authorHandle: dbTweet.author_username || "unknown",
+          savedBy: dbTweet.saved_by_username,
+          savedByHandle: dbTweet.saved_by_username,
+          sentiment: "positive", // Default for now
+          createdAt: dbTweet.created_at,
+          ethosReviewId: dbTweet.ethos_review_id?.toString()
+        }));
+        
+        console.log(`📊 Found ${databaseTweets.length} saved tweets in database`);
+      } catch (error) {
+        console.error("❌ Error fetching saved tweets from database:", error);
+      }
+    }
+
+    // Also fetch saved tweets from Ethos API (existing logic)
+    let ethosApiTweets: SavedTweet[] = [];
     try {
-      console.log("🔍 Fetching saved tweets from Ethos API...");
-      
-      // Fetch saved tweets from Ethos API
-      const ethosResponse = await fetch("https://api.ethos.network/api/v1/reviews", {
-        method: "POST",
+      const ethosResponse = await fetch("https://api.ethos.network/reviews?limit=50", {
+        method: 'GET',
         headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          author: ["0x792cCe0d4230FF69FA69F466Ef62B8f81eB619d7"], // Static author address for Ethos Agent
-          orderBy: {
-            createdAt: "desc"
-          },
-          limit: 50,
-          offset: 0
-        })
+          'Content-Type': 'application/json',
+        }
       });
 
       if (!ethosResponse.ok) {
-        console.error(`❌ Ethos API error: ${ethosResponse.status} ${ethosResponse.statusText}`);
-        return new Response(JSON.stringify({ 
-          success: false, 
-          error: "Failed to fetch from Ethos API",
-          data: []
-        }), {
-          status: 500,
-          headers: { "Content-Type": "application/json" }
-        });
+        throw new Error(`Ethos API responded with status: ${ethosResponse.status}`);
       }
 
       const ethosData = await ethosResponse.json();
-      console.log(`✅ Ethos API response received, ok: ${ethosData.ok}, values count: ${ethosData.data?.values?.length || 0}`);
-
-      let savedTweets: SavedTweet[] = [];
+      console.log(`📡 Ethos API response status: ${ethosResponse.status} ${ethosResponse.statusText}`);
 
       if (ethosData.ok && ethosData.data && ethosData.data.values) {
-        savedTweets = ethosData.data.values.map((review: any) => {
-          // Parse metadata to extract tweet information
-          let metadata = {};
-          let tweetUrl = "";
-          let savedBy = "";
-          let savedByHandle = "";
-          let targetUser = "";
-          let targetUserHandle = "";
+        console.log(`🔍 Found reviews count: ${ethosData.data.values.length}`);
+        
+        // Filter for Twitter-related reviews (those with Twitter attestations or saved tweets)
+        const twitterReviews = ethosData.data.values.filter((review: any) => {
+          const hasTwitterAttestation = review.attestationDetails?.service === "x.com";
+          const hasTwitterMetadata = review.metadata && 
+            (review.metadata.includes("Original tweet saved by @") || 
+             review.metadata.includes("Link to tweet: https://x.com/") ||
+             review.metadata.includes("service:x.com"));
+          
+          return hasTwitterAttestation || hasTwitterMetadata;
+        });
 
+        console.log(`🔍 Twitter-related reviews found: ${twitterReviews.length}`);
+
+        ethosApiTweets = twitterReviews.map((review: any) => {
+          let metadata;
           try {
-            if (review.metadata) {
-              metadata = JSON.parse(review.metadata);
-            }
+            metadata = typeof review.metadata === 'string' ? JSON.parse(review.metadata) : review.metadata;
           } catch (e) {
-            console.log("Failed to parse review metadata:", e);
+            metadata = { description: review.metadata || '' };
           }
 
-          // Extract tweet URL from description/comment
-          const descMatch = review.comment?.match(/Link to tweet: (https:\/\/x\.com\/\w+\/status\/\d+)/);
-          if (descMatch) {
-            tweetUrl = descMatch[1];
+          const description = metadata.description || '';
+          
+          // Extract tweet URL from metadata description
+          const tweetUrlMatch = description.match(/Link to tweet: (https:\/\/x\.com\/[^\s]+)/);
+          const tweetUrl = tweetUrlMatch ? tweetUrlMatch[1] : '';
+
+          // Extract @username who saved it: "Original tweet saved by @username:"
+          const savedByMatch = description.match(/Original tweet saved by @(\w+):/);
+          const savedByHandle = savedByMatch ? savedByMatch[1] : 'Unknown';
+
+          // Extract the original tweet content from description
+          let content = review.comment || 'Saved tweet';
+          const contentMatch = description.match(/Original tweet saved by @\w+: "([^"]+)"/);
+          if (contentMatch) {
+            content = contentMatch[1];
           }
 
-          // Extract saved by from description/comment
-          const savedByMatch = review.comment?.match(/Original tweet saved by @(\w+):/);
-          if (savedByMatch) {
-            savedBy = savedByMatch[1];
-            savedByHandle = savedByMatch[1];
-          }
-
-          // Extract target user info from subject or description
-          if (review.subject && typeof review.subject === 'string') {
-            // Subject might be an address or username
-            targetUser = review.subject;
-            targetUserHandle = review.subject;
-          }
-
-          // Extract tweet URL for target user handle if we have it
+          // Extract author info from tweet URL
+          let authorHandle = 'unknown';
           if (tweetUrl) {
-            const urlMatch = tweetUrl.match(/https:\/\/x\.com\/(\w+)\/status/);
-            if (urlMatch) {
-              targetUserHandle = urlMatch[1];
-              targetUser = urlMatch[1];
+            const authorMatch = tweetUrl.match(/https:\/\/x\.com\/([^\/]+)\/status/);
+            if (authorMatch) {
+              authorHandle = authorMatch[1];
             }
           }
 
           return {
-            id: review.id,
-            subject: review.subject || "",
-            author: review.author || "",
-            comment: review.comment || "",
-            score: review.score || "neutral",
-            createdAt: review.createdAt || Date.now() / 1000,
-            metadata: review.metadata || "",
-            tweetUrl,
-            savedBy,
-            savedByHandle,
-            targetUser,
-            targetUserHandle
+            id: `ethos_${review.id}`,
+            tweetUrl: tweetUrl,
+            content: content,
+            author: authorHandle,
+            authorHandle: authorHandle,
+            savedBy: savedByHandle,
+            savedByHandle: savedByHandle,
+            sentiment: review.score || 'positive',
+            createdAt: new Date(review.createdAt * 1000).toISOString(),
+            ethosReviewId: review.id.toString()
           };
-        });
+        }).filter((tweet: SavedTweet) => tweet.tweetUrl); // Only include tweets with valid URLs
+
+        console.log(`📊 Processed ${ethosApiTweets.length} saved tweets from Ethos API`);
+      } else {
+        console.log("⚠️ No reviews array found in Ethos API response or empty array");
       }
-
-      console.log(`📊 Processed ${savedTweets.length} saved tweets`);
-
-      return new Response(JSON.stringify({
-        success: true,
-        data: savedTweets,
-        total: savedTweets.length
-      }), {
-        headers: { "Content-Type": "application/json" }
-      });
-
     } catch (error) {
-      console.error("❌ Error fetching saved tweets:", error);
-      
-      return new Response(JSON.stringify({
-        success: false,
-        error: error.message || "Unknown error occurred",
-        data: []
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
+      console.error("❌ Error fetching saved tweets from Ethos API:", error);
     }
+
+    // Combine both sources, with database tweets first (most recent)
+    const allSavedTweets = [...databaseTweets, ...ethosApiTweets];
+    
+    // Remove duplicates based on tweet URL
+    const uniqueTweets = allSavedTweets.filter((tweet, index, self) => 
+      index === self.findIndex(t => t.tweetUrl === tweet.tweetUrl)
+    );
+
+    console.log(`📊 Total unique saved tweets: ${uniqueTweets.length}`);
+
+    return new Response(JSON.stringify({
+      success: true,
+      data: uniqueTweets,
+      total: uniqueTweets.length
+    }), {
+      headers: { "Content-Type": "application/json" },
+    });
   },
 }; 

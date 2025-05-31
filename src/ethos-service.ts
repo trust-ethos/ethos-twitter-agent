@@ -39,7 +39,11 @@ export interface EthosUserSearchResponse {
 }
 
 export class EthosService {
-  private baseUrl = "https://api.ethos.network";
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl = Deno.env.get("ETHOS_API_BASE_URL") || "https://api.ethos.network";
+  }
 
   /**
    * Get user stats from Ethos API

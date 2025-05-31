@@ -1154,75 +1154,38 @@ export class TwitterService {
     try {
       console.log(`🔍 Checking Ethos activity for @${username}...`);
       
-      // Check for reviews where the user is the subject (not author)
-      // Using the correct subject format from the documentation
-      const reviewsAsSubjectResponse = await fetch('https://api.ethos.network/api/v1/reviews/count', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          subject: [`service:x.com:username:${username}`]
-        })
-      });
+      // Use the Users API to get comprehensive stats
+      const userkey = `service:x.com:username:${username}`;
+      const userStatsResponse = await fetch(`https://api.ethos.network/api/v1/users/${encodeURIComponent(userkey)}/stats`);
 
-      console.log(`📊 Reviews API response for @${username}: ${reviewsAsSubjectResponse.status}`);
+      console.log(`📊 Users API response for @${username}: ${userStatsResponse.status}`);
       
-      if (reviewsAsSubjectResponse.ok) {
-        const reviewsAsSubject = await reviewsAsSubjectResponse.json();
-        console.log(`📊 Reviews data for @${username}:`, JSON.stringify(reviewsAsSubject, null, 2));
+      if (userStatsResponse.ok) {
+        const userStats = await userStatsResponse.json();
+        console.log(`📊 User stats for @${username}:`, JSON.stringify(userStats, null, 2));
         
-        if (reviewsAsSubject.ok && reviewsAsSubject.data && reviewsAsSubject.data.count > 0) {
-          console.log(`✅ @${username} has ${reviewsAsSubject.data.count} reviews as subject`);
-          return true; // User has received reviews
-        }
-      }
-
-      // Check for vouches received by the user (not authored by them)
-      // Note: Need to find the correct vouches API endpoint - this is a placeholder
-      try {
-        const vouchesResponse = await fetch('https://api.ethos.network/api/v1/vouches/count', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            subject: [`service:x.com:username:${username}`]
-          })
-        });
-
-        console.log(`📊 Vouches API response for @${username}: ${vouchesResponse.status}`);
-        
-        if (vouchesResponse.ok) {
-          const vouchesAsSubject = await vouchesResponse.json();
-          console.log(`📊 Vouches data for @${username}:`, JSON.stringify(vouchesAsSubject, null, 2));
+        if (userStats.ok && userStats.data) {
+          const reviewsReceived = userStats.data.reviews?.received || 0;
+          const vouchesReceived = userStats.data.vouches?.count?.received || 0;
           
-          // CRITICAL: Check for suspicious data patterns
-          // If the count is exactly 20068 or similar suspiciously round numbers, it's likely a default/bug
-          const suspiciousDefaultCounts = [20068, 20000, 10000, 50000];
-          const count = vouchesAsSubject.data?.count || 0;
+          const hasActivity = reviewsReceived > 0 || vouchesReceived > 0;
           
-          if (suspiciousDefaultCounts.includes(count)) {
-            console.warn(`⚠️ @${username} returned suspicious default count ${count} - treating as no activity`);
-            return false;
+          if (hasActivity) {
+            console.log(`✅ @${username} has Ethos activity: ${reviewsReceived} reviews, ${vouchesReceived} vouches`);
+          } else {
+            console.log(`❌ @${username} has no Ethos activity`);
           }
           
-          if (vouchesAsSubject.ok && vouchesAsSubject.data && count > 0) {
-            console.log(`✅ @${username} has ${count} vouches as subject`);
-            return true; // User has received vouches
-          }
+          return hasActivity;
         }
-      } catch (vouchError) {
-        console.warn(`⚠️ Vouches API error for @${username}:`, vouchError);
-        // Vouches API might not exist or have different endpoint, don't fail the whole check
+      } else {
+        console.log(`⚠️ Failed to fetch user stats for @${username}: ${userStatsResponse.status}`);
       }
-
-      console.log(`❌ @${username} has no Ethos activity (neither reviews nor vouches as subject)`);
-      return false; // User has no Ethos activity
-
+      
+      return false;
     } catch (error) {
-      console.error(`💥 Error checking Ethos activity for @${username}:`, error);
-      return false; // Default to false on error
+      console.error(`❌ Error checking Ethos activity for @${username}:`, error);
+      return false;
     }
   }
 }

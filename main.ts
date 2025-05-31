@@ -4,9 +4,30 @@ import { TwitterWebhookHandler } from "./src/webhook-handler.ts";
 import { TwitterService } from "./src/twitter-service.ts";
 import { CommandProcessor } from "./src/command-processor.ts";
 import { PollingService } from "./src/polling-service.ts";
+import { initDatabase } from "./src/database.ts";
 
 // Load environment variables
 await load({ export: true });
+
+// Initialize database
+const databaseUrl = Deno.env.get("DATABASE_URL");
+if (databaseUrl) {
+  try {
+    const db = initDatabase(databaseUrl);
+    const isHealthy = await db.healthCheck();
+    if (isHealthy) {
+      console.log("🗄️ Database connected successfully");
+      const stats = await db.getStats();
+      console.log("📊 Database stats:", stats);
+    } else {
+      console.error("❌ Database health check failed");
+    }
+  } catch (error) {
+    console.error("❌ Database initialization failed:", error);
+  }
+} else {
+  console.log("⚠️ DATABASE_URL not configured, using KV storage fallback");
+}
 
 const app = new Application();
 const router = new Router();
@@ -674,6 +695,140 @@ router.get("/test/storage", async (ctx) => {
     ctx.response.body = {
       status: "error",
       message: "Storage stats test failed",
+      error: error.message
+    };
+  }
+});
+
+// Database test endpoint
+router.get("/test/database", async (ctx) => {
+  try {
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
+    
+    const isHealthy = await db.healthCheck();
+    const stats = await db.getStats();
+    
+    // Test saving and retrieving a tweet
+    const testKey = `test_${Date.now()}`;
+    await db.setAppState(testKey, { test: true, timestamp: new Date().toISOString() });
+    const testValue = await db.getAppState(testKey);
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Database connection successful",
+      health: isHealthy,
+      stats: stats,
+      testOperation: {
+        key: testKey,
+        value: testValue,
+        success: testValue !== null
+      },
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Database test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Database test failed",
+      error: error.message
+    };
+  }
+});
+
+// Test saved tweets endpoint
+router.get("/test/saved-tweets", async (ctx) => {
+  try {
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
+    
+    // Get all saved tweets from database
+    const savedTweets = await db.getSavedTweets(50, 0);
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Saved tweets retrieved successfully",
+      data: savedTweets,
+      total: savedTweets.length,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Saved tweets test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Saved tweets test failed",
+      error: error.message
+    };
+  }
+});
+
+// Test saving a tweet endpoint 
+router.post("/test/save-tweet", async (ctx) => {
+  try {
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
+    
+    const body = await ctx.request.body({ type: "json" }).value;
+    const tweetId = body.tweetId || `test_${Date.now()}`;
+    
+    // Save a test tweet
+    await db.saveTweet({
+      tweet_id: parseInt(tweetId),
+      tweet_url: `https://x.com/test/status/${tweetId}`,
+      original_content: body.content || "Test tweet saved via @ethosAgent",
+      saved_by_user_id: 1,
+      saved_by_username: body.savedBy || "testuser",
+      ethos_source: "test:manual",
+      published_at: new Date()
+    });
+    
+    // Retrieve the saved tweet to verify
+    const savedTweets = await db.getSavedTweets(10, 0);
+    const savedTweet = savedTweets.find(t => t.tweet_id.toString() === tweetId);
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Tweet saved successfully",
+      savedTweet: savedTweet,
+      allSavedTweets: savedTweets.length,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Save tweet test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Save tweet test failed",
+      error: error.message
+    };
+  }
+});
+
+// Test storage service endpoint
+router.get("/test/storage-service/:tweetId", async (ctx) => {
+  try {
+    const tweetId = ctx.params.tweetId;
+    const storageService = commandProcessor['storageService']; // Access private member for testing
+    
+    const isSaved = await storageService.isTweetSaved(tweetId);
+    const savedTweetInfo = await storageService.getSavedTweet(tweetId);
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Storage service test completed",
+      tweetId: tweetId,
+      isSaved: isSaved,
+      savedTweetInfo: savedTweetInfo,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Storage service test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Storage service test failed",
       error: error.message
     };
   }
