@@ -74,6 +74,8 @@ export const handler: Handlers = {
     }
 
     // Also fetch saved tweets from Ethos API (existing logic)
+    // Temporarily disabled - only showing personal saved tweets from database
+    /*
     let ethosApiTweets: SavedTweet[] = [];
     try {
       const ethosResponse = await fetch("https://api.ethos.network/reviews?limit=50", {
@@ -161,6 +163,8 @@ export const handler: Handlers = {
     } catch (error) {
       console.error("❌ Error fetching saved tweets from Ethos API:", error);
     }
+    */
+    let ethosApiTweets: SavedTweet[] = []; // Empty array - only showing personal saved tweets
 
     // Combine both sources, with database tweets first (most recent)
     const allSavedTweets = [...databaseTweets, ...ethosApiTweets];
