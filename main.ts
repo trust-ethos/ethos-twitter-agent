@@ -358,10 +358,10 @@ router.get("/dashboard", async (ctx) => {
                             <h3 class="text-lg font-medium ethos-text-base">Tweet Validations</h3>
                             <p class="mt-1 text-sm ethos-text-secondary">Quality analysis of Twitter engagement</p>
                         </div>
-                        <div class="flex space-x-4">
-                            <!-- Search -->
+                        <div class="flex items-center space-x-4">
+                            <!-- Global Search -->
                             <div class="relative">
-                                <input type="text" id="search-input" placeholder="Search validations..." 
+                                <input type="text" id="search-input" placeholder="Search all columns..." 
                                        class="px-4 py-2 pr-10 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
                                     <svg class="h-5 w-5 ethos-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -369,14 +369,6 @@ router.get("/dashboard", async (ctx) => {
                                     </svg>
                                 </div>
                             </div>
-                            <!-- Author Filter -->
-                            <select id="author-filter" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">All Authors</option>
-                            </select>
-                            <!-- Validator Filter -->
-                            <select id="validator-filter" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">All Validators</option>
-                            </select>
                             <!-- Entries per page -->
                             <select id="entries-per-page" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="10">10</option>
@@ -393,23 +385,40 @@ router.get("/dashboard", async (ctx) => {
                     <table class="min-w-full divide-y ethos-border">
                         <thead class="ethos-bg-elevated">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="tweetAuthor">
-                                    Author <span class="sort-icon sort-none"></span>
+                                <!-- Author Column with Filter -->
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">
+                                    <div class="flex flex-col space-y-2">
+                                        <div class="flex items-center cursor-pointer hover:ethos-text-base" data-sort="tweetAuthor">
+                                            Author <span class="sort-icon sort-none ml-1"></span>
+                                        </div>
+                                        <select id="author-filter" class="text-xs px-2 py-1 ethos-bg-container ethos-text-base border ethos-border rounded focus:ring-1 focus:ring-blue-500">
+                                            <option value="">All Authors</option>
+                                        </select>
+                                    </div>
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="requestedBy">
-                                    Validator <span class="sort-icon sort-none"></span>
+                                <!-- Validator Column with Filter -->
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">
+                                    <div class="flex flex-col space-y-2">
+                                        <div class="flex items-center cursor-pointer hover:ethos-text-base" data-sort="requestedBy">
+                                            Validator <span class="sort-icon sort-none ml-1"></span>
+                                        </div>
+                                        <select id="validator-filter" class="text-xs px-2 py-1 ethos-bg-container ethos-text-base border ethos-border rounded focus:ring-1 focus:ring-blue-500">
+                                            <option value="">All Validators</option>
+                                        </select>
+                                    </div>
                                 </th>
+                                <!-- Other sortable columns -->
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="qualityScore">
-                                    Quality Score <span class="sort-icon sort-none"></span>
+                                    Quality Score <span class="sort-icon sort-none ml-1"></span>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="averageScore">
-                                    Avg Ethos Score <span class="sort-icon sort-none"></span>
+                                    Avg Ethos Score <span class="sort-icon sort-none ml-1"></span>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="totalEngagement">
-                                    Total Engagement <span class="sort-icon sort-none"></span>
+                                    Total Engagement <span class="sort-icon sort-none ml-1"></span>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="timestamp">
-                                    Date <span class="sort-icon sort-desc"></span>
+                                    Date <span class="sort-icon sort-desc ml-1"></span>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">
                                     Actions
@@ -540,14 +549,14 @@ router.get("/dashboard", async (ctx) => {
                 loadValidations();
             }, 300));
 
-            // Author filter
+            // Author filter (now integrated in table header)
             document.getElementById('author-filter').addEventListener('change', function(e) {
                 currentAuthorFilter = e.target.value;
                 currentPage = 1;
                 loadValidations();
             });
 
-            // Validator filter
+            // Validator filter (now integrated in table header)
             document.getElementById('validator-filter').addEventListener('change', function(e) {
                 currentValidatorFilter = e.target.value;
                 currentPage = 1;
@@ -561,9 +570,9 @@ router.get("/dashboard", async (ctx) => {
                 loadValidations();
             });
 
-            // Table header sorting
-            document.querySelectorAll('th[data-sort]').forEach(th => {
-                th.addEventListener('click', function() {
+            // Table header sorting (updated selector for new structure)
+            document.querySelectorAll('[data-sort]').forEach(element => {
+                element.addEventListener('click', function() {
                     const sortBy = this.dataset.sort;
                     if (currentSortBy === sortBy) {
                         currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
@@ -591,15 +600,15 @@ router.get("/dashboard", async (ctx) => {
             });
         }
 
-        // Update sort icons
+        // Update sort icons (updated selector for new structure)
         function updateSortIcons() {
-            document.querySelectorAll('th[data-sort] .sort-icon').forEach(icon => {
-                icon.className = 'sort-icon sort-none';
+            document.querySelectorAll('[data-sort] .sort-icon').forEach(icon => {
+                icon.className = 'sort-icon sort-none ml-1';
             });
             
-            const activeHeader = document.querySelector(\`th[data-sort="\${currentSortBy}"] .sort-icon\`);
+            const activeHeader = document.querySelector(\`[data-sort="\${currentSortBy}"] .sort-icon\`);
             if (activeHeader) {
-                activeHeader.className = \`sort-icon sort-\${currentSortOrder}\`;
+                activeHeader.className = \`sort-icon sort-\${currentSortOrder} ml-1\`;
             }
         }
 
@@ -726,14 +735,23 @@ router.get("/dashboard", async (ctx) => {
                 const scoreBadge = getScoreBadge(validation.averageScore);
                 const date = new Date(validation.timestamp).toLocaleDateString();
                 
-                // Fix Twitter profile image URLs - ensure they're proper Twitter URLs
-                const authorAvatar = validation.tweetAuthorAvatar && validation.tweetAuthorAvatar.includes('twimg.com') 
-                    ? validation.tweetAuthorAvatar 
-                    : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png';
+                // Fix Twitter profile image URLs - try to construct actual profile URLs
+                const getTwitterProfileImage = (handle, avatar) => {
+                    // If we have a valid Twitter image URL, use it
+                    if (avatar && avatar.includes('twimg.com') && !avatar.includes('default_profile')) {
+                        return avatar;
+                    }
+                    
+                    // Try to construct a Twitter profile image URL
+                    // Twitter profile images follow the pattern: https://pbs.twimg.com/profile_images/{id}/{hash}_{size}.{ext}
+                    // Since we don't have the ID/hash, we'll try a different approach
+                    
+                    // For now, return a reliable fallback that always works
+                    return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png';
+                };
                 
-                const validatorAvatar = validation.requestedByAvatar && validation.requestedByAvatar.includes('twimg.com')
-                    ? validation.requestedByAvatar 
-                    : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
+                const authorAvatar = getTwitterProfileImage(validation.tweetAuthorHandle, validation.tweetAuthorAvatar);
+                const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar);
                 
                 return \`
                     <tr class="hover:ethos-bg-elevated transition-colors">
