@@ -162,54 +162,54 @@ router.get("/dashboard", async (ctx) => {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Ethos Light Theme - improved mapping */
-            --background: 35 35 32; /* colorBgLayout: #C1C0B6 */
-            --foreground: 239 238 224; /* colorTextBase: #1F2126 */
-            --card: 51 51 48; /* colorBgElevated: #D5D4CD */
-            --card-foreground: 239 238 224 87%; /* colorText: #1F2126E0 */
-            --popover: 51 51 48; /* colorBgElevated: #D5D4CD */
-            --popover-foreground: 239 238 224; /* colorTextBase: #1F2126 */
-            --primary: 46 123 195; /* colorPrimary: #1F21B6 */
-            --primary-foreground: 35 35 32; /* colorTextLightSolid */
-            --secondary: 51 51 48; /* colorBgElevated: #D5D4CD */
-            --secondary-foreground: 239 238 224; /* colorTextBase: #1F2126 */
-            --muted: 51 51 48; /* colorBgElevated: #D5D4CD */
-            --muted-foreground: 239 238 224 65%; /* colorTextSecondary: #1F2126A6 */
-            --accent: 51 51 48; /* colorBgElevated: #D5D4CD */
-            --accent-foreground: 239 238 224; /* colorTextBase: #1F2126 */
-            --destructive: 183 43 56; /* colorError: #b72b38 */
-            --destructive-foreground: 255 255 255; /* white */
-            --border: 239 238 224 6%; /* Table.headerSplitColor: #1F21260F */
-            --input: 45 45 42; /* colorBgContainer for inputs: #CBCBC2 */
-            --ring: 46 123 195; /* colorPrimary: #1F21B6 */
-            --success: 18 127 49; /* colorSuccess: #127f31 */
-            --warning: 204 154 26; /* colorWarning: #cc9a1a */
+            /* ShadCN Default Light Theme */
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 221.2 83.2% 53.3%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 84% 4.9%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96%;
+            --accent-foreground: 222.2 84% 4.9%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 221.2 83.2% 53.3%;
+            --success: 142.1 76.2% 36.3%;
+            --warning: 47.9 95.8% 53.1%;
             --radius: 0.5rem;
         }
         
         .dark {
-            /* Ethos Dark Theme - improved mapping */
-            --background: 193 192 182; /* colorBgLayout: #C1C0B6 */
-            --foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
-            --card: 51 51 48; /* colorBgElevated: #333330 */
-            --card-foreground: 239 238 224 85%; /* colorText: #EFEEE0D9 */
-            --popover: 51 51 48; /* colorBgElevated: #333330 */
-            --popover-foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
-            --primary: 46 123 195; /* colorPrimary: #2E7BC3 */
-            --primary-foreground: 35 35 32; /* colorTextLightSolid: #232320 */
-            --secondary: 51 51 48; /* colorBgElevated: #333330 */
-            --secondary-foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
-            --muted: 51 51 48; /* colorBgElevated: #333330 */
-            --muted-foreground: 255 255 255 65%; /* colorTextSecondary: #FFFFFFA6 */
-            --accent: 51 51 48; /* colorBgElevated: #333330 */
-            --accent-foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
-            --destructive: 183 43 56; /* colorError: #b72b38 */
-            --destructive-foreground: 255 255 255; /* white */
-            --border: 51 51 48; /* colorBgElevated for subtle borders */
-            --input: 45 45 42; /* colorBgContainer for inputs: #2d2d2A */
-            --ring: 46 123 195; /* colorPrimary: #2E7BC3 */
-            --success: 18 127 49; /* colorSuccess: #127f31 */
-            --warning: 194 144 16; /* colorWarning: #C29010 */
+            /* ShadCN Default Dark Theme */
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 217.2 91.2% 59.8%;
+            --primary-foreground: 222.2 84% 4.9%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 224.3 76.3% 94.1%;
+            --success: 142.1 70.6% 45.3%;
+            --warning: 47.9 95.8% 53.1%;
         }
         
         /* ShadCN Component Styles */
@@ -316,17 +316,17 @@ router.get("/dashboard", async (ctx) => {
         }
         
         .badge-success {
-            background-color: rgb(var(--success));
-            color: hsl(var(--destructive-foreground));
+            background-color: hsl(var(--success));
+            color: hsl(var(--primary-foreground));
         }
         
         .badge-warning {
-            background-color: rgb(var(--warning));
-            color: hsl(var(--destructive-foreground));
+            background-color: hsl(var(--warning));
+            color: hsl(var(--primary-foreground));
         }
         
         .badge-destructive {
-            background-color: rgb(var(--destructive));
+            background-color: hsl(var(--destructive));
             color: hsl(var(--destructive-foreground));
         }
         
@@ -371,49 +371,21 @@ router.get("/dashboard", async (ctx) => {
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 150ms;
         }
-        
-        .light {
-            /* Ethos Light Theme - for explicit light mode */
-            --background: 193 192 182; /* colorBgLayout: #C1C0B6 */
-            --foreground: 31 33 38; /* colorTextBase: #1F2126 */
-            --card: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --card-foreground: 31 33 38 87%; /* colorText: #1F2126E0 */
-            --popover: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --popover-foreground: 31 33 38; /* colorTextBase: #1F2126 */
-            --primary: 31 33 182; /* colorPrimary: #1F21B6 */
-            --primary-foreground: 193 192 182; /* colorTextLightSolid */
-            --secondary: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --secondary-foreground: 31 33 38; /* colorTextBase: #1F2126 */
-            --muted: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --muted-foreground: 31 33 38 65%; /* colorTextSecondary: #1F2126A6 */
-            --accent: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --accent-foreground: 31 33 38; /* colorTextBase: #1F2126 */
-            --destructive: 183 43 56; /* colorError: #b72b38 */
-            --destructive-foreground: 255 255 255; /* white */
-            --border: 31 33 38 6%; /* Table.headerSplitColor: #1F21260F */
-            --input: 203 203 194; /* colorBgContainer for inputs: #CBCBC2 */
-            --ring: 31 33 182; /* colorPrimary: #1F21B6 */
-            --success: 18 127 49; /* colorSuccess: #127f31 */
-            --warning: 204 154 26; /* colorWarning: #cc9a1a */
-        }
     </style>
     <script>
         // Theme system with flash prevention
         (function() {
-            const theme = localStorage.getItem('theme') || 'dark'; // Default to dark instead of system
+            const theme = localStorage.getItem('theme') || 'system';
             const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const shouldBeDark = theme === 'dark' || (theme === 'system' && systemDark);
             
             // Remove all theme classes first
-            document.documentElement.classList.remove('dark', 'light');
+            document.documentElement.classList.remove('dark');
             
-            // Apply appropriate theme class  
-            if (theme === 'light') {
-                document.documentElement.classList.add('light');
-            } else if (shouldBeDark || theme === 'dark') {
+            // Apply dark class if needed
+            if (shouldBeDark) {
                 document.documentElement.classList.add('dark');
             }
-            // Default is dark if no explicit class
         })();
     </script>
 </head>
@@ -684,22 +656,19 @@ router.get("/dashboard", async (ctx) => {
                 { name: 'system', icon: '💻', text: 'System' }
             ];
             
-            let currentTheme = localStorage.getItem('theme') || 'dark';
+            let currentTheme = localStorage.getItem('theme') || 'system';
             
             function applyTheme(theme) {
                 const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 const shouldBeDark = theme === 'dark' || (theme === 'system' && systemDark);
                 
                 // Remove all theme classes first
-                document.documentElement.classList.remove('dark', 'light');
+                document.documentElement.classList.remove('dark');
                 
-                // Apply appropriate theme class
-                if (theme === 'light') {
-                    document.documentElement.classList.add('light');
-                } else if (shouldBeDark) {
+                // Apply dark class if needed
+                if (shouldBeDark) {
                     document.documentElement.classList.add('dark');
                 }
-                // If no class, use default (which will be dark)
                 
                 const themeData = themes.find(t => t.name === theme);
                 if (themeData) {
@@ -991,11 +960,11 @@ router.get("/dashboard", async (ctx) => {
         // Get percentage color class for engagement stats
         function getPercentageColorClass(percentage) {
             if (percentage >= 60) {
-                return 'text-[rgb(18,127,49)] dark:text-[rgb(18,127,49)]'; // Ethos success green
+                return 'text-green-600 dark:text-green-400'; // Standard green
             } else if (percentage >= 30) {
-                return 'text-[rgb(204,154,26)] dark:text-[rgb(194,144,16)]'; // Ethos warning
+                return 'text-yellow-600 dark:text-yellow-400'; // Standard yellow
             } else {
-                return 'text-[rgb(183,43,56)] dark:text-[rgb(183,43,56)]'; // Ethos error red
+                return 'text-red-600 dark:text-red-400'; // Standard red
             }
         }
 
@@ -1012,11 +981,11 @@ router.get("/dashboard", async (ctx) => {
             if (score < 800) {
                 emoji = '🔴';
                 label = 'Untrusted';
-                textColor = 'text-[rgb(183,43,56)]'; // Ethos error red
+                textColor = 'text-red-600 dark:text-red-400'; // Standard red
             } else if (score < 1200) {
                 emoji = '🟡';
                 label = 'Questionable';
-                textColor = 'text-[rgb(204,154,26)] dark:text-[rgb(194,144,16)]'; // Ethos warning
+                textColor = 'text-yellow-600 dark:text-yellow-400'; // Standard yellow
             } else if (score < 1600) {
                 emoji = '⚪';
                 label = 'Neutral';
@@ -1024,11 +993,11 @@ router.get("/dashboard", async (ctx) => {
             } else if (score < 2000) {
                 emoji = '🔵';
                 label = 'Reputable';
-                textColor = 'text-[rgb(46,123,195)] dark:text-[rgb(46,123,195)]'; // Ethos primary blue
+                textColor = 'text-blue-600 dark:text-blue-400'; // Standard blue
             } else {
                 emoji = '🟢';
                 label = 'Exemplary';
-                textColor = 'text-[rgb(18,127,49)]'; // Ethos success green
+                textColor = 'text-green-600 dark:text-green-400'; // Standard green
             }
             
             return '<div class="flex items-center space-x-2">' +
