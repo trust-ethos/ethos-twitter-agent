@@ -550,8 +550,10 @@ router.get("/dashboard", async (ctx) => {
                                             <div class="flex items-center">
                                                 <span class="text-lg mr-2">${getQualityEmoji(qualityPercentage)}</span>
                                                 <div>
-                                                    <div class="text-sm font-medium ethos-text-base">${qualityPercentage}%</div>
-                                                    <div class="text-xs ethos-text-tertiary">${validation.overallQuality}</div>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                                        ${qualityPercentage}%
+                                                    </span>
+                                                    <div class="text-xs ethos-text-tertiary mt-1">${validation.overallQuality}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -571,33 +573,45 @@ router.get("/dashboard", async (ctx) => {
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="space-y-1 text-xs">
-                                                <div class="flex justify-between">
+                                                <div class="flex justify-between items-center">
                                                     <span>💬 Replies:</span>
-                                                    <span>${validation.engagementStats.reputable_repliers || 0}/${validation.engagementStats.total_repliers || 0}</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                        ${validation.engagementStats.reputable_repliers || 0}/${validation.engagementStats.total_repliers || 0}
+                                                    </span>
                                                 </div>
-                                                <div class="flex justify-between">
+                                                <div class="flex justify-between items-center">
                                                     <span>🔄 RTs:</span>
-                                                    <span>${validation.engagementStats.reputable_retweeters || 0}/${validation.engagementStats.total_retweeters || 0}</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                        ${validation.engagementStats.reputable_retweeters || 0}/${validation.engagementStats.total_retweeters || 0}
+                                                    </span>
                                                 </div>
-                                                <div class="flex justify-between">
+                                                <div class="flex justify-between items-center">
                                                     <span>💭 QTs:</span>
-                                                    <span>${validation.engagementStats.reputable_quote_tweeters || 0}/${validation.engagementStats.total_quote_tweeters || 0}</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                                        ${validation.engagementStats.reputable_quote_tweeters || 0}/${validation.engagementStats.total_quote_tweeters || 0}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="space-y-1 text-xs">
-                                                <div class="flex justify-between">
+                                                <div class="flex justify-between items-center">
                                                     <span>💬 Replies:</span>
-                                                    <span>${validation.engagementStats.ethos_active_repliers || 0}/${validation.engagementStats.total_repliers || 0}</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                                        ${validation.engagementStats.ethos_active_repliers || 0}/${validation.engagementStats.total_repliers || 0}
+                                                    </span>
                                                 </div>
-                                                <div class="flex justify-between">
+                                                <div class="flex justify-between items-center">
                                                     <span>🔄 RTs:</span>
-                                                    <span>${validation.engagementStats.ethos_active_retweeters || 0}/${validation.engagementStats.total_retweeters || 0}</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                                        ${validation.engagementStats.ethos_active_retweeters || 0}/${validation.engagementStats.total_retweeters || 0}
+                                                    </span>
                                                 </div>
-                                                <div class="flex justify-between">
+                                                <div class="flex justify-between items-center">
                                                     <span>💭 QTs:</span>
-                                                    <span>${validation.engagementStats.ethos_active_quote_tweeters || 0}/${validation.engagementStats.total_quote_tweeters || 0}</span>
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                                        ${validation.engagementStats.ethos_active_quote_tweeters || 0}/${validation.engagementStats.total_quote_tweeters || 0}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </td>
