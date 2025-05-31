@@ -471,14 +471,14 @@ router.get("/dashboard", async (ctx) => {
                     <table class="min-w-full divide-y ethos-border">
                         <thead class="ethos-bg-elevated">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Tweet</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Author</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Validator</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Quality Score</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Avg Ethos Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Top Validators</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Reputable Engagement</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Ethos Activity</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Tweet</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y ethos-border">
@@ -495,27 +495,12 @@ router.get("/dashboard", async (ctx) => {
                                     return "🔴";
                                 };
                                 
-                                // Get ethos score emoji  
-                                const getEthosEmoji = (score) => {
-                                    if (!score) return "⚫";
-                                    if (score < 800) return "🔴";
-                                    if (score < 1200) return "🟡";
-                                    if (score < 1600) return "⚪";
-                                    if (score < 2000) return "🔵";
-                                    return "🟢";
-                                };
+                                // Create top validators facepile - for now using validator + author as example
+                                // In a real implementation, this would show the top validators for this specific tweet
+                                const topValidators = [validation.requestedByAvatar, validation.tweetAuthorAvatar].filter(Boolean).slice(0, 3);
                                 
                                 return `
                                     <tr class="hover:ethos-bg-elevated transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center max-w-sm">
-                                                <div class="flex-shrink-0">
-                                                    <a href="${validation.tweetUrl}" target="_blank" class="ethos-text-hover text-xs">
-                                                        View Tweet →
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-10 w-10">
@@ -548,8 +533,17 @@ router.get("/dashboard", async (ctx) => {
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <span class="text-lg mr-2">${getEthosEmoji(validation.averageScore)}</span>
-                                                <div class="text-sm font-medium ethos-text-base">${validation.averageScore || 'N/A'}</div>
+                                                <div class="flex -space-x-2">
+                                                    ${topValidators.map((avatar, index) => `
+                                                        <img class="h-8 w-8 rounded-full border-2 border-white object-cover" 
+                                                             src="${avatar}" 
+                                                             alt="Validator ${index + 1}" 
+                                                             onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'"
+                                                             style="z-index: ${10 - index};">
+                                                    `).join('')}
+                                                    ${topValidators.length === 0 ? '<span class="text-xs ethos-text-tertiary">No validators</span>' : ''}
+                                                </div>
+                                                ${topValidators.length > 0 ? `<span class="ml-2 text-xs ethos-text-tertiary">+${Math.max(0, (validation.engagementStats.total_retweeters || 0) + (validation.engagementStats.total_repliers || 0) + (validation.engagementStats.total_quote_tweeters || 0) - 2)} others</span>` : ''}
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -586,6 +580,15 @@ router.get("/dashboard", async (ctx) => {
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm ethos-text-tertiary">
                                             ${new Date(validation.timestamp).toLocaleDateString()}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center max-w-sm">
+                                                <div class="flex-shrink-0">
+                                                    <a href="${validation.tweetUrl}" target="_blank" class="ethos-text-hover text-xs">
+                                                        View Tweet →
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                 `;
