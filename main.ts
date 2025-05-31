@@ -162,54 +162,54 @@ router.get("/dashboard", async (ctx) => {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Ethos Light Theme - mapped from baseLightTheme */
-            --background: 193 192 182; /* #C1C0B6 */
-            --foreground: 31 33 38; /* #1F2126 */
-            --card: 203 203 194; /* #CBCBC2 */
-            --card-foreground: 31 33 38; /* #1F2126 */
-            --popover: 203 203 194; /* #CBCBC2 */
-            --popover-foreground: 31 33 38; /* #1F2126 */
-            --primary: 31 33 182; /* #1F21B6 */
-            --primary-foreground: 193 192 182; /* #C1C0B6 */
-            --secondary: 213 212 205; /* #D5D4CD */
-            --secondary-foreground: 31 33 38; /* #1F2126 */
-            --muted: 213 212 205; /* #D5D4CD */
-            --muted-foreground: 31 33 38 65%; /* #1F2126A6 */
-            --accent: 213 212 205; /* #D5D4CD */
-            --accent-foreground: 31 33 38; /* #1F2126 */
-            --destructive: 183 43 56; /* #b72b38 */
+            /* Ethos Light Theme - improved mapping */
+            --background: 193 192 182; /* colorBgLayout: #C1C0B6 */
+            --foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --card: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --card-foreground: 31 33 38 87%; /* colorText: #1F2126E0 */
+            --popover: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --popover-foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --primary: 31 33 182; /* colorPrimary: #1F21B6 */
+            --primary-foreground: 193 192 182; /* colorTextLightSolid */
+            --secondary: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --secondary-foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --muted: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --muted-foreground: 31 33 38 65%; /* colorTextSecondary: #1F2126A6 */
+            --accent: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --accent-foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --destructive: 183 43 56; /* colorError: #b72b38 */
             --destructive-foreground: 255 255 255; /* white */
-            --border: 31 33 38 6%; /* #1F21260F */
-            --input: 31 33 38 6%; /* #1F21260F */
-            --ring: 31 33 182; /* #1F21B6 */
-            --success: 18 127 49; /* #127f31 */
-            --warning: 204 154 26; /* #cc9a1a */
+            --border: 31 33 38 6%; /* Table.headerSplitColor: #1F21260F */
+            --input: 203 203 194; /* colorBgContainer for inputs: #CBCBC2 */
+            --ring: 31 33 182; /* colorPrimary: #1F21B6 */
+            --success: 18 127 49; /* colorSuccess: #127f31 */
+            --warning: 204 154 26; /* colorWarning: #cc9a1a */
             --radius: 0.5rem;
         }
         
         .dark {
-            /* Ethos Dark Theme - mapped from baseDarkTheme */
-            --background: 35 35 32; /* #232320 */
-            --foreground: 239 238 224; /* #EFEEE0 */
-            --card: 45 45 42; /* #2d2d2A */
-            --card-foreground: 239 238 224; /* #EFEEE0 */
-            --popover: 45 45 42; /* #2d2d2A */
-            --popover-foreground: 239 238 224; /* #EFEEE0 */
-            --primary: 46 123 195; /* #2E7BC3 */
-            --primary-foreground: 35 35 32; /* #232320 */
-            --secondary: 51 51 48; /* #333330 */
-            --secondary-foreground: 239 238 224; /* #EFEEE0 */
-            --muted: 51 51 48; /* #333330 */
-            --muted-foreground: 255 255 255 65%; /* #FFFFFFA6 */
-            --accent: 51 51 48; /* #333330 */
-            --accent-foreground: 239 238 224; /* #EFEEE0 */
-            --destructive: 183 43 56; /* #b72b38 */
+            /* Ethos Dark Theme - improved mapping */
+            --background: 35 35 32; /* colorBgLayout: #232320 */
+            --foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
+            --card: 51 51 48; /* colorBgElevated: #333330 */
+            --card-foreground: 239 238 224 85%; /* colorText: #EFEEE0D9 */
+            --popover: 51 51 48; /* colorBgElevated: #333330 */
+            --popover-foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
+            --primary: 46 123 195; /* colorPrimary: #2E7BC3 */
+            --primary-foreground: 35 35 32; /* colorTextLightSolid: #232320 */
+            --secondary: 51 51 48; /* colorBgElevated: #333330 */
+            --secondary-foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
+            --muted: 51 51 48; /* colorBgElevated: #333330 */
+            --muted-foreground: 255 255 255 65%; /* colorTextSecondary: #FFFFFFA6 */
+            --accent: 51 51 48; /* colorBgElevated: #333330 */
+            --accent-foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
+            --destructive: 183 43 56; /* colorError: #b72b38 */
             --destructive-foreground: 255 255 255; /* white */
-            --border: 51 51 48; /* #333330 */
-            --input: 51 51 48; /* #333330 */
-            --ring: 46 123 195; /* #2E7BC3 */
-            --success: 18 127 49; /* #127f31 */
-            --warning: 194 144 16; /* #C29010 */
+            --border: 51 51 48; /* colorBgElevated for subtle borders */
+            --input: 45 45 42; /* colorBgContainer for inputs: #2d2d2A */
+            --ring: 46 123 195; /* colorPrimary: #2E7BC3 */
+            --success: 18 127 49; /* colorSuccess: #127f31 */
+            --warning: 194 144 16; /* colorWarning: #C29010 */
         }
         
         /* ShadCN Component Styles */
