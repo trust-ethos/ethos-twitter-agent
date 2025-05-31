@@ -13,6 +13,7 @@ await load({ export: true });
 const databaseUrl = Deno.env.get("DATABASE_URL");
 if (databaseUrl) {
   try {
+    console.log("🗄️ Attempting to connect to database...");
     const db = initDatabase(databaseUrl);
     const isHealthy = await db.healthCheck();
     if (isHealthy) {
@@ -24,6 +25,7 @@ if (databaseUrl) {
     }
   } catch (error) {
     console.error("❌ Database initialization failed:", error);
+    console.log("⚠️ Continuing without database - using KV storage fallback");
   }
 } else {
   console.log("⚠️ DATABASE_URL not configured, using KV storage fallback");
