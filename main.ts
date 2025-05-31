@@ -1836,50 +1836,75 @@ router.post("/test/create-sample", async (ctx) => {
   try {
     const storageService = commandProcessor['storageService'];
     
-    // Create multiple sample validations with different validators
+    // Create multiple sample validations with different validators - WITH REAL TWITTER IMAGES
     const sampleValidators = [
-      {
-        handle: "vitalik",
-        name: "Vitalik Buterin",
-        avatar: "https://pbs.twimg.com/profile_images/977496875887558661/L86xyLF4_400x400.jpg"
-      },
-      {
-        handle: "elonmusk", 
-        name: "Elon Musk",
-        avatar: "https://pbs.twimg.com/profile_images/1683325380441128960/yRsRRjGO_400x400.jpg"
-      },
-      {
-        handle: "naval",
-        name: "Naval",
-        avatar: "https://pbs.twimg.com/profile_images/1296720045988904962/rUgP8ORE_400x400.jpg"
-      },
-      {
-        handle: "balajis",
-        name: "Balaji Srinivasan",
-        avatar: "https://pbs.twimg.com/profile_images/1590968738358079488/IY9Gx6Ok_400x400.jpg"
-      }
+      { handle: "vitalik", name: "Vitalik Buterin" },
+      { handle: "elonmusk", name: "Elon Musk" },
+      { handle: "naval", name: "Naval" },
+      { handle: "balajis", name: "Balaji Srinivasan" }
     ];
 
     const sampleAuthors = [
-      { handle: "sama", name: "Sam Altman", avatar: "https://pbs.twimg.com/profile_images/1784943589584429057/kcGhGGZH_400x400.jpg" },
-      { handle: "pmarca", name: "Marc Andreessen", avatar: "https://pbs.twimg.com/profile_images/1577136786707210241/qX7fLf_z_400x400.jpg" },
-      { handle: "chamath", name: "Chamath Palihapitiya", avatar: "https://pbs.twimg.com/profile_images/1577136786707210241/qX7fLf_z_400x400.jpg" }
+      { handle: "sama", name: "Sam Altman" },
+      { handle: "pmarca", name: "Marc Andreessen" },
+      { handle: "chamath", name: "Chamath Palihapitiya" }
     ];
 
-    // Create 5 validations with different validators and authors
+    // Create 5 validations with different validators and authors - FETCH REAL IMAGES
     for (let i = 0; i < 5; i++) {
       const validator = sampleValidators[i % sampleValidators.length];
       const author = sampleAuthors[i % sampleAuthors.length];
+      
+      // Fetch real Twitter profile images
+      let validatorUser, authorUser;
+      try {
+        console.log(`🔍 Fetching Twitter data for validator: ${validator.handle} and author: ${author.handle}`);
+        validatorUser = await twitterService.getUserByUsername(validator.handle);
+        authorUser = await twitterService.getUserByUsername(author.handle);
+      } catch (error) {
+        console.log(`⚠️ Failed to fetch user data: ${error.message}, using defaults`);
+        validatorUser = null;
+        authorUser = null;
+      }
+      
+      // Get optimized image URLs (same logic as TwitterService)
+      const getOptimizedImageUrl = (user, size) => {
+        if (!user?.profile_image_url || !user.profile_image_url.includes('pbs.twimg.com')) {
+          return size === '_bigger' 
+            ? `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png`
+            : `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`;
+        }
+        
+        let url = user.profile_image_url;
+        
+        // Replace size in the URL to get the right resolution
+        url = url.replace(/_normal\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        url = url.replace(/_bigger\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        url = url.replace(/_mini\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        url = url.replace(/_400x400\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        
+        // If no size found, append before extension
+        if (!url.includes(size)) {
+          url = url.replace(/\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        }
+        
+        return url.replace(/^http:/, 'https:');
+      };
+      
+      const validatorAvatar = getOptimizedImageUrl(validatorUser, '_normal');
+      const authorAvatar = getOptimizedImageUrl(authorUser, '_bigger');
+      
+      console.log(`📸 Using avatars - Validator: ${validatorAvatar}, Author: ${authorAvatar}`);
       
       const sampleValidation = {
         id: `sample_${Date.now()}_${i}`,
         tweetId: `123456789012345678${i}`,
         tweetAuthor: author.name,
         tweetAuthorHandle: author.handle,
-        tweetAuthorAvatar: author.avatar,
+        tweetAuthorAvatar: authorAvatar,
         requestedBy: validator.name,
         requestedByHandle: validator.handle,
-        requestedByAvatar: validator.avatar,
+        requestedByAvatar: validatorAvatar,
         timestamp: new Date(Date.now() - i * 60000).toISOString(), // Stagger timestamps
         tweetUrl: `https://x.com/${author.handle}/status/123456789012345678${i}`,
         averageScore: 1200 + (i * 200), // Varying scores
@@ -1919,7 +1944,7 @@ router.post("/test/create-sample", async (ctx) => {
     
     ctx.response.body = {
       status: "success",
-      message: "Multiple sample validation data created",
+      message: "Sample validation data created with real Twitter profile images",
       count: 5
     };
   } catch (error) {
