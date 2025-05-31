@@ -119,6 +119,12 @@ export class TwitterWebhookHandler {
 
       console.log(`👤 Tweet author: ${author.name} (@${author.username})`);
 
+      // Filter: Ignore replies from @airdroppatron
+      if (author.username.toLowerCase() === 'airdroppatron') {
+        console.log(`🚫 Ignoring reply from @airdroppatron`);
+        return;
+      }
+
       // Parse the command
       const command = this.commandProcessor.parseCommand(tweet, author);
       

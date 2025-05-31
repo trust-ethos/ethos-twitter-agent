@@ -225,6 +225,12 @@ export class PollingService {
 
       console.log(`\n📢 Processing mention from @${author.username}: "${mention.text}"`);
 
+      // Filter: Ignore replies from @airdroppatron
+      if (author.username.toLowerCase() === 'airdroppatron') {
+        console.log(`🚫 Ignoring reply from @airdroppatron`);
+        return;
+      }
+
       // Parse the command using the command processor
       const command = this.commandProcessor.parseCommand(mention, author);
       
