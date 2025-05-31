@@ -70,7 +70,7 @@ export class TwitterService {
     try {
       console.log(`🔍 Fetching user info for: ${username}`);
       
-      const response = await fetch(`https://api.twitter.com/2/users/by/username/${username}`, {
+      const response = await fetch(`https://api.twitter.com/2/users/by/username/${username}?user.fields=profile_image_url`, {
         headers: {
           'Authorization': `Bearer ${this.bearerToken}`,
         },
@@ -117,7 +117,7 @@ export class TwitterService {
     try {
       console.log(`🔍 Fetching user info for ID: ${userId}`);
       
-      const response = await fetch(`https://api.twitter.com/2/users/${userId}`, {
+      const response = await fetch(`https://api.twitter.com/2/users/${userId}?user.fields=profile_image_url`, {
         headers: {
           'Authorization': `Bearer ${this.bearerToken}`,
         },
