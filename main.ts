@@ -542,10 +542,15 @@ router.get("/dashboard", async (ctx) => {
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
-                                                <span class="text-lg mr-2">${validation.averageScore >= 1800 ? "🟢" : validation.averageScore >= 1500 ? "🟡" : "🔴"}</span>
+                                                <span class="text-lg mr-2">${getEmojiForAvgScore(validation.averageScore || 0)}</span>
                                                 <div>
                                                     <div class="text-sm font-medium ethos-text-base">${validation.averageScore}</div>
-                                                    <div class="text-xs ethos-text-tertiary">Average Score</div>
+                                                    <div class="text-xs ethos-text-tertiary">${
+                                                        (validation.averageScore || 0) < 800 ? 'Untrusted' :
+                                                        (validation.averageScore || 0) < 1200 ? 'Questionable' :
+                                                        (validation.averageScore || 0) < 1600 ? 'Neutral' :
+                                                        (validation.averageScore || 0) < 2000 ? 'Reputable' : 'Exemplary'
+                                                    }</div>
                                                 </div>
                                             </div>
                                         </td>
