@@ -163,25 +163,25 @@ router.get("/dashboard", async (ctx) => {
     <style>
         :root {
             /* Ethos Light Theme - improved mapping */
-            --background: 193 192 182; /* colorBgLayout: #C1C0B6 */
-            --foreground: 31 33 38; /* colorTextBase: #1F2126 */
-            --card: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --card-foreground: 31 33 38 87%; /* colorText: #1F2126E0 */
-            --popover: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --popover-foreground: 31 33 38; /* colorTextBase: #1F2126 */
-            --primary: 31 33 182; /* colorPrimary: #1F21B6 */
-            --primary-foreground: 193 192 182; /* colorTextLightSolid */
-            --secondary: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --secondary-foreground: 31 33 38; /* colorTextBase: #1F2126 */
-            --muted: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --muted-foreground: 31 33 38 65%; /* colorTextSecondary: #1F2126A6 */
-            --accent: 213 212 205; /* colorBgElevated: #D5D4CD */
-            --accent-foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --background: 35 35 32; /* colorBgLayout: #C1C0B6 */
+            --foreground: 239 238 224; /* colorTextBase: #1F2126 */
+            --card: 51 51 48; /* colorBgElevated: #D5D4CD */
+            --card-foreground: 239 238 224 87%; /* colorText: #1F2126E0 */
+            --popover: 51 51 48; /* colorBgElevated: #D5D4CD */
+            --popover-foreground: 239 238 224; /* colorTextBase: #1F2126 */
+            --primary: 46 123 195; /* colorPrimary: #1F21B6 */
+            --primary-foreground: 35 35 32; /* colorTextLightSolid */
+            --secondary: 51 51 48; /* colorBgElevated: #D5D4CD */
+            --secondary-foreground: 239 238 224; /* colorTextBase: #1F2126 */
+            --muted: 51 51 48; /* colorBgElevated: #D5D4CD */
+            --muted-foreground: 239 238 224 65%; /* colorTextSecondary: #1F2126A6 */
+            --accent: 51 51 48; /* colorBgElevated: #D5D4CD */
+            --accent-foreground: 239 238 224; /* colorTextBase: #1F2126 */
             --destructive: 183 43 56; /* colorError: #b72b38 */
             --destructive-foreground: 255 255 255; /* white */
-            --border: 31 33 38 6%; /* Table.headerSplitColor: #1F21260F */
-            --input: 203 203 194; /* colorBgContainer for inputs: #CBCBC2 */
-            --ring: 31 33 182; /* colorPrimary: #1F21B6 */
+            --border: 239 238 224 6%; /* Table.headerSplitColor: #1F21260F */
+            --input: 45 45 42; /* colorBgContainer for inputs: #CBCBC2 */
+            --ring: 46 123 195; /* colorPrimary: #1F21B6 */
             --success: 18 127 49; /* colorSuccess: #127f31 */
             --warning: 204 154 26; /* colorWarning: #cc9a1a */
             --radius: 0.5rem;
@@ -189,7 +189,7 @@ router.get("/dashboard", async (ctx) => {
         
         .dark {
             /* Ethos Dark Theme - improved mapping */
-            --background: 35 35 32; /* colorBgLayout: #232320 */
+            --background: 193 192 182; /* colorBgLayout: #C1C0B6 */
             --foreground: 239 238 224; /* colorTextBase: #EFEEE0 */
             --card: 51 51 48; /* colorBgElevated: #333330 */
             --card-foreground: 239 238 224 85%; /* colorText: #EFEEE0D9 */
@@ -371,17 +371,49 @@ router.get("/dashboard", async (ctx) => {
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 150ms;
         }
+        
+        .light {
+            /* Ethos Light Theme - for explicit light mode */
+            --background: 193 192 182; /* colorBgLayout: #C1C0B6 */
+            --foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --card: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --card-foreground: 31 33 38 87%; /* colorText: #1F2126E0 */
+            --popover: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --popover-foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --primary: 31 33 182; /* colorPrimary: #1F21B6 */
+            --primary-foreground: 193 192 182; /* colorTextLightSolid */
+            --secondary: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --secondary-foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --muted: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --muted-foreground: 31 33 38 65%; /* colorTextSecondary: #1F2126A6 */
+            --accent: 213 212 205; /* colorBgElevated: #D5D4CD */
+            --accent-foreground: 31 33 38; /* colorTextBase: #1F2126 */
+            --destructive: 183 43 56; /* colorError: #b72b38 */
+            --destructive-foreground: 255 255 255; /* white */
+            --border: 31 33 38 6%; /* Table.headerSplitColor: #1F21260F */
+            --input: 203 203 194; /* colorBgContainer for inputs: #CBCBC2 */
+            --ring: 31 33 182; /* colorPrimary: #1F21B6 */
+            --success: 18 127 49; /* colorSuccess: #127f31 */
+            --warning: 204 154 26; /* colorWarning: #cc9a1a */
+        }
     </style>
     <script>
         // Theme system with flash prevention
         (function() {
-            const theme = localStorage.getItem('theme') || 'system';
+            const theme = localStorage.getItem('theme') || 'dark'; // Default to dark instead of system
             const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const shouldBeDark = theme === 'dark' || (theme === 'system' && systemDark);
             
-            if (shouldBeDark) {
+            // Remove all theme classes first
+            document.documentElement.classList.remove('dark', 'light');
+            
+            // Apply appropriate theme class  
+            if (theme === 'light') {
+                document.documentElement.classList.add('light');
+            } else if (shouldBeDark || theme === 'dark') {
                 document.documentElement.classList.add('dark');
             }
+            // Default is dark if no explicit class
         })();
     </script>
 </head>
@@ -652,17 +684,22 @@ router.get("/dashboard", async (ctx) => {
                 { name: 'system', icon: '💻', text: 'System' }
             ];
             
-            let currentTheme = localStorage.getItem('theme') || 'system';
+            let currentTheme = localStorage.getItem('theme') || 'dark';
             
             function applyTheme(theme) {
                 const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
                 const shouldBeDark = theme === 'dark' || (theme === 'system' && systemDark);
                 
-                if (shouldBeDark) {
+                // Remove all theme classes first
+                document.documentElement.classList.remove('dark', 'light');
+                
+                // Apply appropriate theme class
+                if (theme === 'light') {
+                    document.documentElement.classList.add('light');
+                } else if (shouldBeDark) {
                     document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
                 }
+                // If no class, use default (which will be dark)
                 
                 const themeData = themes.find(t => t.name === theme);
                 if (themeData) {
