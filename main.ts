@@ -373,6 +373,10 @@ router.get("/dashboard", async (ctx) => {
                             <select id="author-filter" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">All Authors</option>
                             </select>
+                            <!-- Validator Filter -->
+                            <select id="validator-filter" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Validators</option>
+                            </select>
                             <!-- Entries per page -->
                             <select id="entries-per-page" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="10">10</option>
@@ -464,6 +468,7 @@ router.get("/dashboard", async (ctx) => {
         let currentSortBy = 'timestamp';
         let currentSortOrder = 'desc';
         let currentAuthorFilter = '';
+        let currentValidatorFilter = '';
         let isLoading = false;
 
         // Initialize the application
@@ -542,6 +547,13 @@ router.get("/dashboard", async (ctx) => {
                 loadValidations();
             });
 
+            // Validator filter
+            document.getElementById('validator-filter').addEventListener('change', function(e) {
+                currentValidatorFilter = e.target.value;
+                currentPage = 1;
+                loadValidations();
+            });
+
             // Entries per page
             document.getElementById('entries-per-page').addEventListener('change', function(e) {
                 currentLimit = parseInt(e.target.value);
@@ -613,7 +625,8 @@ router.get("/dashboard", async (ctx) => {
                     search: currentSearch,
                     sortBy: currentSortBy,
                     sortOrder: currentSortOrder,
-                    author: currentAuthorFilter
+                    author: currentAuthorFilter,
+                    validator: currentValidatorFilter
                 });
                 
                 const response = await fetch(\`/api/validations?\${params}\`);
@@ -622,6 +635,7 @@ router.get("/dashboard", async (ctx) => {
                 if (result.success) {
                     updateStats(result);
                     updateAuthorFilter(result.filters.uniqueAuthors);
+                    updateValidatorFilter(result.filters.uniqueValidators);
                     renderTable(result.data);
                     renderPagination(result.pagination);
                     
@@ -685,6 +699,23 @@ router.get("/dashboard", async (ctx) => {
             });
         }
 
+        // Update validator filter dropdown
+        function updateValidatorFilter(validators) {
+            const validatorFilter = document.getElementById('validator-filter');
+            const currentValue = validatorFilter.value;
+            
+            validatorFilter.innerHTML = '<option value="">All Validators</option>';
+            validators.forEach(validator => {
+                const option = document.createElement('option');
+                option.value = validator.handle;
+                option.textContent = \`@\${validator.handle} (\${validator.name})\`;
+                if (validator.handle === currentValue) {
+                    option.selected = true;
+                }
+                validatorFilter.appendChild(option);
+            });
+        }
+
         // Render table rows
         function renderTable(validations) {
             const tableBody = document.getElementById('table-body');
@@ -695,11 +726,20 @@ router.get("/dashboard", async (ctx) => {
                 const scoreBadge = getScoreBadge(validation.averageScore);
                 const date = new Date(validation.timestamp).toLocaleDateString();
                 
+                // Fix Twitter profile image URLs - ensure they're proper Twitter URLs
+                const authorAvatar = validation.tweetAuthorAvatar && validation.tweetAuthorAvatar.includes('twimg.com') 
+                    ? validation.tweetAuthorAvatar 
+                    : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png';
+                
+                const validatorAvatar = validation.requestedByAvatar && validation.requestedByAvatar.includes('twimg.com')
+                    ? validation.requestedByAvatar 
+                    : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
+                
                 return \`
                     <tr class="hover:ethos-bg-elevated transition-colors">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <img class="h-10 w-10 rounded-full object-cover" src="\${validation.tweetAuthorAvatar}" alt="Author" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'">
+                                <img class="h-10 w-10 rounded-full object-cover" src="\${authorAvatar}" alt="@\${validation.tweetAuthorHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'">
                                 <div class="ml-3">
                                     <div class="text-sm font-medium ethos-text-base">@\${validation.tweetAuthorHandle}</div>
                                     <div class="text-xs ethos-text-tertiary truncate max-w-32">\${validation.tweetAuthor}</div>
@@ -708,7 +748,7 @@ router.get("/dashboard", async (ctx) => {
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
-                                <img class="h-8 w-8 rounded-full object-cover" src="\${validation.requestedByAvatar}" alt="Validator" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
+                                <img class="h-8 w-8 rounded-full object-cover" src="\${validatorAvatar}" alt="@\${validation.requestedByHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
                                 <div class="ml-3">
                                     <div class="text-sm font-medium ethos-text-base">@\${validation.requestedByHandle}</div>
                                 </div>
@@ -885,6 +925,7 @@ router.get("/api/validations", async (ctx) => {
     const sortBy = url.searchParams.get('sortBy') || 'timestamp';
     const sortOrder = url.searchParams.get('sortOrder') || 'desc';
     const authorFilter = url.searchParams.get('author') || '';
+    const validatorFilter = url.searchParams.get('validator') || '';
 
     const storageService = commandProcessor['storageService'];
     
@@ -908,6 +949,13 @@ router.get("/api/validations", async (ctx) => {
     if (authorFilter) {
       allValidations = allValidations.filter(v => 
         v.tweetAuthorHandle.toLowerCase() === authorFilter.toLowerCase()
+      );
+    }
+
+    // Apply validator filter
+    if (validatorFilter) {
+      allValidations = allValidations.filter(v => 
+        v.requestedByHandle.toLowerCase() === validatorFilter.toLowerCase()
       );
     }
 
@@ -961,7 +1009,7 @@ router.get("/api/validations", async (ctx) => {
     const offset = (page - 1) * limit;
     const paginatedValidations = allValidations.slice(offset, offset + limit);
 
-    // Get unique authors for filter dropdown
+    // Get unique tweet authors for filter dropdown
     const authorsMap = new Map();
     allValidations.forEach(v => {
       if (!authorsMap.has(v.tweetAuthorHandle)) {
@@ -972,6 +1020,20 @@ router.get("/api/validations", async (ctx) => {
       }
     });
     const uniqueAuthors = Array.from(authorsMap.values())
+      .sort((a, b) => a.handle.localeCompare(b.handle))
+      .slice(0, 50);
+
+    // Get unique validators for filter dropdown
+    const validatorsMap = new Map();
+    allValidations.forEach(v => {
+      if (!validatorsMap.has(v.requestedByHandle)) {
+        validatorsMap.set(v.requestedByHandle, {
+          handle: v.requestedByHandle,
+          name: v.requestedBy
+        });
+      }
+    });
+    const uniqueValidators = Array.from(validatorsMap.values())
       .sort((a, b) => a.handle.localeCompare(b.handle))
       .slice(0, 50);
 
@@ -992,7 +1054,9 @@ router.get("/api/validations", async (ctx) => {
         sortBy,
         sortOrder,
         authorFilter,
-        uniqueAuthors
+        validatorFilter,
+        uniqueAuthors,
+        uniqueValidators
       },
       timestamp: new Date().toISOString()
     };
