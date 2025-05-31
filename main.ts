@@ -2188,6 +2188,39 @@ router.get("/debug/database-schema", async (ctx) => {
   }
 });
 
+// Test endpoint to show Twitter users with profile images
+router.get("/test/twitter-users", async (ctx) => {
+  try {
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
+    
+    // Get Twitter users with profile images
+    const users = await db.client`
+      SELECT id, username, display_name, profile_image_url, created_at 
+      FROM twitter_users 
+      WHERE profile_image_url IS NOT NULL 
+      ORDER BY created_at DESC 
+      LIMIT 20
+    `;
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Twitter users with profile images",
+      count: users.length,
+      users: users,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Twitter users test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Twitter users test failed",
+      error: error.message
+    };
+  }
+});
+
 // Add router to app
 app.use(router.routes());
 app.use(router.allowedMethods());
