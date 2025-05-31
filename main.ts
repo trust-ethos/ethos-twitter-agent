@@ -748,25 +748,41 @@ router.get("/dashboard", async (ctx) => {
                     validator: currentValidatorFilter
                 });
                 
+                console.log('🔄 Fetching validations with params:', params.toString());
                 const response = await fetch('/api/validations?' + params);
+                console.log('📡 API Response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+                
                 const result = await response.json();
+                console.log('📊 API Response data:', result);
                 
                 if (result.success) {
+                    console.log('✅ Data loaded successfully, ' + result.data.length + ' validations');
                     updateStats(result);
                     renderTable(result.data);
                     renderPagination(result.pagination);
                     
                     if (result.data.length === 0) {
+                        console.log('ℹ️ No data found, showing empty state');
                         emptyState.classList.remove('hidden');
                     } else {
+                        console.log('📋 Showing table with ' + result.data.length + ' rows');
                         pagination.classList.remove('hidden');
                     }
                 } else {
                     throw new Error(result.message || 'Failed to load validations');
                 }
             } catch (error) {
-                console.error('Error loading validations:', error);
+                console.error('❌ Error loading validations:', error);
                 tableBody.innerHTML = '<tr><td colspan="7" class="p-12 text-center text-muted-foreground">Error loading data: ' + error.message + '</td></tr>';
+                
+                // Also show error in stats
+                document.getElementById('total-validations').textContent = 'Error';
+                document.getElementById('unique-validators').textContent = 'Error';
+                document.getElementById('avg-quality').textContent = 'Error';
             } finally {
                 loadingState.classList.add('hidden');
                 isLoading = false;
@@ -775,21 +791,47 @@ router.get("/dashboard", async (ctx) => {
 
         // Update stats cards
         function updateStats(result) {
-            document.getElementById('total-validations').textContent = result.pagination.total.toLocaleString();
+            console.log('📊 Updating stats with result:', result);
             
-            // Calculate unique validators
-            const uniqueValidators = new Set(result.data.map(v => v.requestedByHandle)).size;
-            document.getElementById('unique-validators').textContent = uniqueValidators;
+            // Safely update total validations
+            const totalValidations = result.pagination ? result.pagination.total : (result.data ? result.data.length : 0);
+            document.getElementById('total-validations').textContent = totalValidations.toLocaleString();
             
-            // Calculate average quality score
-            if (result.data.length > 0) {
+            // Calculate unique validators safely
+            if (result.data && result.data.length > 0) {
+                const uniqueValidators = new Set(result.data.map(v => v.requestedByHandle)).size;
+                document.getElementById('unique-validators').textContent = uniqueValidators;
+                
+                // Calculate average quality score
                 const avgQuality = result.data.reduce((sum, v) => {
-                    const quality = (v.engagementStats.reputable_percentage * 0.6) + (v.engagementStats.ethos_active_percentage * 0.4);
+                    const reputablePct = v.engagementStats ? v.engagementStats.reputable_percentage || 0 : 0;
+                    const ethosActivePct = v.engagementStats ? v.engagementStats.ethos_active_percentage || 0 : 0;
+                    const quality = (reputablePct * 0.6) + (ethosActivePct * 0.4);
                     return sum + quality;
                 }, 0) / result.data.length;
                 document.getElementById('avg-quality').textContent = Math.round(avgQuality) + '%';
             } else {
+                document.getElementById('unique-validators').textContent = '0';
                 document.getElementById('avg-quality').textContent = '0%';
+            }
+        }
+
+        // Create sample data if no data exists (for testing)
+        async function createSampleDataIfNeeded() {
+            try {
+                console.log('🧪 Checking if sample data creation is needed...');
+                const response = await fetch('/test/create-sample', { method: 'POST' });
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Sample data created:', result);
+                    return true;
+                } else {
+                    console.log('ℹ️ Sample data creation not available or failed');
+                    return false;
+                }
+            } catch (error) {
+                console.log('ℹ️ Could not create sample data:', error.message);
+                return false;
             }
         }
 
