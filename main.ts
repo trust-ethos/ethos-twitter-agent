@@ -910,19 +910,17 @@ router.get("/dashboard", async (ctx) => {
                     '<td>' + qualityBadge + '</td>' +
                     '<td>' + scoreBadge + '</td>' +
                     '<td>' +
-                        '<div>' +
-                            '<div class="font-medium">' + validation.engagementStats.reputable_total.toLocaleString() + '</div>' +
-                            '<div class="text-sm text-muted-foreground">' +
-                                validation.engagementStats.reputable_retweeters + 'RT • ' + validation.engagementStats.reputable_repliers + 'replies • ' + validation.engagementStats.reputable_quote_tweeters + 'QT' +
-                            '</div>' +
+                        '<div class="text-sm space-y-1">' +
+                            '<div>RT: <span class="font-medium">' + (validation.engagementStats.total_retweeters > 0 ? Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.reputable_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '<span class="font-medium">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
+                            '<div>Reply: <span class="font-medium">' + (validation.engagementStats.total_repliers > 0 ? Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.reputable_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '<span class="font-medium">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
+                            '<div>QT: <span class="font-medium">' + (validation.engagementStats.total_quote_tweeters > 0 ? Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.reputable_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '<span class="font-medium">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
                         '</div>' +
                     '</td>' +
                     '<td>' +
-                        '<div>' +
-                            '<div class="font-medium">' + validation.engagementStats.ethos_active_total.toLocaleString() + '</div>' +
-                            '<div class="text-sm text-muted-foreground">' +
-                                validation.engagementStats.ethos_active_retweeters + 'RT • ' + validation.engagementStats.ethos_active_repliers + 'replies • ' + validation.engagementStats.ethos_active_quote_tweeters + 'QT' +
-                            '</div>' +
+                        '<div class="text-sm space-y-1">' +
+                            '<div>RT: <span class="font-medium">' + (validation.engagementStats.total_retweeters > 0 ? Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.ethos_active_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '<span class="font-medium">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
+                            '<div>Reply: <span class="font-medium">' + (validation.engagementStats.total_repliers > 0 ? Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.ethos_active_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '<span class="font-medium">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
+                            '<div>QT: <span class="font-medium">' + (validation.engagementStats.total_quote_tweeters > 0 ? Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.ethos_active_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '<span class="font-medium">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
                         '</div>' +
                     '</td>' +
                     '<td class="text-muted-foreground">' + date + '</td>' +
