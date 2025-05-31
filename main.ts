@@ -125,42 +125,7 @@ router.get("/dashboard", async (ctx) => {
     };
 
     // For testing purposes, use actual validation data or create sample data
-    const validationData = validations.length > 0 ? validations.slice(0, 20) : [
-      {
-        id: 'sample_1',
-        tweetId: '1234567890',
-        tweetAuthor: 'Sample User',
-        tweetAuthorHandle: 'sampleuser',
-        tweetAuthorAvatar: 'https://via.placeholder.com/40',
-        tweetText: 'This is a sample tweet for demonstration purposes...',
-        tweetUrl: 'https://x.com/sampleuser/status/1234567890',
-        requestedBy: 'Validator',
-        requestedByHandle: 'validator',
-        requestedByAvatar: 'https://via.placeholder.com/40',
-        timestamp: new Date().toISOString(),
-        averageScore: 85,
-        engagementStats: {
-          total_retweeters: 45,
-          total_repliers: 23,
-          total_quote_tweeters: 7,
-          total_unique_users: 75,
-          reputable_retweeters: 30,
-          reputable_repliers: 15,
-          reputable_quote_tweeters: 5,
-          reputable_total: 50,
-          reputable_percentage: 67,
-          ethos_active_retweeters: 25,
-          ethos_active_repliers: 12,
-          ethos_active_quote_tweeters: 3,
-          ethos_active_total: 40,
-          ethos_active_percentage: 53,
-          retweeters_rate_limited: false,
-          repliers_rate_limited: false,
-          quote_tweeters_rate_limited: false,
-        },
-        overallQuality: 'high'
-      }
-    ];
+    const validationData = validations.length > 0 ? validations.slice(0, 20) : [];
 
     // Get unique tweet authors for filter dropdown
     const authorsMap = new Map();
@@ -984,7 +949,179 @@ router.get("/test/database-validations", async (ctx) => {
   }
 });
 
-// Test saving a tweet endpoint 
+// Migration endpoint to move KV data to PostgreSQL database
+router.post("/admin/migrate-kv-to-database", async (ctx) => {
+  try {
+    console.log("🚀 Starting KV to Database migration...");
+    const storageService = commandProcessor['storageService'];
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
+    
+    // Get a reference to KV directly
+    let kv;
+    try {
+      kv = await Deno.openKv();
+    } catch (error) {
+      throw new Error("Cannot access KV storage for migration");
+    }
+
+    let migratedValidations = 0;
+    let migratedSavedTweets = 0;
+    let errors = [];
+
+    // Migrate validations from KV to database
+    console.log("📊 Migrating validations...");
+    try {
+      const validationIter = kv.list({ prefix: ["validation"] });
+      for await (const entry of validationIter) {
+        try {
+          const validation = entry.value;
+          
+          // Re-store using the storage service which will save to database
+          await storageService.storeValidation(validation);
+          migratedValidations++;
+          
+          console.log(`✅ Migrated validation ${validation.id}`);
+        } catch (validationError) {
+          console.error(`❌ Error migrating validation:`, validationError);
+          errors.push(`Validation migration error: ${validationError.message}`);
+        }
+      }
+    } catch (error) {
+      errors.push(`Validation migration failed: ${error.message}`);
+    }
+
+    // Migrate saved tweets from KV to database
+    console.log("💾 Migrating saved tweets...");
+    try {
+      const savedTweetIter = kv.list({ prefix: ["saved_tweet"] });
+      for await (const entry of savedTweetIter) {
+        try {
+          const savedTweet = entry.value;
+          
+          // Re-store using the storage service which will save to database
+          await storageService.markTweetSaved(
+            savedTweet.tweetId,
+            savedTweet.targetUsername,
+            savedTweet.reviewerUsername,
+            savedTweet.reviewScore
+          );
+          migratedSavedTweets++;
+          
+          console.log(`✅ Migrated saved tweet ${savedTweet.tweetId}`);
+        } catch (tweetError) {
+          console.error(`❌ Error migrating saved tweet:`, tweetError);
+          errors.push(`Saved tweet migration error: ${tweetError.message}`);
+        }
+      }
+    } catch (error) {
+      errors.push(`Saved tweet migration failed: ${error.message}`);
+    }
+
+    // Close KV connection
+    kv.close();
+
+    const summary = {
+      migratedValidations,
+      migratedSavedTweets,
+      totalMigrated: migratedValidations + migratedSavedTweets,
+      errors: errors.length > 0 ? errors : null
+    };
+
+    console.log("🎉 Migration completed:", summary);
+
+    ctx.response.body = {
+      status: "success",
+      message: "KV to Database migration completed",
+      summary,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Migration failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Migration failed",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+});
+
+// Debug endpoint to check storage service state
+router.get("/debug/storage-state", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    
+    // Get recent validations from all sources
+    const allValidations = await storageService.getRecentValidations(10);
+    const validationStats = await storageService.getValidationStats();
+    
+    // Check database directly
+    let dbValidations = [];
+    let dbStats = null;
+    try {
+      const { getDatabase } = await import("./src/database.ts");
+      const db = getDatabase();
+      dbValidations = await db.getLatestValidations(5);
+      dbStats = await db.getStats();
+    } catch (dbError) {
+      console.error("❌ Database check failed:", dbError);
+    }
+    
+    // Check KV storage directly
+    let kvValidations = [];
+    let kvCount = 0;
+    try {
+      const kv = await Deno.openKv();
+      const iter = kv.list({ prefix: ["validation"] });
+      for await (const entry of iter) {
+        if (kvCount < 5) {
+          kvValidations.push({
+            key: entry.key,
+            value: entry.value
+          });
+        }
+        kvCount++;
+      }
+      kv.close();
+    } catch (kvError) {
+      console.error("❌ KV check failed:", kvError);
+    }
+
+    ctx.response.body = {
+      status: "success",
+      message: "Storage state debug information",
+      storageService: {
+        recentValidations: allValidations.length,
+        validationStats,
+        sampleValidations: allValidations.slice(0, 3)
+      },
+      database: {
+        available: dbStats !== null,
+        stats: dbStats,
+        recentValidations: dbValidations.length,
+        sampleValidations: dbValidations.slice(0, 2)
+      },
+      kv: {
+        available: kvCount > 0,
+        totalValidations: kvCount,
+        sampleValidations: kvValidations
+      },
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Storage state debug failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Storage state debug failed",
+      error: error.message
+    };
+  }
+});
+
+// Test saving a tweet endpoint
 router.post("/test/save-tweet", async (ctx) => {
   try {
     const { getDatabase } = await import("./src/database.ts");

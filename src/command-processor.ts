@@ -827,10 +827,14 @@ Link to tweet: ${originalTweetLink}`;
         overallQuality
       };
 
-      // Store the validation (don't await to avoid slowing down response)
-      this.storageService.storeValidation(validationRecord).catch(error => {
+      // Store the validation (await to ensure it's saved)
+      try {
+        await this.storageService.storeValidation(validationRecord);
+        console.log(`✅ Successfully stored validation for tweet ${originalTweetId}`);
+      } catch (error) {
         console.error("❌ Failed to store validation:", error);
-      });
+        // Continue processing even if storage fails
+      }
 
       // Format the response
       let replyText: string;
