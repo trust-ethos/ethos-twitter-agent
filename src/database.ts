@@ -236,8 +236,12 @@ class DatabaseClient {
 
   async getLatestValidations(limit: number = 10): Promise<any[]> {
     return await this.sql`
-      SELECT * FROM latest_validations 
-      ORDER BY created_at DESC 
+      SELECT tv.*, t.content as tweet_content, t.author_id,
+             tu.username as author_username, tu.display_name as author_display_name
+      FROM tweet_validations tv
+      JOIN tweets t ON tv.tweet_id = t.id
+      JOIN twitter_users tu ON t.author_id = tu.id
+      ORDER BY tv.created_at DESC 
       LIMIT ${limit}
     `;
   }
