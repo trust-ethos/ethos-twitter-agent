@@ -977,32 +977,10 @@ router.get("/dashboard", async (ctx) => {
 
         // Add missing sort icon styles
         const style = document.createElement('style');
-        style.textContent = `
-            .sort-icon {
-                display: inline-block;
-                width: 0;
-                height: 0;
-                vertical-align: middle;
-                margin-left: 5px;
-            }
-            .sort-asc {
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-bottom: 4px solid currentColor;
-            }
-            .sort-desc {
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 4px solid currentColor;
-            }
-            .sort-none {
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 4px solid hsl(var(--muted-foreground));
-                border-bottom: 4px solid hsl(var(--muted-foreground));
-                margin-top: -4px;
-            }
-        `;
+        style.textContent = '.sort-icon { display: inline-block; width: 0; height: 0; vertical-align: middle; margin-left: 5px; }' +
+            '.sort-asc { border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 4px solid currentColor; }' +
+            '.sort-desc { border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid currentColor; }' +
+            '.sort-none { border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid hsl(var(--muted-foreground)); border-bottom: 4px solid hsl(var(--muted-foreground)); margin-top: -4px; }';
         document.head.appendChild(style);
 
         // Utility function for debouncing
