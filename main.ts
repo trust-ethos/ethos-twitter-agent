@@ -886,7 +886,7 @@ router.get("/dashboard", async (ctx) => {
                 return '<tr>' +
                     '<td>' +
                         '<div class="flex items-center space-x-3">' +
-                            '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=\'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png\'">' +
+                            '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
                             '<div>' +
                                 '<div class="font-medium">@' + validation.tweetAuthorHandle + '</div>' +
                                 '<div class="text-sm text-muted-foreground">' + validation.tweetAuthor + '</div>' +
@@ -895,7 +895,7 @@ router.get("/dashboard", async (ctx) => {
                     '</td>' +
                     '<td>' +
                         '<div class="flex items-center space-x-3">' +
-                            '<img class="h-8 w-8 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=\'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png\'">' +
+                            '<img class="h-8 w-8 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
                             '<div>' +
                                 '<div class="font-medium">@' + validation.requestedByHandle + '</div>' +
                             '</div>' +
