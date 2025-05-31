@@ -716,9 +716,9 @@ router.get("/dashboard", async (ctx) => {
                 icon.className = 'sort-icon sort-none';
             });
             
-            const activeHeader = document.querySelector(`[data-sort="${currentSortBy}"] .sort-icon`);
+            const activeHeader = document.querySelector('[data-sort="' + currentSortBy + '"] .sort-icon');
             if (activeHeader) {
-                activeHeader.className = `sort-icon sort-${currentSortOrder}`;
+                activeHeader.className = 'sort-icon sort-' + currentSortOrder;
             }
         }
 
@@ -748,7 +748,7 @@ router.get("/dashboard", async (ctx) => {
                     validator: currentValidatorFilter
                 });
                 
-                const response = await fetch(`/api/validations?${params}`);
+                const response = await fetch('/api/validations?' + params);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -766,13 +766,7 @@ router.get("/dashboard", async (ctx) => {
                 }
             } catch (error) {
                 console.error('Error loading validations:', error);
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="p-12 text-center text-muted-foreground">
-                            Error loading data: ${error.message}
-                        </td>
-                    </tr>
-                `;
+                tableBody.innerHTML = '<tr><td colspan="7" class="p-12 text-center text-muted-foreground">Error loading data: ' + error.message + '</td></tr>';
             } finally {
                 loadingState.classList.add('hidden');
                 isLoading = false;
@@ -828,43 +822,41 @@ router.get("/dashboard", async (ctx) => {
                 const authorAvatar = getTwitterProfileImage(validation.tweetAuthorHandle, validation.tweetAuthorAvatar, false);
                 const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar, true);
                 
-                return `
-                    <tr>
-                        <td>
-                            <div class="flex items-center space-x-3">
-                                <img class="h-10 w-10 rounded-full object-cover" src="${authorAvatar}" alt="@${validation.tweetAuthorHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'">
-                                <div>
-                                    <div class="font-medium">@${validation.tweetAuthorHandle}</div>
-                                    <div class="text-sm text-muted-foreground">${validation.tweetAuthor}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="flex items-center space-x-3">
-                                <img class="h-8 w-8 rounded-full object-cover" src="${validatorAvatar}" alt="@${validation.requestedByHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
-                                <div>
-                                    <div class="font-medium">@${validation.requestedByHandle}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${qualityBadge}</td>
-                        <td>${scoreBadge}</td>
-                        <td>
-                            <div>
-                                <div class="font-medium">${validation.engagementStats.total_unique_users.toLocaleString()}</div>
-                                <div class="text-sm text-muted-foreground">
-                                    ${validation.engagementStats.total_retweeters}RT • ${validation.engagementStats.total_repliers}replies • ${validation.engagementStats.total_quote_tweeters}QT
-                                </div>
-                            </div>
-                        </td>
-                        <td class="text-muted-foreground">${date}</td>
-                        <td>
-                            <a href="${validation.tweetUrl}" target="_blank" class="text-primary hover:underline">
-                                View Tweet →
-                            </a>
-                        </td>
-                    </tr>
-                `;
+                return '<tr>' +
+                    '<td>' +
+                        '<div class="flex items-center space-x-3">' +
+                            '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=\'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png\'">' +
+                            '<div>' +
+                                '<div class="font-medium">@' + validation.tweetAuthorHandle + '</div>' +
+                                '<div class="text-sm text-muted-foreground">' + validation.tweetAuthor + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td>' +
+                        '<div class="flex items-center space-x-3">' +
+                            '<img class="h-8 w-8 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=\'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png\'">' +
+                            '<div>' +
+                                '<div class="font-medium">@' + validation.requestedByHandle + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td>' + qualityBadge + '</td>' +
+                    '<td>' + scoreBadge + '</td>' +
+                    '<td>' +
+                        '<div>' +
+                            '<div class="font-medium">' + validation.engagementStats.total_unique_users.toLocaleString() + '</div>' +
+                            '<div class="text-sm text-muted-foreground">' +
+                                validation.engagementStats.total_retweeters + 'RT • ' + validation.engagementStats.total_repliers + 'replies • ' + validation.engagementStats.total_quote_tweeters + 'QT' +
+                            '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td class="text-muted-foreground">' + date + '</td>' +
+                    '<td>' +
+                        '<a href="' + validation.tweetUrl + '" target="_blank" class="text-primary hover:underline">' +
+                            'View Tweet →' +
+                        '</a>' +
+                    '</td>' +
+                '</tr>';
             }).join('');
         }
 
@@ -879,7 +871,7 @@ router.get("/dashboard", async (ctx) => {
                 badgeClass = 'badge badge-destructive';
             }
             
-            return `<span class="${badgeClass}">${score}%</span>`;
+            return '<span class="' + badgeClass + '">' + score + '%</span>';
         }
 
         // Get score badge with ShadCN styling
@@ -914,15 +906,13 @@ router.get("/dashboard", async (ctx) => {
                 textColor = 'text-green-600';
             }
             
-            return `
-                <div class="flex items-center space-x-2">
-                    <span class="text-lg">${emoji}</span>
-                    <div>
-                        <div class="font-medium">${score}</div>
-                        <div class="text-sm ${textColor}">${label}</div>
-                    </div>
-                </div>
-            `;
+            return '<div class="flex items-center space-x-2">' +
+                '<span class="text-lg">' + emoji + '</span>' +
+                '<div>' +
+                    '<div class="font-medium">' + score + '</div>' +
+                    '<div class="text-sm ' + textColor + '">' + label + '</div>' +
+                '</div>' +
+            '</div>';
         }
 
         // Render pagination with ShadCN styling
