@@ -376,18 +376,52 @@ export class StorageService {
     try {
       // First try to save to database
       if (this.database) {
-        // We need to ensure the reviewer user exists in twitter_users table
+        // Generate consistent user ID for the reviewer
+        const generateUserId = (username: string): number => {
+          let hash = 0;
+          for (let i = 0; i < username.length; i++) {
+            const char = username.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32-bit integer
+          }
+          return Math.abs(hash);
+        };
+
+        const reviewerUserId = generateUserId(reviewerUsername);
+        
+        // Ensure the reviewer user exists in twitter_users table
+        await this.database.upsertTwitterUser({
+          id: reviewerUserId,
+          username: reviewerUsername,
+          display_name: reviewerUsername,
+          profile_image_url: null
+        });
+
+        // Generate user ID for target user if provided
+        let targetUserId = null;
+        if (targetUsername && targetUsername !== reviewerUsername) {
+          targetUserId = generateUserId(targetUsername);
+          await this.database.upsertTwitterUser({
+            id: targetUserId,
+            username: targetUsername,
+            display_name: targetUsername,
+            profile_image_url: null
+          });
+        }
+
+        // Now save the tweet with proper user IDs
         await this.database.saveTweet({
           tweet_id: parseInt(tweetId),
           tweet_url: `https://x.com/${targetUsername}/status/${tweetId}`,
-          original_content: `Tweet saved via @ethosAgent by @${reviewerUsername}`,
-          saved_by_user_id: null, // We'll use username instead for now
-          saved_by_username: reviewerUsername,
+          original_content: `Tweet saved via @ethosAgent by @${reviewerUsername} with ${reviewScore} sentiment`,
+          author_user_id: targetUserId,
           author_username: targetUsername,
+          saved_by_user_id: reviewerUserId, // Now using proper user ID
+          saved_by_username: reviewerUsername,
           ethos_source: "command:save",
           published_at: new Date()
         });
-        console.log(`✅ Tweet ${tweetId} saved to database`);
+        console.log(`✅ Tweet ${tweetId} saved to PostgreSQL database`);
       }
       
       // Also save to KV storage as backup
