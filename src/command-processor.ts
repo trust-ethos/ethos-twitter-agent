@@ -102,14 +102,6 @@ export class CommandProcessor {
       return null;
     }
     
-    // Check if @ethosagent is the LAST mention in the initial group
-    // (This ensures user is directing the command to us, not just mentioning us casually)
-    const lastMention = initialMentions[initialMentions.length - 1];
-    if (!lastMention.includes('@ethosagent')) {
-      console.log(`ℹ️ @ethosAgent not the last mention in group: [${initialMentions.join(', ')}]. Last: ${lastMention}`);
-      return null;
-    }
-    
     // Look for a command word immediately after the mentions
     if (firstNonMentionIndex >= parts.length) {
       console.log(`ℹ️ No content after mentions: "${originalText}"`);
@@ -126,6 +118,34 @@ export class CommandProcessor {
     
     // Args are everything after the command
     const args = parts.slice(firstNonMentionIndex + 1);
+    
+    // Check if this is a "save target" command by looking at the args
+    const isSaveTargetCommand = potentialCommand === "save" && 
+                                args.length >= 2 && 
+                                args.some(arg => arg.toLowerCase() === "target");
+    
+    // Check @ethosAgent position based on command type
+    const lastMention = initialMentions[initialMentions.length - 1];
+    const secondToLastMention = initialMentions.length >= 2 ? initialMentions[initialMentions.length - 2] : null;
+    
+    if (isSaveTargetCommand) {
+      // For "save target" commands, @ethosAgent can be second-to-last (target user is last)
+      const ethosAgentInCorrectPosition = lastMention.includes('@ethosagent') || 
+                                         (secondToLastMention && secondToLastMention.includes('@ethosagent'));
+      
+      if (!ethosAgentInCorrectPosition) {
+        console.log(`ℹ️ For save target command, @ethosAgent must be last or second-to-last mention in group: [${initialMentions.join(', ')}]`);
+        return null;
+      }
+      
+      console.log(`✅ Save target command: @ethosAgent found in valid position (last: ${lastMention}, second-to-last: ${secondToLastMention})`);
+    } else {
+      // For all other commands, @ethosAgent must be the LAST mention
+      if (!lastMention.includes('@ethosagent')) {
+        console.log(`ℹ️ @ethosAgent not the last mention in group: [${initialMentions.join(', ')}]. Last: ${lastMention}`);
+        return null;
+      }
+    }
 
     console.log(`🎯 Found valid command: ${potentialCommand} (after mentions: [${initialMentions.join(', ')}])`);
     return {
