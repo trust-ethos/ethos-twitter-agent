@@ -156,8 +156,10 @@ export class StorageService {
               overallQuality: validation.overallQuality,
               tweetAuthor: validation.tweetAuthor,
               tweetAuthorHandle: validation.tweetAuthorHandle,
+              tweetAuthorAvatar: validation.tweetAuthorAvatar,
               requestedBy: validation.requestedBy,
               requestedByHandle: validation.requestedByHandle,
+              requestedByAvatar: validation.requestedByAvatar,
               tweetUrl: validation.tweetUrl
             }
           };
@@ -208,10 +210,10 @@ export class StorageService {
             tweetId: dbVal.tweet_id.toString(),
             tweetAuthor: dbVal.engagement_data?.tweetAuthor || dbVal.author_display_name || "Unknown",
             tweetAuthorHandle: dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username || "unknown",
-            tweetAuthorAvatar: dbVal.engagement_data?.tweetAuthorAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png',
+            tweetAuthorAvatar: dbVal.engagement_data?.tweetAuthorAvatar || `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png`,
             requestedBy: dbVal.engagement_data?.requestedBy || "Unknown",
             requestedByHandle: dbVal.engagement_data?.requestedByHandle || "unknown", 
-            requestedByAvatar: dbVal.engagement_data?.requestedByAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png',
+            requestedByAvatar: dbVal.engagement_data?.requestedByAvatar || `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`,
             timestamp: dbVal.created_at,
             tweetUrl: dbVal.engagement_data?.tweetUrl || `https://x.com/${dbVal.author_username}/status/${dbVal.tweet_id}`,
             averageScore: dbVal.engagement_data?.averageScore || null,
