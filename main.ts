@@ -93,111 +93,10 @@ try {
   console.log("⚠️ Deno.cron() for rate limit cleanup not available (likely running locally):", error.message);
 }
 
-// Dashboard route - serve the tabbed dashboard page
+// Dashboard route - serve the modern Tailwind data table
 router.get("/dashboard", async (ctx) => {
   try {
-    // Get tab parameter (simplified since only validations now)
-    const url = new URL(ctx.request.url);
-    const authorFilter = url.searchParams.get('author');
-
-    // Get validation data from storage
-    const storageService = commandProcessor['storageService'];
-    const allValidations = await storageService.getRecentValidations(200);
-    const validationStats = await storageService.getValidationStats();
-
-    // Filter validations by author if specified
-    let validations = allValidations;
-    if (authorFilter) {
-      validations = allValidations.filter(v => 
-        v.tweetAuthorHandle.toLowerCase() === authorFilter.toLowerCase()
-      );
-    }
-
-    // Create enhanced stats object with all properties needed for the template
-    const stats = {
-      totalValidations: validationStats.totalValidations || 0,
-      savedTweets: Math.floor(validationStats.totalValidations * 0.7) || 0, // Estimate saved tweets as 70% of validations
-      averageScore: allValidations.length > 0 ? 
-        Math.round(allValidations.reduce((sum, v) => sum + (v.averageScore || 0), 0) / allValidations.length) : 
-        0,
-      systemStatus: 'Healthy',
-      uniqueValidators: new Set(validations.map(v => v.requestedByHandle)).size
-    };
-
-    // For testing purposes, use actual validation data or create sample data
-    const validationData = validations.length > 0 ? validations.slice(0, 20) : [];
-
-    // Get unique tweet authors for filter dropdown
-    const authorsMap = new Map();
-    allValidations.forEach(v => {
-      if (!authorsMap.has(v.tweetAuthorHandle)) {
-        authorsMap.set(v.tweetAuthorHandle, {
-          handle: v.tweetAuthorHandle,
-          name: v.tweetAuthor
-        });
-      }
-    });
-    const uniqueAuthors = Array.from(authorsMap.values())
-      .sort((a, b) => a.handle.localeCompare(b.handle))
-      .slice(0, 50);
-
-    // Calculate top validators
-    const validatorCounts = new Map();
-    allValidations.forEach(v => {
-      const validator = validatorCounts.get(v.requestedByHandle) || {
-        handle: v.requestedByHandle,
-        name: v.requestedBy,
-        avatar: v.requestedByAvatar,
-        count: 0
-      };
-      validator.count++;
-      validatorCounts.set(v.requestedByHandle, validator);
-    });
-    
-    const topValidators = Array.from(validatorCounts.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-
-    // Format date helper
-    const formatDate = (timestamp) => {
-      const date = typeof timestamp === 'number' ? new Date(timestamp * 1000) : new Date(timestamp);
-      return date.toLocaleString();
-    };
-
-    // Helper functions
-    const getQualityEmoji = (quality) => {
-      switch (quality) {
-        case "high": return "🟢";
-        case "medium": return "🟡";
-        case "low": return "🔴";
-        default: return "⚪";
-      }
-    };
-
-    const getSentimentEmoji = (score) => {
-      switch (score) {
-        case "positive": return "👍";
-        case "negative": return "👎"; 
-        case "neutral": return "⚪";
-        default: return "⚪";
-      }
-    };
-
-    const getEmojiForAvgScore = (avgScore) => {
-      if (avgScore < 800) return "🔴";
-      if (avgScore < 1200) return "🟡";
-      if (avgScore < 1600) return "⚪️";
-      if (avgScore < 2000) return "🔵";
-      return "🟢";
-    };
-
-    const getEmojiForPercentage = (percentage) => {
-      if (percentage < 30) return "🔴";
-      if (percentage < 60) return "🟡";
-      return "🟢";
-    };
-
-    // Enhanced HTML dashboard with Ethos-inspired styling
+    // Enhanced HTML dashboard with modern Tailwind data table
     const html = `
 <!DOCTYPE html>
 <html lang="en" class="h-full">
@@ -324,6 +223,32 @@ router.get("/dashboard", async (ctx) => {
         html {
             background-color: var(--ethos-bg-base);
         }
+        
+        /* Table sorting icons */
+        .sort-icon {
+            display: inline-block;
+            width: 0;
+            height: 0;
+            vertical-align: middle;
+            margin-left: 5px;
+        }
+        .sort-asc {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid currentColor;
+        }
+        .sort-desc {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid currentColor;
+        }
+        .sort-none {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid #ccc;
+            border-bottom: 4px solid #ccc;
+            margin-top: -4px;
+        }
     </style>
     <script>
         // Flash prevention - apply theme before page loads
@@ -365,324 +290,195 @@ router.get("/dashboard", async (ctx) => {
 
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Total Validations -->
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="ethos-text-tertiary text-sm font-medium">Total Validations</p>
-                            <p class="text-2xl font-bold ethos-text-base">${stats.totalValidations.toLocaleString()}</p>
-                        </div>
+                    <div class="flex items-center">
                         <div class="p-3 ethos-primary-bg rounded-full">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                    </div>
-                    <div class="mt-4 flex items-center">
-                        <span class="text-sm ethos-success">+12%</span>
-                        <span class="ethos-text-tertiary text-sm ml-2">vs last week</span>
+                        <div class="ml-4">
+                            <p class="ethos-text-tertiary text-sm font-medium">Total Validations</p>
+                            <p id="total-validations" class="text-2xl font-bold ethos-text-base">...</p>
+                        </div>
                     </div>
                 </div>
-
-                <!-- Saved Tweets -->
+                
                 <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="ethos-text-tertiary text-sm font-medium">Saved Tweets</p>
-                            <p class="text-2xl font-bold ethos-text-base">${stats.savedTweets.toLocaleString()}</p>
-                        </div>
+                    <div class="flex items-center">
                         <div class="p-3 bg-blue-500 rounded-full">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center">
-                        <span class="text-sm ethos-success">+8%</span>
-                        <span class="ethos-text-tertiary text-sm ml-2">vs last week</span>
-                    </div>
-                </div>
-
-                <!-- Top Validators -->
-                <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="ethos-text-tertiary text-sm font-medium">Top Validators</p>
-                            <p class="text-2xl font-bold ethos-text-base">${stats.uniqueValidators}</p>
-                        </div>
-                        <div class="p-3 bg-purple-500 rounded-full">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                             </svg>
                         </div>
-                    </div>
-                    <div class="mt-4 space-y-3">
-                        <!-- Show top validators by validation count -->
-                        ${topValidators.slice(0, 3).map((validator, index) => `
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3">
-                                    <div class="flex-shrink-0 h-8 w-8 relative">
-                                        <img class="h-8 w-8 rounded-full object-cover border-2 ${index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-400' : 'border-orange-400'}" 
-                                             src="${validator.avatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'}" 
-                                             alt="${validator.handle}"
-                                             onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
-                                        ${index === 0 ? '<div class="absolute -top-1 -right-1 text-xs">🥇</div>' : 
-                                          index === 1 ? '<div class="absolute -top-1 -right-1 text-xs">🥈</div>' : 
-                                          '<div class="absolute -top-1 -right-1 text-xs">🥉</div>'}
-                                    </div>
-                                    <div>
-                                        <div class="text-sm font-medium ethos-text-base">@${validator.handle}</div>
-                                        <div class="text-xs ethos-text-tertiary">${validator.name || validator.handle}</div>
-                                    </div>
-                                </div>
-                                <div class="text-sm font-bold ethos-primary">${validator.count}</div>
-                            </div>
-                        `).join('')}
-                        ${topValidators.length === 0 ? `
-                            <div class="text-center py-2">
-                                <p class="text-sm ethos-text-tertiary">No validators yet</p>
-                            </div>
-                        ` : ''}
+                        <div class="ml-4">
+                            <p class="ethos-text-tertiary text-sm font-medium">Unique Validators</p>
+                            <p id="unique-validators" class="text-2xl font-bold ethos-text-base">...</p>
+                        </div>
                     </div>
                 </div>
-
-                <!-- System Status -->
+                
                 <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="ethos-text-tertiary text-sm font-medium">System Status</p>
-                            <p class="text-2xl font-bold ethos-success">${stats.systemStatus}</p>
+                    <div class="flex items-center">
+                        <div class="p-3 bg-purple-500 rounded-full">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
                         </div>
+                        <div class="ml-4">
+                            <p class="ethos-text-tertiary text-sm font-medium">Avg Quality Score</p>
+                            <p id="avg-quality" class="text-2xl font-bold ethos-text-base">...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
+                    <div class="flex items-center">
                         <div class="p-3 bg-green-500 rounded-full">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                         </div>
-                    </div>
-                    <div class="mt-4 flex items-center">
-                        <span class="text-sm ethos-success">99.9%</span>
-                        <span class="ethos-text-tertiary text-sm ml-2">uptime</span>
+                        <div class="ml-4">
+                            <p class="ethos-text-tertiary text-sm font-medium">System Status</p>
+                            <p class="text-2xl font-bold ethos-success">Healthy</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Validations Table -->
-            <div class="ethos-bg-container rounded-lg border ethos-border">
+            <!-- Data Table -->
+            <div class="ethos-bg-container rounded-lg border ethos-border shadow-sm">
+                <!-- Table Header -->
                 <div class="px-6 py-4 border-b ethos-border">
-                    <h3 class="text-lg font-medium ethos-text-base">Recent Validations</h3>
-                    <p class="mt-1 text-sm ethos-text-secondary">Latest tweet quality validations performed by the agent</p>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                        <div>
+                            <h3 class="text-lg font-medium ethos-text-base">Tweet Validations</h3>
+                            <p class="mt-1 text-sm ethos-text-secondary">Quality analysis of Twitter engagement</p>
+                        </div>
+                        <div class="flex space-x-4">
+                            <!-- Search -->
+                            <div class="relative">
+                                <input type="text" id="search-input" placeholder="Search validations..." 
+                                       class="px-4 py-2 pr-10 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <svg class="h-5 w-5 ethos-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <!-- Author Filter -->
+                            <select id="author-filter" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Authors</option>
+                            </select>
+                            <!-- Entries per page -->
+                            <select id="entries-per-page" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 
+                <!-- Table Content -->
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y ethos-border">
                         <thead class="ethos-bg-elevated">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Author</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Validator</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Quality Score</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Avg Ethos Score</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Reputable Engagement</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Ethos Activity</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">Tweet</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="tweetAuthor">
+                                    Author <span class="sort-icon sort-none"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="requestedBy">
+                                    Validator <span class="sort-icon sort-none"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="qualityScore">
+                                    Quality Score <span class="sort-icon sort-none"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="averageScore">
+                                    Avg Ethos Score <span class="sort-icon sort-none"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="totalEngagement">
+                                    Total Engagement <span class="sort-icon sort-none"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="timestamp">
+                                    Date <span class="sort-icon sort-desc"></span>
+                                </th>
+                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">
+                                    Actions
+                                </th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y ethos-border">
-                            ${validationData.map(validation => {
-                                // Calculate quality score percentage (60% reputable + 40% ethos active)
-                                const reputablePercentage = validation.engagementStats.reputable_percentage || 0;
-                                const ethosActivePercentage = validation.engagementStats.ethos_active_percentage || 0;
-                                const qualityPercentage = Math.round((reputablePercentage * 0.6) + (ethosActivePercentage * 0.4));
-                                
-                                // Get quality emoji
-                                const getQualityEmoji = (percentage) => {
-                                    if (percentage >= 60) return "🟢";
-                                    if (percentage >= 30) return "🟡";
-                                    return "🔴";
-                                };
-                                
-                                // Create top validators facepile - for now using validator + author as example
-                                // In a real implementation, this would show the top validators for this specific tweet
-                                const topValidators = [validation.requestedByAvatar, validation.tweetAuthorAvatar].filter(Boolean).slice(0, 3);
-                                
-                                return `
-                                    <tr class="hover:ethos-bg-elevated transition-colors">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-10 w-10">
-                                                    <img class="h-10 w-10 rounded-full object-cover" src="${validation.tweetAuthorAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'}" alt="Author" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'">
-                                                </div>
-                                                <div class="ml-3">
-                                                    <div class="text-sm font-medium ethos-text-base">@${validation.tweetAuthorHandle}</div>
-                                                    <div class="text-xs ethos-text-tertiary truncate max-w-24">${validation.tweetAuthor}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div class="flex-shrink-0 h-8 w-8">
-                                                    <img class="h-8 w-8 rounded-full object-cover" src="${validation.requestedByAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'}" alt="Validator" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
-                                                </div>
-                                                <div class="ml-3">
-                                                    <div class="text-sm font-medium ethos-text-base">@${validation.requestedByHandle}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <div>
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                        qualityPercentage < 30 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                        qualityPercentage < 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                        'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                    }">
-                                                        Quality ${qualityPercentage}%
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <span class="text-lg mr-2">${getEmojiForAvgScore(validation.averageScore || 0)}</span>
-                                                <div>
-                                                    <div class="text-sm font-medium ethos-text-base">${validation.averageScore}</div>
-                                                    <div class="text-xs ethos-text-tertiary">${
-                                                        (validation.averageScore || 0) < 800 ? 'Untrusted' :
-                                                        (validation.averageScore || 0) < 1200 ? 'Questionable' :
-                                                        (validation.averageScore || 0) < 1600 ? 'Neutral' :
-                                                        (validation.averageScore || 0) < 2000 ? 'Reputable' : 'Exemplary'
-                                                    }</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="space-y-1 text-xs">
-                                                <div class="flex justify-between items-center">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        (() => {
-                                                            const percentage = validation.engagementStats.total_repliers > 0 ? 
-                                                                Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) : 0;
-                                                            return percentage < 30 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                   percentage < 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                                        })()
-                                                    }">
-                                                        Replies ${validation.engagementStats.reputable_repliers || 0}/${validation.engagementStats.total_repliers || 0}
-                                                    </span>
-                                                </div>
-                                                <div class="flex justify-between items-center">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        (() => {
-                                                            const percentage = validation.engagementStats.total_retweeters > 0 ? 
-                                                                Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) : 0;
-                                                            return percentage < 30 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                   percentage < 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                                        })()
-                                                    }">
-                                                        RTs ${validation.engagementStats.reputable_retweeters || 0}/${validation.engagementStats.total_retweeters || 0}
-                                                    </span>
-                                                </div>
-                                                <div class="flex justify-between items-center">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        (() => {
-                                                            const percentage = validation.engagementStats.total_quote_tweeters > 0 ? 
-                                                                Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) : 0;
-                                                            return percentage < 30 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                   percentage < 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                                        })()
-                                                    }">
-                                                        QTs ${validation.engagementStats.reputable_quote_tweeters || 0}/${validation.engagementStats.total_quote_tweeters || 0}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="space-y-1 text-xs">
-                                                <div class="flex justify-between items-center">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        (() => {
-                                                            const percentage = validation.engagementStats.total_repliers > 0 ? 
-                                                                Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) : 0;
-                                                            return percentage < 30 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                   percentage < 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                                        })()
-                                                    }">
-                                                        Replies ${validation.engagementStats.ethos_active_repliers || 0}/${validation.engagementStats.total_repliers || 0}
-                                                    </span>
-                                                </div>
-                                                <div class="flex justify-between items-center">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        (() => {
-                                                            const percentage = validation.engagementStats.total_retweeters > 0 ? 
-                                                                Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) : 0;
-                                                            return percentage < 30 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                   percentage < 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                                        })()
-                                                    }">
-                                                        RTs ${validation.engagementStats.ethos_active_retweeters || 0}/${validation.engagementStats.total_retweeters || 0}
-                                                    </span>
-                                                </div>
-                                                <div class="flex justify-between items-center">
-                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        (() => {
-                                                            const percentage = validation.engagementStats.total_quote_tweeters > 0 ? 
-                                                                Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) : 0;
-                                                            return percentage < 30 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                                                   percentage < 60 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                                                   'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-                                                        })()
-                                                    }">
-                                                        QTs ${validation.engagementStats.ethos_active_quote_tweeters || 0}/${validation.engagementStats.total_quote_tweeters || 0}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm ethos-text-tertiary">
-                                            ${new Date(validation.timestamp).toLocaleDateString()}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center max-w-sm">
-                                                <div class="flex-shrink-0">
-                                                    <a href="${validation.tweetUrl}" target="_blank" class="ethos-text-hover text-xs">
-                                                        View Tweet →
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
+                        <tbody id="table-body" class="divide-y ethos-border">
+                            <!-- Data will be loaded here -->
                         </tbody>
                     </table>
                 </div>
                 
-                ${validationData.length === 0 ? `
-                    <div class="text-center py-12">
-                        <svg class="mx-auto h-12 w-12 ethos-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <h3 class="mt-2 text-sm font-medium ethos-text-secondary">No validations found</h3>
-                        <p class="mt-1 text-sm ethos-text-tertiary">Validations will appear here once the agent starts processing tweets.</p>
+                <!-- Loading State -->
+                <div id="loading-state" class="text-center py-12">
+                    <div class="loading-pulse ethos-text-secondary">Loading validations...</div>
+                </div>
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="text-center py-12 hidden">
+                    <svg class="mx-auto h-12 w-12 ethos-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium ethos-text-secondary">No validations found</h3>
+                    <p class="mt-1 text-sm ethos-text-tertiary">Try adjusting your search or filters.</p>
+                </div>
+                
+                <!-- Pagination -->
+                <div id="pagination" class="px-6 py-4 border-t ethos-border">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm ethos-text-secondary">
+                            Showing <span id="showing-from">0</span> to <span id="showing-to">0</span> of <span id="total-entries">0</span> entries
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="prev-page" class="px-3 py-1 text-sm ethos-bg-elevated ethos-text-base border ethos-border rounded hover:ethos-bg-container disabled:opacity-50 disabled:cursor-not-allowed">
+                                Previous
+                            </button>
+                            <div id="page-numbers" class="flex space-x-1">
+                                <!-- Page numbers will be inserted here -->
+                            </div>
+                            <button id="next-page" class="px-3 py-1 text-sm ethos-bg-elevated ethos-text-base border ethos-border rounded hover:ethos-bg-container disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                        </div>
                     </div>
-                ` : ''}
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- Theme Toggle Script -->
+    <!-- JavaScript for Data Table -->
     <script>
-        (function() {
+        // Data table state
+        let currentPage = 1;
+        let currentLimit = 25;
+        let currentSearch = '';
+        let currentSortBy = 'timestamp';
+        let currentSortOrder = 'desc';
+        let currentAuthorFilter = '';
+        let isLoading = false;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            setupThemeToggle();
+            setupEventListeners();
+            loadValidations();
+        });
+
+        // Theme toggle functionality
+        function setupThemeToggle() {
             const themeToggle = document.getElementById('theme-toggle');
             const themeIcon = document.getElementById('theme-icon');
             const themeText = document.getElementById('theme-text');
             
-            // Theme states: light → dark → system → light...
             const themes = [
                 { name: 'light', icon: '☀️', text: 'Light' },
                 { name: 'dark', icon: '🌙', text: 'Dark' },
@@ -716,29 +512,353 @@ router.get("/dashboard", async (ctx) => {
                 return themes[nextIndex].name;
             }
             
-            // Initialize theme
             applyTheme(currentTheme);
             
-            // Theme toggle click handler
             themeToggle.addEventListener('click', () => {
                 currentTheme = getNextTheme(currentTheme);
                 applyTheme(currentTheme);
             });
             
-            // Listen for system theme changes
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
                 if (currentTheme === 'system') {
                     applyTheme('system');
                 }
             });
-            
-            // Auto-refresh functionality
-            setInterval(() => {
-                if (document.visibilityState === 'visible') {
-                    window.location.reload();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search input
+            document.getElementById('search-input').addEventListener('input', debounce(function(e) {
+                currentSearch = e.target.value;
+                currentPage = 1;
+                loadValidations();
+            }, 300));
+
+            // Author filter
+            document.getElementById('author-filter').addEventListener('change', function(e) {
+                currentAuthorFilter = e.target.value;
+                currentPage = 1;
+                loadValidations();
+            });
+
+            // Entries per page
+            document.getElementById('entries-per-page').addEventListener('change', function(e) {
+                currentLimit = parseInt(e.target.value);
+                currentPage = 1;
+                loadValidations();
+            });
+
+            // Table header sorting
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', function() {
+                    const sortBy = this.dataset.sort;
+                    if (currentSortBy === sortBy) {
+                        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortBy = sortBy;
+                        currentSortOrder = 'desc';
+                    }
+                    currentPage = 1;
+                    updateSortIcons();
+                    loadValidations();
+                });
+            });
+
+            // Pagination
+            document.getElementById('prev-page').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    loadValidations();
                 }
-            }, 30000); // Refresh every 30 seconds when page is visible
-        })();
+            });
+
+            document.getElementById('next-page').addEventListener('click', function() {
+                currentPage++;
+                loadValidations();
+            });
+        }
+
+        // Update sort icons
+        function updateSortIcons() {
+            document.querySelectorAll('th[data-sort] .sort-icon').forEach(icon => {
+                icon.className = 'sort-icon sort-none';
+            });
+            
+            const activeHeader = document.querySelector(\`th[data-sort="\${currentSortBy}"] .sort-icon\`);
+            if (activeHeader) {
+                activeHeader.className = \`sort-icon sort-\${currentSortOrder}\`;
+            }
+        }
+
+        // Load validations from API
+        async function loadValidations() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            const loadingState = document.getElementById('loading-state');
+            const emptyState = document.getElementById('empty-state');
+            const tableBody = document.getElementById('table-body');
+            const pagination = document.getElementById('pagination');
+            
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            tableBody.innerHTML = '';
+            pagination.classList.add('hidden');
+            
+            try {
+                const params = new URLSearchParams({
+                    page: currentPage,
+                    limit: currentLimit,
+                    search: currentSearch,
+                    sortBy: currentSortBy,
+                    sortOrder: currentSortOrder,
+                    author: currentAuthorFilter
+                });
+                
+                const response = await fetch(\`/api/validations?\${params}\`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStats(result);
+                    updateAuthorFilter(result.filters.uniqueAuthors);
+                    renderTable(result.data);
+                    renderPagination(result.pagination);
+                    
+                    if (result.data.length === 0) {
+                        emptyState.classList.remove('hidden');
+                    } else {
+                        pagination.classList.remove('hidden');
+                    }
+                } else {
+                    throw new Error(result.message || 'Failed to load validations');
+                }
+            } catch (error) {
+                console.error('Error loading validations:', error);
+                tableBody.innerHTML = \`
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center ethos-text-secondary">
+                            Error loading data: \${error.message}
+                        </td>
+                    </tr>
+                \`;
+            } finally {
+                loadingState.classList.add('hidden');
+                isLoading = false;
+            }
+        }
+
+        // Update stats cards
+        function updateStats(result) {
+            document.getElementById('total-validations').textContent = result.pagination.total.toLocaleString();
+            
+            // Calculate unique validators
+            const uniqueValidators = new Set(result.data.map(v => v.requestedByHandle)).size;
+            document.getElementById('unique-validators').textContent = uniqueValidators;
+            
+            // Calculate average quality score
+            if (result.data.length > 0) {
+                const avgQuality = result.data.reduce((sum, v) => {
+                    const quality = (v.engagementStats.reputable_percentage * 0.6) + (v.engagementStats.ethos_active_percentage * 0.4);
+                    return sum + quality;
+                }, 0) / result.data.length;
+                document.getElementById('avg-quality').textContent = Math.round(avgQuality) + '%';
+            } else {
+                document.getElementById('avg-quality').textContent = '0%';
+            }
+        }
+
+        // Update author filter dropdown
+        function updateAuthorFilter(authors) {
+            const authorFilter = document.getElementById('author-filter');
+            const currentValue = authorFilter.value;
+            
+            authorFilter.innerHTML = '<option value="">All Authors</option>';
+            authors.forEach(author => {
+                const option = document.createElement('option');
+                option.value = author.handle;
+                option.textContent = \`@\${author.handle} (\${author.name})\`;
+                if (author.handle === currentValue) {
+                    option.selected = true;
+                }
+                authorFilter.appendChild(option);
+            });
+        }
+
+        // Render table rows
+        function renderTable(validations) {
+            const tableBody = document.getElementById('table-body');
+            
+            tableBody.innerHTML = validations.map(validation => {
+                const qualityScore = Math.round((validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4));
+                const qualityBadge = getQualityBadge(qualityScore);
+                const scoreBadge = getScoreBadge(validation.averageScore);
+                const date = new Date(validation.timestamp).toLocaleDateString();
+                
+                return \`
+                    <tr class="hover:ethos-bg-elevated transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img class="h-10 w-10 rounded-full object-cover" src="\${validation.tweetAuthorAvatar}" alt="Author" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'">
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium ethos-text-base">@\${validation.tweetAuthorHandle}</div>
+                                    <div class="text-xs ethos-text-tertiary truncate max-w-32">\${validation.tweetAuthor}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <img class="h-8 w-8 rounded-full object-cover" src="\${validation.requestedByAvatar}" alt="Validator" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium ethos-text-base">@\${validation.requestedByHandle}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            \${qualityBadge}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            \${scoreBadge}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm ethos-text-base">\${validation.engagementStats.total_unique_users.toLocaleString()}</div>
+                            <div class="text-xs ethos-text-tertiary">
+                                \${validation.engagementStats.total_retweeters}RT • \${validation.engagementStats.total_repliers}replies • \${validation.engagementStats.total_quote_tweeters}QT
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm ethos-text-tertiary">
+                            \${date}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="\${validation.tweetUrl}" target="_blank" class="ethos-primary hover:underline">
+                                View Tweet →
+                            </a>
+                        </td>
+                    </tr>
+                \`;
+            }).join('');
+        }
+
+        // Get quality badge HTML
+        function getQualityBadge(score) {
+            let bgClass, textClass;
+            if (score >= 60) {
+                bgClass = 'bg-green-100 dark:bg-green-900';
+                textClass = 'text-green-800 dark:text-green-200';
+            } else if (score >= 30) {
+                bgClass = 'bg-yellow-100 dark:bg-yellow-900';
+                textClass = 'text-yellow-800 dark:text-yellow-200';
+            } else {
+                bgClass = 'bg-red-100 dark:bg-red-900';
+                textClass = 'text-red-800 dark:text-red-200';
+            }
+            
+            return \`
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium \${bgClass} \${textClass}">
+                    \${score}%
+                </span>
+            \`;
+        }
+
+        // Get score badge HTML
+        function getScoreBadge(score) {
+            if (!score) {
+                return '<span class="text-sm ethos-text-tertiary">—</span>';
+            }
+            
+            let emoji = '⚪';
+            let label = 'Neutral';
+            
+            if (score < 800) {
+                emoji = '🔴';
+                label = 'Untrusted';
+            } else if (score < 1200) {
+                emoji = '🟡';
+                label = 'Questionable';
+            } else if (score < 1600) {
+                emoji = '⚪';
+                label = 'Neutral';
+            } else if (score < 2000) {
+                emoji = '🔵';
+                label = 'Reputable';
+            } else {
+                emoji = '🟢';
+                label = 'Exemplary';
+            }
+            
+            return \`
+                <div class="flex items-center">
+                    <span class="text-lg mr-2">\${emoji}</span>
+                    <div>
+                        <div class="text-sm font-medium ethos-text-base">\${score}</div>
+                        <div class="text-xs ethos-text-tertiary">\${label}</div>
+                    </div>
+                </div>
+            \`;
+        }
+
+        // Render pagination
+        function renderPagination(pagination) {
+            document.getElementById('showing-from').textContent = ((pagination.page - 1) * pagination.limit + 1);
+            document.getElementById('showing-to').textContent = Math.min(pagination.page * pagination.limit, pagination.total);
+            document.getElementById('total-entries').textContent = pagination.total.toLocaleString();
+            
+            const prevButton = document.getElementById('prev-page');
+            const nextButton = document.getElementById('next-page');
+            
+            prevButton.disabled = !pagination.hasPrev;
+            nextButton.disabled = !pagination.hasNext;
+            
+            // Render page numbers
+            const pageNumbers = document.getElementById('page-numbers');
+            pageNumbers.innerHTML = '';
+            
+            const totalPages = pagination.totalPages;
+            const currentPage = pagination.page;
+            
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, currentPage + 2);
+            
+            if (endPage - startPage < 4) {
+                if (startPage === 1) {
+                    endPage = Math.min(totalPages, startPage + 4);
+                } else {
+                    startPage = Math.max(1, endPage - 4);
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = \`px-3 py-1 text-sm border ethos-border rounded \${
+                    i === currentPage 
+                        ? 'ethos-primary-bg text-white' 
+                        : 'ethos-bg-elevated ethos-text-base hover:ethos-bg-container'
+                }\`;
+                
+                if (i !== currentPage) {
+                    pageButton.addEventListener('click', () => {
+                        currentPage = i;
+                        loadValidations();
+                    });
+                }
+                
+                pageNumbers.appendChild(pageButton);
+            }
+        }
+
+        // Utility function for debouncing
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
     </script>
 </body>
 </html>
@@ -756,15 +876,134 @@ router.get("/dashboard", async (ctx) => {
 // Dashboard API endpoint
 router.get("/api/validations", async (ctx) => {
   try {
-    const storageService = commandProcessor['storageService'];
-    const validations = await storageService.getRecentValidations(50);
+    const url = new URL(ctx.request.url);
     
+    // Parse query parameters
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const limit = parseInt(url.searchParams.get('limit') || '25');
+    const search = url.searchParams.get('search') || '';
+    const sortBy = url.searchParams.get('sortBy') || 'timestamp';
+    const sortOrder = url.searchParams.get('sortOrder') || 'desc';
+    const authorFilter = url.searchParams.get('author') || '';
+
+    const storageService = commandProcessor['storageService'];
+    
+    // Get all validations first (we'll implement server-side pagination later if needed)
+    let allValidations = await storageService.getRecentValidations(1000);
+    
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase();
+      allValidations = allValidations.filter(v => 
+        v.tweetAuthor.toLowerCase().includes(searchLower) ||
+        v.tweetAuthorHandle.toLowerCase().includes(searchLower) ||
+        v.requestedBy.toLowerCase().includes(searchLower) ||
+        v.requestedByHandle.toLowerCase().includes(searchLower) ||
+        v.id.toLowerCase().includes(searchLower) ||
+        v.tweetId.includes(search)
+      );
+    }
+
+    // Apply author filter
+    if (authorFilter) {
+      allValidations = allValidations.filter(v => 
+        v.tweetAuthorHandle.toLowerCase() === authorFilter.toLowerCase()
+      );
+    }
+
+    // Apply sorting
+    allValidations.sort((a, b) => {
+      let aVal, bVal;
+      
+      switch (sortBy) {
+        case 'timestamp':
+          aVal = new Date(a.timestamp).getTime();
+          bVal = new Date(b.timestamp).getTime();
+          break;
+        case 'tweetAuthor':
+          aVal = a.tweetAuthor.toLowerCase();
+          bVal = b.tweetAuthor.toLowerCase();
+          break;
+        case 'requestedBy':
+          aVal = a.requestedBy.toLowerCase();
+          bVal = b.requestedBy.toLowerCase();
+          break;
+        case 'averageScore':
+          aVal = a.averageScore || 0;
+          bVal = b.averageScore || 0;
+          break;
+        case 'qualityScore':
+          // Calculate weighted quality score
+          const aQuality = (a.engagementStats.reputable_percentage * 0.6) + (a.engagementStats.ethos_active_percentage * 0.4);
+          const bQuality = (b.engagementStats.reputable_percentage * 0.6) + (b.engagementStats.ethos_active_percentage * 0.4);
+          aVal = aQuality;
+          bVal = bQuality;
+          break;
+        case 'totalEngagement':
+          aVal = a.engagementStats.total_unique_users;
+          bVal = b.engagementStats.total_unique_users;
+          break;
+        default:
+          aVal = a.timestamp;
+          bVal = b.timestamp;
+      }
+      
+      if (sortOrder === 'asc') {
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      } else {
+        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
+      }
+    });
+
+    // Calculate pagination
+    const total = allValidations.length;
+    const totalPages = Math.ceil(total / limit);
+    const offset = (page - 1) * limit;
+    const paginatedValidations = allValidations.slice(offset, offset + limit);
+
+    // Get unique authors for filter dropdown
+    const authorsMap = new Map();
+    allValidations.forEach(v => {
+      if (!authorsMap.has(v.tweetAuthorHandle)) {
+        authorsMap.set(v.tweetAuthorHandle, {
+          handle: v.tweetAuthorHandle,
+          name: v.tweetAuthor
+        });
+      }
+    });
+    const uniqueAuthors = Array.from(authorsMap.values())
+      .sort((a, b) => a.handle.localeCompare(b.handle))
+      .slice(0, 50);
+
     ctx.response.headers.set("Content-Type", "application/json");
-    ctx.response.body = JSON.stringify(validations);
+    ctx.response.body = {
+      success: true,
+      data: paginatedValidations,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      },
+      filters: {
+        search,
+        sortBy,
+        sortOrder,
+        authorFilter,
+        uniqueAuthors
+      },
+      timestamp: new Date().toISOString()
+    };
   } catch (error) {
     console.error("❌ API error:", error);
     ctx.response.status = 500;
-    ctx.response.body = { error: "API temporarily unavailable" };
+    ctx.response.body = { 
+      success: false,
+      error: "API temporarily unavailable",
+      message: error.message 
+    };
   }
 });
 
