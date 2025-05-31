@@ -162,50 +162,54 @@ router.get("/dashboard", async (ctx) => {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* ShadCN Light Theme */
-            --background: 0 0% 100%;
-            --foreground: 222.2 84% 4.9%;
-            --card: 0 0% 100%;
-            --card-foreground: 222.2 84% 4.9%;
-            --popover: 0 0% 100%;
-            --popover-foreground: 222.2 84% 4.9%;
-            --primary: 221.2 83.2% 53.3%;
-            --primary-foreground: 210 40% 98%;
-            --secondary: 210 40% 96%;
-            --secondary-foreground: 222.2 84% 4.9%;
-            --muted: 210 40% 96%;
-            --muted-foreground: 215.4 16.3% 46.9%;
-            --accent: 210 40% 96%;
-            --accent-foreground: 222.2 84% 4.9%;
-            --destructive: 0 84.2% 60.2%;
-            --destructive-foreground: 210 40% 98%;
-            --border: 214.3 31.8% 91.4%;
-            --input: 214.3 31.8% 91.4%;
-            --ring: 221.2 83.2% 53.3%;
+            /* Ethos Light Theme - mapped from baseLightTheme */
+            --background: 193 192 182; /* #C1C0B6 */
+            --foreground: 31 33 38; /* #1F2126 */
+            --card: 203 203 194; /* #CBCBC2 */
+            --card-foreground: 31 33 38; /* #1F2126 */
+            --popover: 203 203 194; /* #CBCBC2 */
+            --popover-foreground: 31 33 38; /* #1F2126 */
+            --primary: 31 33 182; /* #1F21B6 */
+            --primary-foreground: 193 192 182; /* #C1C0B6 */
+            --secondary: 213 212 205; /* #D5D4CD */
+            --secondary-foreground: 31 33 38; /* #1F2126 */
+            --muted: 213 212 205; /* #D5D4CD */
+            --muted-foreground: 31 33 38 65%; /* #1F2126A6 */
+            --accent: 213 212 205; /* #D5D4CD */
+            --accent-foreground: 31 33 38; /* #1F2126 */
+            --destructive: 183 43 56; /* #b72b38 */
+            --destructive-foreground: 255 255 255; /* white */
+            --border: 31 33 38 6%; /* #1F21260F */
+            --input: 31 33 38 6%; /* #1F21260F */
+            --ring: 31 33 182; /* #1F21B6 */
+            --success: 18 127 49; /* #127f31 */
+            --warning: 204 154 26; /* #cc9a1a */
             --radius: 0.5rem;
         }
         
         .dark {
-            /* ShadCN Dark Theme */
-            --background: 222.2 84% 4.9%;
-            --foreground: 210 40% 98%;
-            --card: 222.2 84% 4.9%;
-            --card-foreground: 210 40% 98%;
-            --popover: 222.2 84% 4.9%;
-            --popover-foreground: 210 40% 98%;
-            --primary: 217.2 91.2% 59.8%;
-            --primary-foreground: 222.2 84% 4.9%;
-            --secondary: 217.2 32.6% 17.5%;
-            --secondary-foreground: 210 40% 98%;
-            --muted: 217.2 32.6% 17.5%;
-            --muted-foreground: 215 20.2% 65.1%;
-            --accent: 217.2 32.6% 17.5%;
-            --accent-foreground: 210 40% 98%;
-            --destructive: 0 62.8% 30.6%;
-            --destructive-foreground: 210 40% 98%;
-            --border: 217.2 32.6% 17.5%;
-            --input: 217.2 32.6% 17.5%;
-            --ring: 224.3 76.3% 94.1%;
+            /* Ethos Dark Theme - mapped from baseDarkTheme */
+            --background: 35 35 32; /* #232320 */
+            --foreground: 239 238 224; /* #EFEEE0 */
+            --card: 45 45 42; /* #2d2d2A */
+            --card-foreground: 239 238 224; /* #EFEEE0 */
+            --popover: 45 45 42; /* #2d2d2A */
+            --popover-foreground: 239 238 224; /* #EFEEE0 */
+            --primary: 46 123 195; /* #2E7BC3 */
+            --primary-foreground: 35 35 32; /* #232320 */
+            --secondary: 51 51 48; /* #333330 */
+            --secondary-foreground: 239 238 224; /* #EFEEE0 */
+            --muted: 51 51 48; /* #333330 */
+            --muted-foreground: 255 255 255 65%; /* #FFFFFFA6 */
+            --accent: 51 51 48; /* #333330 */
+            --accent-foreground: 239 238 224; /* #EFEEE0 */
+            --destructive: 183 43 56; /* #b72b38 */
+            --destructive-foreground: 255 255 255; /* white */
+            --border: 51 51 48; /* #333330 */
+            --input: 51 51 48; /* #333330 */
+            --ring: 46 123 195; /* #2E7BC3 */
+            --success: 18 127 49; /* #127f31 */
+            --warning: 194 144 16; /* #C29010 */
         }
         
         /* ShadCN Component Styles */
@@ -312,17 +316,17 @@ router.get("/dashboard", async (ctx) => {
         }
         
         .badge-success {
-            background-color: hsl(142.1 76.2% 36.3%);
-            color: hsl(355.7 100% 97.3%);
+            background-color: rgb(var(--success));
+            color: hsl(var(--destructive-foreground));
         }
         
         .badge-warning {
-            background-color: hsl(32.1 94.6% 43.7%);
-            color: hsl(355.7 100% 97.3%);
+            background-color: rgb(var(--warning));
+            color: hsl(var(--destructive-foreground));
         }
         
         .badge-destructive {
-            background-color: hsl(var(--destructive));
+            background-color: rgb(var(--destructive));
             color: hsl(var(--destructive-foreground));
         }
         
@@ -950,11 +954,11 @@ router.get("/dashboard", async (ctx) => {
         // Get percentage color class for engagement stats
         function getPercentageColorClass(percentage) {
             if (percentage >= 60) {
-                return 'text-green-600 dark:text-green-400';
+                return 'text-[rgb(18,127,49)] dark:text-[rgb(18,127,49)]'; // Ethos success green
             } else if (percentage >= 30) {
-                return 'text-yellow-600 dark:text-yellow-400';
+                return 'text-[rgb(204,154,26)] dark:text-[rgb(194,144,16)]'; // Ethos warning
             } else {
-                return 'text-red-600 dark:text-red-400';
+                return 'text-[rgb(183,43,56)] dark:text-[rgb(183,43,56)]'; // Ethos error red
             }
         }
 
@@ -971,11 +975,11 @@ router.get("/dashboard", async (ctx) => {
             if (score < 800) {
                 emoji = '🔴';
                 label = 'Untrusted';
-                textColor = 'text-destructive';
+                textColor = 'text-[rgb(183,43,56)]'; // Ethos error red
             } else if (score < 1200) {
                 emoji = '🟡';
                 label = 'Questionable';
-                textColor = 'text-yellow-600';
+                textColor = 'text-[rgb(204,154,26)] dark:text-[rgb(194,144,16)]'; // Ethos warning
             } else if (score < 1600) {
                 emoji = '⚪';
                 label = 'Neutral';
@@ -983,11 +987,11 @@ router.get("/dashboard", async (ctx) => {
             } else if (score < 2000) {
                 emoji = '🔵';
                 label = 'Reputable';
-                textColor = 'text-blue-600';
+                textColor = 'text-[rgb(46,123,195)] dark:text-[rgb(46,123,195)]'; // Ethos primary blue
             } else {
                 emoji = '🟢';
                 label = 'Exemplary';
-                textColor = 'text-green-600';
+                textColor = 'text-[rgb(18,127,49)]'; // Ethos success green
             }
             
             return '<div class="flex items-center space-x-2">' +
