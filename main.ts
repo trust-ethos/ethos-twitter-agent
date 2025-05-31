@@ -1831,51 +1831,43 @@ router.post("/test/create-real-validation", async (ctx) => {
   }
 });
 
-// Create sample validation data endpoint
+// Create sample validation data endpoint - using existing database users
 router.post("/test/create-sample", async (ctx) => {
   try {
     const storageService = commandProcessor['storageService'];
+    const { getDatabase } = await import("./src/database.ts");
+    const db = getDatabase();
     
-    // Create multiple sample validations with different validators - WITH REAL TWITTER IMAGES
-    const sampleValidators = [
-      { handle: "vitalik", name: "Vitalik Buterin" },
-      { handle: "elonmusk", name: "Elon Musk" },
-      { handle: "naval", name: "Naval" },
-      { handle: "balajis", name: "Balaji Srinivasan" }
-    ];
+    // Get Twitter users with profile images from database
+    const availableUsers = await db.client`
+      SELECT id, username, display_name, profile_image_url 
+      FROM twitter_users 
+      WHERE profile_image_url IS NOT NULL 
+      AND profile_image_url LIKE '%pbs.twimg.com%'
+      ORDER BY RANDOM()
+      LIMIT 10
+    `;
+    
+    if (availableUsers.length < 4) {
+      throw new Error('Not enough Twitter users with profile images in database');
+    }
+    
+    console.log(`📊 Found ${availableUsers.length} users with profile images in database`);
 
-    const sampleAuthors = [
-      { handle: "sama", name: "Sam Altman" },
-      { handle: "pmarca", name: "Marc Andreessen" },
-      { handle: "chamath", name: "Chamath Palihapitiya" }
-    ];
-
-    // Create 5 validations with different validators and authors - FETCH REAL IMAGES
+    // Create 5 validations using existing database users
     for (let i = 0; i < 5; i++) {
-      const validator = sampleValidators[i % sampleValidators.length];
-      const author = sampleAuthors[i % sampleAuthors.length];
+      const validator = availableUsers[i % availableUsers.length];
+      const author = availableUsers[(i + 1) % availableUsers.length];
       
-      // Fetch real Twitter profile images
-      let validatorUser, authorUser;
-      try {
-        console.log(`🔍 Fetching Twitter data for validator: ${validator.handle} and author: ${author.handle}`);
-        validatorUser = await twitterService.getUserByUsername(validator.handle);
-        authorUser = await twitterService.getUserByUsername(author.handle);
-      } catch (error) {
-        console.log(`⚠️ Failed to fetch user data: ${error.message}, using defaults`);
-        validatorUser = null;
-        authorUser = null;
-      }
-      
-      // Get optimized image URLs (same logic as TwitterService)
-      const getOptimizedImageUrl = (user, size) => {
-        if (!user?.profile_image_url || !user.profile_image_url.includes('pbs.twimg.com')) {
+      // Get optimized image URLs for different sizes
+      const getOptimizedImageUrl = (profileImageUrl, size) => {
+        if (!profileImageUrl || !profileImageUrl.includes('pbs.twimg.com')) {
           return size === '_bigger' 
             ? `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png`
             : `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`;
         }
         
-        let url = user.profile_image_url;
+        let url = profileImageUrl;
         
         // Replace size in the URL to get the right resolution
         url = url.replace(/_normal\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
@@ -1891,22 +1883,22 @@ router.post("/test/create-sample", async (ctx) => {
         return url.replace(/^http:/, 'https:');
       };
       
-      const validatorAvatar = getOptimizedImageUrl(validatorUser, '_normal');
-      const authorAvatar = getOptimizedImageUrl(authorUser, '_bigger');
+      const validatorAvatar = getOptimizedImageUrl(validator.profile_image_url, '_normal');
+      const authorAvatar = getOptimizedImageUrl(author.profile_image_url, '_bigger');
       
-      console.log(`📸 Using avatars - Validator: ${validatorAvatar}, Author: ${authorAvatar}`);
+      console.log(`📸 Creating validation - Validator: @${validator.username} (${validatorAvatar}), Author: @${author.username} (${authorAvatar})`);
       
       const sampleValidation = {
-        id: `sample_${Date.now()}_${i}`,
-        tweetId: `123456789012345678${i}`,
-        tweetAuthor: author.name,
-        tweetAuthorHandle: author.handle,
+        id: `db_sample_${Date.now()}_${i}`,
+        tweetId: `223456789012345678${i}`,
+        tweetAuthor: author.display_name,
+        tweetAuthorHandle: author.username,
         tweetAuthorAvatar: authorAvatar,
-        requestedBy: validator.name,
-        requestedByHandle: validator.handle,
+        requestedBy: validator.display_name,
+        requestedByHandle: validator.username,
         requestedByAvatar: validatorAvatar,
         timestamp: new Date(Date.now() - i * 60000).toISOString(), // Stagger timestamps
-        tweetUrl: `https://x.com/${author.handle}/status/123456789012345678${i}`,
+        tweetUrl: `https://x.com/${author.username}/status/223456789012345678${i}`,
         averageScore: 1200 + (i * 200), // Varying scores
         engagementStats: {
           total_retweeters: 100 + (i * 20),
@@ -1933,9 +1925,9 @@ router.post("/test/create-sample", async (ctx) => {
           const ethosActivePct = 85 + (i * 1);
           const weightedScore = (reputablePct * 0.6) + (ethosActivePct * 0.4);
           
-          if (weightedScore >= 60) return "high";
-          if (weightedScore >= 30) return "medium";
-          return "low";
+          if (weightedScore >= 60) return "high" as "high" | "medium" | "low";
+          if (weightedScore >= 30) return "medium" as "high" | "medium" | "low";
+          return "low" as "high" | "medium" | "low";
         })()
       };
 
@@ -1944,8 +1936,9 @@ router.post("/test/create-sample", async (ctx) => {
     
     ctx.response.body = {
       status: "success",
-      message: "Sample validation data created with real Twitter profile images",
-      count: 5
+      message: "Sample validation data created using existing database users with real Twitter profile images",
+      count: 5,
+      usersUsed: availableUsers.slice(0, 5).map(u => ({ username: u.username, display_name: u.display_name }))
     };
   } catch (error) {
     console.error("❌ Failed to create sample data:", error);
