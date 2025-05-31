@@ -360,6 +360,18 @@ Learn more about Ethos at https://ethos.network`;
       const tweet = command.originalTweet;
       const mentionerUsername = command.mentionedUser.username;
       const mentionerName = command.mentionedUser.name;
+      const mentionerUserId = command.mentionedUser.id;
+
+      // 🚨 RATE LIMITING: Check if user has exceeded save command limit
+      const isRateLimited = await this.storageService.isRateLimited(mentionerUserId, "save");
+      if (isRateLimited) {
+        console.log(`🚨 Rate limit hit: @${mentionerUsername} (${mentionerUserId}) exceeded save command limit`);
+        return {
+          success: false,
+          message: "Save command rate limit exceeded",
+          replyText: `You've reached the limit of 5 save commands per hour. Please try again later.`
+        };
+      }
 
       // Debug: Log the tweet data structure to understand what we're receiving
       console.log(`🔍 Save command debugging:`);
@@ -628,6 +640,9 @@ Link to tweet: ${originalTweetLink}`;
         // Mark the tweet as saved in our storage
         await this.storageService.markTweetSaved(originalTweetId, targetUsername, mentionerUsername, reviewScore);
         
+        // 📝 RATE LIMITING: Record successful command usage
+        await this.storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "save");
+        
         // Log the response data to understand its structure
         console.log(`🔍 Review creation response data:`, JSON.stringify(reviewResult.data, null, 2));
         
@@ -707,6 +722,18 @@ Link to tweet: ${originalTweetLink}`;
     try {
       const tweet = command.originalTweet;
       const mentionerUsername = command.mentionedUser.username;
+      const mentionerUserId = command.mentionedUser.id;
+
+      // 🚨 RATE LIMITING: Check if user has exceeded validate command limit
+      const isRateLimited = await this.storageService.isRateLimited(mentionerUserId, "validate");
+      if (isRateLimited) {
+        console.log(`🚨 Rate limit hit: @${mentionerUsername} (${mentionerUserId}) exceeded validate command limit`);
+        return {
+          success: false,
+          message: "Validate command rate limit exceeded",
+          replyText: `You've reached the limit of 5 validate commands per hour. Please try again later.`
+        };
+      }
 
       // Check if this is a reply to another tweet
       if (!tweet.referenced_tweets || tweet.referenced_tweets.length === 0) {
@@ -911,6 +938,9 @@ Link to tweet: ${originalTweetLink}`;
 
         replyText = response;
       }
+
+      // 📝 RATE LIMITING: Record successful command usage
+      await this.storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "validate");
 
       return {
         success: true,

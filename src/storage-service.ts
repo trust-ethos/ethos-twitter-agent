@@ -43,6 +43,13 @@ interface ValidationRecord {
   overallQuality: "high" | "medium" | "low";
 }
 
+interface RateLimitRecord {
+  userId: string;
+  username: string;
+  commandType: "save" | "validate";
+  timestamp: string;
+}
+
 export class StorageService {
   private kv: Deno.Kv | null = null;
   private localStorage: Map<string, SavedTweet> = new Map(); // Fallback for local development
@@ -489,56 +496,125 @@ export class StorageService {
    * Get statistics about saved tweets
    */
   async getStats(): Promise<{ totalSaved: number; recentSaves: number }> {
-    try {
-      if (this.database) {
-        // Use database storage
-        const stats = await this.database.getStats();
-        
-        // Get recent saves (last 24 hours) - we'll approximate this for now
-        const oneDayAgo = new Date();
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-        
-        const allSavedTweets = await this.database.getSavedTweets(1000, 0);
-        const recentSaves = allSavedTweets.filter((tweet: any) => 
-          new Date(tweet.created_at) > oneDayAgo
-        ).length;
-        
-        return {
-          totalSaved: stats.saved_tweets || 0,
-          recentSaves
-        };
-      } else {
-        // Fallback to existing KV/local logic
-        let totalSaved = 0;
-        let recentSaves = 0;
-        const oneDayAgo = new Date();
-        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+    let totalSaved = 0;
+    let recentSaves = 0;
+    const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
 
-        if (this.kv) {
-          // Count KV entries
-          for await (const entry of this.kv.list<SavedTweet>({ prefix: ["saved_tweets"] })) {
-            totalSaved++;
-            const savedDate = new Date(entry.value.savedAt);
-            if (savedDate > oneDayAgo) {
-              recentSaves++;
-            }
-          }
-        } else {
-          // Count local storage entries
-          totalSaved = this.localStorage.size;
-          for (const savedTweet of this.localStorage.values()) {
-            const savedDate = new Date(savedTweet.savedAt);
-            if (savedDate > oneDayAgo) {
-              recentSaves++;
-            }
+    if (this.kv) {
+      const iter = this.kv.list({ prefix: ["saved_tweet"] });
+      for await (const entry of iter) {
+        totalSaved++;
+        const savedTweet = entry.value as SavedTweet;
+        const savedTime = new Date(savedTweet.savedAt).getTime();
+        if (savedTime > oneDayAgo) {
+          recentSaves++;
+        }
+      }
+    } else {
+      totalSaved = this.localStorage.size;
+      for (const savedTweet of this.localStorage.values()) {
+        const savedTime = new Date(savedTweet.savedAt).getTime();
+        if (savedTime > oneDayAgo) {
+          recentSaves++;
+        }
+      }
+    }
+
+    return { totalSaved, recentSaves };
+  }
+
+  // ============================================================================
+  // RATE LIMITING FUNCTIONALITY
+  // ============================================================================
+
+  /**
+   * Check if a user has exceeded the rate limit (5 commands per hour)
+   */
+  async isRateLimited(userId: string, commandType: "save" | "validate"): Promise<boolean> {
+    try {
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+      let commandCount = 0;
+
+      if (this.kv) {
+        // Check KV storage for rate limit records
+        const iter = this.kv.list({ prefix: ["rate_limit", userId, commandType] });
+        for await (const entry of iter) {
+          const record = entry.value as RateLimitRecord;
+          const recordTime = new Date(record.timestamp).getTime();
+          if (recordTime > oneHourAgo) {
+            commandCount++;
           }
         }
+      }
 
-        return { totalSaved, recentSaves };
+      // Rate limit is 5 commands per hour
+      const isLimited = commandCount >= 5;
+      
+      if (isLimited) {
+        console.log(`🚨 Rate limit exceeded for user ${userId}: ${commandCount} ${commandType} commands in last hour`);
+      }
+
+      return isLimited;
+    } catch (error) {
+      console.error("❌ Error checking rate limit:", error);
+      // If we can't check the rate limit, don't block the user
+      return false;
+    }
+  }
+
+  /**
+   * Record a command usage for rate limiting
+   */
+  async recordCommandUsage(userId: string, username: string, commandType: "save" | "validate"): Promise<void> {
+    try {
+      const now = new Date().toISOString();
+      const record: RateLimitRecord = {
+        userId,
+        username,
+        commandType,
+        timestamp: now
+      };
+
+      if (this.kv) {
+        // Store with unique key including timestamp to avoid conflicts
+        const key = ["rate_limit", userId, commandType, now];
+        await this.kv.set(key, record);
+        console.log(`📝 Recorded ${commandType} command usage for user ${username} (${userId})`);
       }
     } catch (error) {
-      console.error("❌ Error getting stats:", error);
-      return { totalSaved: 0, recentSaves: 0 };
+      console.error("❌ Error recording command usage:", error);
+    }
+  }
+
+  /**
+   * Clean up old rate limit records (older than 2 hours)
+   */
+  async cleanupOldRateLimits(): Promise<void> {
+    try {
+      if (!this.kv) return;
+
+      const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
+      const toDelete: Deno.KvKey[] = [];
+
+      const iter = this.kv.list({ prefix: ["rate_limit"] });
+      for await (const entry of iter) {
+        const record = entry.value as RateLimitRecord;
+        const recordTime = new Date(record.timestamp).getTime();
+        if (recordTime < twoHoursAgo) {
+          toDelete.push(entry.key);
+        }
+      }
+
+      // Delete old records in batches
+      for (const key of toDelete) {
+        await this.kv.delete(key);
+      }
+
+      if (toDelete.length > 0) {
+        console.log(`🧹 Cleaned up ${toDelete.length} old rate limit records`);
+      }
+    } catch (error) {
+      console.error("❌ Error cleaning up old rate limits:", error);
     }
   }
 } 

@@ -76,6 +76,23 @@ if (usePolling) {
   }
 }
 
+// Set up rate limit cleanup cron job (runs every hour)
+try {
+  Deno.cron("ethosAgent-rate-limit-cleanup", "0 * * * *", async () => {
+    console.log("🧹 Deno.cron triggered: Cleaning up old rate limit records");
+    try {
+      const storageService = commandProcessor.storageService;
+      await storageService.cleanupOldRateLimits();
+      console.log("✅ Deno.cron rate limit cleanup completed");
+    } catch (error) {
+      console.error("❌ Deno.cron rate limit cleanup failed:", error);
+    }
+  });
+  console.log("🧹 Deno.cron() registered for rate limit cleanup every hour");
+} catch (error) {
+  console.log("⚠️ Deno.cron() for rate limit cleanup not available (likely running locally):", error.message);
+}
+
 // Dashboard route - serve the tabbed dashboard page
 router.get("/dashboard", async (ctx) => {
   try {
