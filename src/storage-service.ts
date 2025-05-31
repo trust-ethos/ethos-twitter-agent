@@ -204,54 +204,58 @@ export class StorageService {
         try {
           const dbValidations = await this.database.getLatestValidations(limit);
           
-          // Convert database format to ValidationRecord format
+          // Get all unique usernames that we need profile images for
+          const allUsernames = new Set<string>();
+          for (const dbVal of dbValidations) {
+            const authorHandle = dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username;
+            const validatorHandle = dbVal.engagement_data?.requestedByHandle;
+            if (authorHandle) allUsernames.add(authorHandle);
+            if (validatorHandle) allUsernames.add(validatorHandle);
+          }
+          
+          // Single bulk query to get all profile images at once
+          const profileImageCache = new Map<string, string>();
+          if (allUsernames.size > 0) {
+            try {
+              const usernameArray = Array.from(allUsernames);
+              const users = await this.database.client`
+                SELECT username, profile_image_url 
+                FROM twitter_users 
+                WHERE username = ANY(${usernameArray})
+                AND profile_image_url IS NOT NULL 
+                AND profile_image_url LIKE '%pbs.twimg.com%'
+              `;
+              
+              // Create lookup cache
+              for (const user of users) {
+                profileImageCache.set(user.username, user.profile_image_url);
+              }
+              console.log(`📸 Cached ${profileImageCache.size} profile images for ${allUsernames.size} users`);
+            } catch (cacheError) {
+              console.log(`Could not bulk load profile images:`, cacheError);
+            }
+          }
+          
+          // Convert database format to ValidationRecord format using cache
           const validations: ValidationRecord[] = [];
           
           for (const dbVal of dbValidations) {
-            // Look up actual Twitter users to get real profile images
+            // Get profile images from cache or engagement_data
             let tweetAuthorAvatar = dbVal.engagement_data?.tweetAuthorAvatar;
             let requestedByAvatar = dbVal.engagement_data?.requestedByAvatar;
             
-            // If no avatar in engagement_data, look up from twitter_users table
+            // Use cached profile images if available and current ones are defaults
             if (!tweetAuthorAvatar || tweetAuthorAvatar.includes('default_profile')) {
               const authorHandle = dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username;
-              if (authorHandle) {
-                try {
-                  const authorUser = await this.database.client`
-                    SELECT profile_image_url FROM twitter_users 
-                    WHERE username = ${authorHandle} 
-                    AND profile_image_url IS NOT NULL 
-                    AND profile_image_url LIKE '%pbs.twimg.com%'
-                    LIMIT 1
-                  `;
-                  if (authorUser.length > 0) {
-                    // Convert to _bigger size for tweet authors
-                    tweetAuthorAvatar = this.getOptimizedImageUrl(authorUser[0].profile_image_url, '_bigger');
-                  }
-                } catch (lookupError) {
-                  console.log(`Could not look up avatar for author ${authorHandle}:`, lookupError);
-                }
+              if (authorHandle && profileImageCache.has(authorHandle)) {
+                tweetAuthorAvatar = this.getOptimizedImageUrl(profileImageCache.get(authorHandle)!, '_bigger');
               }
             }
             
             if (!requestedByAvatar || requestedByAvatar.includes('default_profile')) {
               const validatorHandle = dbVal.engagement_data?.requestedByHandle;
-              if (validatorHandle) {
-                try {
-                  const validatorUser = await this.database.client`
-                    SELECT profile_image_url FROM twitter_users 
-                    WHERE username = ${validatorHandle} 
-                    AND profile_image_url IS NOT NULL 
-                    AND profile_image_url LIKE '%pbs.twimg.com%'
-                    LIMIT 1
-                  `;
-                  if (validatorUser.length > 0) {
-                    // Convert to _normal size for validators
-                    requestedByAvatar = this.getOptimizedImageUrl(validatorUser[0].profile_image_url, '_normal');
-                  }
-                } catch (lookupError) {
-                  console.log(`Could not look up avatar for validator ${validatorHandle}:`, lookupError);
-                }
+              if (validatorHandle && profileImageCache.has(validatorHandle)) {
+                requestedByAvatar = this.getOptimizedImageUrl(profileImageCache.get(validatorHandle)!, '_normal');
               }
             }
             
