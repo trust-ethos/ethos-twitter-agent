@@ -434,18 +434,33 @@ router.get("/dashboard", async (ctx) => {
                             </svg>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <div class="flex -space-x-2">
-                            <!-- Show recent validator avatars as facepile -->
-                            ${validationData.slice(0, 4).map((validation, index) => `
-                                <img class="h-8 w-8 rounded-full border-2 border-white object-cover" 
-                                     src="${validation.requestedByAvatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'}" 
-                                     alt="Validator ${index + 1}" 
-                                     onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'"
-                                     style="z-index: ${10 - index};">
-                            `).join('')}
-                            ${validationData.length > 4 ? `<div class="h-8 w-8 rounded-full border-2 border-white ethos-bg-elevated flex items-center justify-center text-xs ethos-text-secondary font-medium">+${validationData.length - 4}</div>` : ''}
-                        </div>
+                    <div class="mt-4 space-y-3">
+                        <!-- Show top validators by validation count -->
+                        ${topValidators.slice(0, 3).map((validator, index) => `
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex-shrink-0 h-8 w-8 relative">
+                                        <img class="h-8 w-8 rounded-full object-cover border-2 ${index === 0 ? 'border-yellow-400' : index === 1 ? 'border-gray-400' : 'border-orange-400'}" 
+                                             src="${validator.avatar || 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'}" 
+                                             alt="${validator.handle}"
+                                             onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
+                                        ${index === 0 ? '<div class="absolute -top-1 -right-1 text-xs">🥇</div>' : 
+                                          index === 1 ? '<div class="absolute -top-1 -right-1 text-xs">🥈</div>' : 
+                                          '<div class="absolute -top-1 -right-1 text-xs">🥉</div>'}
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium ethos-text-base">@${validator.handle}</div>
+                                        <div class="text-xs ethos-text-tertiary">${validator.name || validator.handle}</div>
+                                    </div>
+                                </div>
+                                <div class="text-sm font-bold ethos-primary">${validator.count}</div>
+                            </div>
+                        `).join('')}
+                        ${topValidators.length === 0 ? `
+                            <div class="text-center py-2">
+                                <p class="text-sm ethos-text-tertiary">No validators yet</p>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
 
