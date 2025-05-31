@@ -556,7 +556,6 @@ router.get("/dashboard", async (ctx) => {
                                                     }">
                                                         Quality ${qualityPercentage}%
                                                     </span>
-                                                    <div class="text-xs ethos-text-tertiary mt-1">${validation.overallQuality}</div>
                                                 </div>
                                             </div>
                                         </td>
