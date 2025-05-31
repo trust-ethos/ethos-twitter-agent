@@ -1,0 +1,38 @@
+{
+  "build_id": "3224f976494b501e4b53e0b7bd31bdf3ed407e88",
+  "files": {
+    "main.js": [
+      "chunk-HTQE5ABB.js",
+      "chunk-D4CPDDRE.js",
+      "chunk-ATX7TDFZ.js"
+    ],
+    "deserializer.js": [],
+    "signals.js": [
+      "chunk-D4CPDDRE.js",
+      "chunk-4CGUAWBV.js",
+      "chunk-ATX7TDFZ.js"
+    ],
+    "island-counter.js": [
+      "chunk-HTQE5ABB.js",
+      "chunk-D4CPDDRE.js",
+      "chunk-RPWRD7AT.js",
+      "chunk-4CGUAWBV.js",
+      "chunk-ATX7TDFZ.js"
+    ],
+    "chunk-HTQE5ABB.js": [],
+    "chunk-D4CPDDRE.js": [],
+    "island-themetoggle.js": [
+      "chunk-RPWRD7AT.js",
+      "chunk-4CGUAWBV.js",
+      "chunk-ATX7TDFZ.js"
+    ],
+    "chunk-RPWRD7AT.js": [
+      "chunk-ATX7TDFZ.js"
+    ],
+    "chunk-4CGUAWBV.js": [
+      "chunk-ATX7TDFZ.js"
+    ],
+    "chunk-ATX7TDFZ.js": [],
+    "metafile.json": []
+  }
+}

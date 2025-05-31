@@ -1,5 +1,6 @@
 import { Handlers, PageProps } from "$fresh/server.ts";
 import { Head } from "$fresh/runtime.ts";
+import ThemeToggle from "../islands/ThemeToggle.tsx";
 
 interface ValidationRecord {
   id: string;
@@ -210,199 +211,219 @@ export default function Dashboard({ data }: PageProps<DashboardData>) {
     return `${percentage.toFixed(1)}%`;
   };
 
+  const navigationItems = [
+    { name: 'Dashboard', href: '/dashboard', current: true },
+    { name: 'Analytics', href: '#', current: false },
+  ];
+
   return (
     <>
       <Head>
         <title>Ethos Agent Dashboard</title>
         <meta name="description" content="Real-time dashboard showing Ethos Agent validation results" />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            // Initialize theme before page loads to prevent flash
+            (function() {
+              const theme = localStorage.getItem('theme') || 'system';
+              if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+              }
+            })();
+          `
+        }} />
       </Head>
       
-      <div class="min-h-screen bg-gray-50">
-        <div class="container mx-auto px-4 py-8">
-          {/* Header */}
-          <div class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">
-              Ethos Agent Dashboard
-            </h1>
-            <p class="text-gray-600">
-              Real-time transparency into @ethosAgent validation commands
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">Total Validations</h3>
-              <p class="text-3xl font-bold text-blue-600">{stats.totalValidations}</p>
+      <div class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+        {/* Header */}
+        <div class="bg-white dark:bg-gray-800 shadow dark:shadow-gray-900/20 border-b border-gray-200 dark:border-gray-700">
+          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-lg flex items-center justify-center mr-3">
+                  <span class="text-white font-bold text-xl">E</span>
+                </div>
+                <div>
+                  <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Ethos Agent Dashboard</h1>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Twitter Analytics & Validation</p>
+                </div>
+              </div>
+              <div class="flex items-center space-x-4">
+                <ThemeToggle />
+                <div class="flex items-center space-x-2">
+                  <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">Live</span>
+                </div>
+              </div>
             </div>
-            <div class="bg-white rounded-lg shadow p-6">
-              <h3 class="text-lg font-semibold text-gray-900 mb-2">Last Updated</h3>
-              <p class="text-sm text-gray-600">{formatDate(stats.lastUpdated)}</p>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          
+          {/* Stats Grid */}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-900/20 border border-gray-200 dark:border-gray-700 p-6 card-hover">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <span class="text-2xl">📊</span>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Validations</p>
+                  <p class="text-3xl font-bold text-gray-900 dark:text-white">{stats.totalValidations}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-900/20 border border-gray-200 dark:border-gray-700 p-6 card-hover">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                  <span class="text-2xl">✅</span>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400">High Quality</p>
+                  <p class="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {validations.filter(v => v.overallQuality === 'high').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-900/20 border border-gray-200 dark:border-gray-700 p-6 card-hover">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                  <span class="text-2xl">👥</span>
+                </div>
+                <div class="ml-4">
+                  <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Avg Users</p>
+                  <p class="text-3xl font-bold text-gray-900 dark:text-white">
+                    {validations.length > 0 ? Math.round(validations.reduce((sum, v) => sum + v.engagementStats.total_unique_users, 0) / validations.length) : 0}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Validations Table */}
-          <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h2 class="text-xl font-semibold text-gray-900">Tweet Validations</h2>
-              <p class="text-sm text-gray-500 mt-1">
-                Recent tweet engagement analysis results from @ethosAgent validate commands
+          <div class="bg-white dark:bg-gray-800 shadow dark:shadow-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent Validations</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Tweet engagement analysis results from @ethosAgent validate commands
               </p>
             </div>
             
             {validations.length === 0 ? (
-              <div class="px-6 py-8 text-center text-gray-500">
-                No validations found. Results will appear here when users run @ethosAgent validate commands.
+              <div class="px-6 py-12 text-center">
+                <div class="text-6xl mb-4">📊</div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">No validations yet</h3>
+                <p class="text-gray-500 dark:text-gray-400">
+                  Results will appear here when users run @ethosAgent validate commands on Twitter.
+                </p>
               </div>
             ) : (
-              <>
-                {/* Desktop Table */}
-                <div class="hidden lg:block overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                      <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Tweet Author
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Requested By
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Quality
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Total Users
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Reputable %
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Ethos Active %
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Timestamp
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Link
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                      {validations.map((validation) => (
-                        <tr key={validation.id} class="hover:bg-gray-50">
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div class="text-sm font-medium text-gray-900">
+              <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Tweet Author
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Quality
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Engagement
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Reputable %
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Requested By
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Time
+                      </th>
+                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Action
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {validations.map((validation) => (
+                      <tr key={validation.id} class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="flex items-center">
+                            <div class="w-10 h-10 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                              {validation.tweetAuthor.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="ml-3">
+                              <div class="text-sm font-medium text-gray-900 dark:text-white">
                                 {validation.tweetAuthor}
                               </div>
-                              <div class="text-sm text-gray-500">
+                              <div class="text-sm text-gray-500 dark:text-gray-400">
                                 @{validation.tweetAuthorHandle}
                               </div>
                             </div>
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <div>
-                              <div class="text-sm font-medium text-gray-900">
-                                {validation.requestedBy}
-                              </div>
-                              <div class="text-sm text-gray-500">
-                                @{validation.requestedByHandle}
-                              </div>
-                            </div>
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="flex items-center gap-2">
-                              <span class="text-xl">{getQualityEmoji(validation.overallQuality)}</span>
-                              <span class="text-sm capitalize text-gray-600">{validation.overallQuality}</span>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="flex items-center">
+                            <span class="text-2xl mr-2">{getQualityEmoji(validation.overallQuality)}</span>
+                            <span class={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              validation.overallQuality === 'high' 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                                : validation.overallQuality === 'medium'
+                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400'
+                            }`}>
+                              {validation.overallQuality}
                             </span>
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {validation.engagementStats.total_unique_users}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {getPercentageDisplay(validation.engagementStats.reputable_percentage)}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {getPercentageDisplay(validation.engagementStats.ethos_active_percentage)}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                            {formatDate(validation.timestamp)}
-                          </td>
-                          <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <a 
-                              href={validation.tweetUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              class="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Tweet
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Mobile/Tablet Cards */}
-                <div class="lg:hidden">
-                  {validations.map((validation) => (
-                    <div key={validation.id} class="border-b border-gray-200 p-4">
-                      <div class="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 class="text-sm font-medium text-gray-900">
-                            {validation.tweetAuthor}
-                          </h3>
-                          <p class="text-sm text-gray-500">@{validation.tweetAuthorHandle}</p>
-                        </div>
-                        <span class="flex items-center gap-2">
-                          <span class="text-xl">{getQualityEmoji(validation.overallQuality)}</span>
-                          <span class="text-sm capitalize text-gray-600">{validation.overallQuality}</span>
-                        </span>
-                      </div>
-                      
-                      <div class="grid grid-cols-2 gap-4 mb-3 text-sm">
-                        <div>
-                          <span class="text-gray-500">Total Users:</span>
-                          <span class="ml-1 font-medium">{validation.engagementStats.total_unique_users}</span>
-                        </div>
-                        <div>
-                          <span class="text-gray-500">Reputable:</span>
-                          <span class="ml-1 font-medium">{getPercentageDisplay(validation.engagementStats.reputable_percentage)}</span>
-                        </div>
-                        <div>
-                          <span class="text-gray-500">Ethos Active:</span>
-                          <span class="ml-1 font-medium">{getPercentageDisplay(validation.engagementStats.ethos_active_percentage)}</span>
-                        </div>
-                        <div>
-                          <span class="text-gray-500">Requested by:</span>
-                          <span class="ml-1 font-medium">@{validation.requestedByHandle}</span>
-                        </div>
-                      </div>
-
-                      {getRateLimitText(validation.engagementStats) && (
-                        <div class="mb-3">
-                          <span class="text-xs text-yellow-600 bg-yellow-50 px-2 py-1 rounded">
-                            ⚠️ {getRateLimitText(validation.engagementStats)}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <div class="flex justify-between items-center text-xs text-gray-500">
-                        <span>{formatDate(validation.timestamp)}</span>
-                        <a 
-                          href={validation.tweetUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          class="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          View Tweet
-                        </a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <div class="flex items-center space-x-1">
+                            <span class="font-semibold">{validation.engagementStats.total_unique_users}</span>
+                            <span class="text-gray-500 dark:text-gray-400">users</span>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="flex items-center">
+                            <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
+                              <div 
+                                class="bg-blue-600 dark:bg-blue-500 h-2 rounded-full" 
+                                style={`width: ${Math.min(validation.engagementStats.reputable_percentage, 100)}%`}
+                              ></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">
+                              {validation.engagementStats.reputable_percentage.toFixed(1)}%
+                            </span>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                          <div class="text-sm text-gray-900 dark:text-white">
+                            @{validation.requestedByHandle}
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(validation.timestamp).toLocaleDateString()}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <a 
+                            href={validation.tweetUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors duration-200"
+                          >
+                            View Tweet
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
