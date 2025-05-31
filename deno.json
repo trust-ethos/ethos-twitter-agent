@@ -1,46 +1,25 @@
 {
   "lock": false,
   "tasks": {
-    "check": "deno fmt --check && deno lint && deno check **/*.ts && deno check **/*.tsx",
-    "cli": "echo \"import '\\$fresh/src/dev/cli.ts'\" | deno run --unstable-kv --allow-net --allow-read --allow-write --allow-env --allow-run --allow-sys -",
-    "manifest": "deno task cli manifest $(pwd)",
+    "check": "deno fmt --check && deno lint && deno check **/*.ts",
     "start": "deno run -A --unstable-kv main.ts",
     "dev": "deno run -A --unstable-kv --watch main.ts",
-    "test": "deno test -A --unstable-kv",
-    "dashboard": "cd dashboard && deno task start",
-    "dashboard-build": "cd dashboard && deno task build",
-    "dashboard-preview": "cd dashboard && deno task preview",
-    "build": "deno run -A --unstable-kv dev.ts build",
-    "preview": "deno run -A --unstable-kv main.ts",
-    "update": "deno run -A -r https://fresh.deno.dev/update ."
+    "test": "deno test -A --unstable-kv"
   },
   "lint": {
     "rules": {
       "tags": [
-        "fresh",
         "recommended"
       ]
     }
   },
-  "exclude": [
-    "**/_fresh/*"
-  ],
   "imports": {
     "@std/": "https://deno.land/std@0.208.0/",
     "oak": "https://deno.land/x/oak@v12.6.1/mod.ts",
     "dotenv": "https://deno.land/std@0.208.0/dotenv/mod.ts",
-    "$fresh/": "https://deno.land/x/fresh@1.6.8/",
-    "$std/": "https://deno.land/std@0.193.0/",
-    "preact": "https://esm.sh/preact@10.15.1",
-    "preact/": "https://esm.sh/preact@10.15.1/",
-    "preact-render-to-string": "https://esm.sh/*preact-render-to-string@6.2.1",
-    "@preact/signals": "https://esm.sh/*@preact/signals@1.1.3",
-    "@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.2.3",
-    "twind": "https://esm.sh/twind@0.16.19",
-    "twind/": "https://esm.sh/twind@0.16.19/",
     "@neondatabase/serverless": "npm:@neondatabase/serverless@^0.9.0"
   },
   "compilerOptions": {
-    "lib": ["deno.ns", "deno.unstable"]
+    "lib": ["deno.ns", "deno.unstable", "dom", "es2022"]
   }
 }
