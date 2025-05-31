@@ -96,7 +96,6 @@ try {
 // Dashboard route - serve the modern Tailwind data table
 router.get("/dashboard", async (ctx) => {
   try {
-    // Enhanced HTML dashboard with modern Tailwind data table
     const html = `
 <!DOCTYPE html>
 <html lang="en" class="h-full">
@@ -111,102 +110,250 @@ router.get("/dashboard", async (ctx) => {
             theme: {
                 extend: {
                     colors: {
-                        // Ethos Dark Theme Colors
-                        'ethos-primary': '#2E7BC3',
-                        'ethos-primary-hover': '#1F21B6',
-                        'ethos-bg-base': '#232320',
-                        'ethos-bg-container': '#2d2d2A',
-                        'ethos-bg-elevated': '#333330',
-                        'ethos-text-base': '#EFEEE0',
-                        'ethos-text-secondary': '#FFFFFFA6',
-                        'ethos-text-tertiary': '#FFFFFF73',
-                        'ethos-success': '#127f31',
-                        'ethos-error': '#b72b38',
-                        'ethos-warning': '#C29010',
-                        'ethos-border': '#9E9C8D',
-                        
-                        // Ethos Light Theme Colors
-                        'ethos-light-primary': '#1F21B6',
-                        'ethos-light-bg-base': '#C1C0B6',
-                        'ethos-light-bg-container': '#CBCBC2',
-                        'ethos-light-bg-elevated': '#D5D4CD',
-                        'ethos-light-text-base': '#1F2126',
-                        'ethos-light-text-secondary': '#1F2126A6',
-                        'ethos-light-text-tertiary': '#1F212673',
+                        // ShadCN-inspired color palette
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))"
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))"
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))"
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))"
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))"
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))"
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))"
+                        }
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)"
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
                     }
                 }
             }
         }
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Ethos Light Theme (default) */
-            --ethos-primary: #1F21B6;
-            --ethos-primary-hover: #2E7BC3;
-            --ethos-bg-base: #C1C0B6;
-            --ethos-bg-container: #CBCBC2;
-            --ethos-bg-elevated: #D5D4CD;
-            --ethos-text-base: #1F2126;
-            --ethos-text-secondary: rgba(31, 33, 38, 0.65);
-            --ethos-text-tertiary: rgba(31, 33, 38, 0.45);
-            --ethos-border: rgba(31, 33, 38, 0.15);
-            --ethos-success: #127f31;
-            --ethos-error: #b72b38;
-            --ethos-warning: #cc9a1a;
+            /* ShadCN Light Theme */
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 221.2 83.2% 53.3%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96%;
+            --secondary-foreground: 222.2 84% 4.9%;
+            --muted: 210 40% 96%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96%;
+            --accent-foreground: 222.2 84% 4.9%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 221.2 83.2% 53.3%;
+            --radius: 0.5rem;
         }
         
         .dark {
-            /* Ethos Dark Theme */
-            --ethos-primary: #2E7BC3;
-            --ethos-primary-hover: #1F21B6;
-            --ethos-bg-base: #232320;
-            --ethos-bg-container: #2d2d2A;
-            --ethos-bg-elevated: #333330;
-            --ethos-text-base: #EFEEE0;
-            --ethos-text-secondary: rgba(239, 238, 224, 0.85);
-            --ethos-text-tertiary: rgba(255, 255, 255, 0.45);
-            --ethos-border: rgba(158, 156, 141, 0.2);
-            --ethos-success: #127f31;
-            --ethos-error: #b72b38;
-            --ethos-warning: #C29010;
+            /* ShadCN Dark Theme */
+            --background: 222.2 84% 4.9%;
+            --foreground: 210 40% 98%;
+            --card: 222.2 84% 4.9%;
+            --card-foreground: 210 40% 98%;
+            --popover: 222.2 84% 4.9%;
+            --popover-foreground: 210 40% 98%;
+            --primary: 217.2 91.2% 59.8%;
+            --primary-foreground: 222.2 84% 4.9%;
+            --secondary: 217.2 32.6% 17.5%;
+            --secondary-foreground: 210 40% 98%;
+            --muted: 217.2 32.6% 17.5%;
+            --muted-foreground: 215 20.2% 65.1%;
+            --accent: 217.2 32.6% 17.5%;
+            --accent-foreground: 210 40% 98%;
+            --destructive: 0 62.8% 30.6%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 217.2 32.6% 17.5%;
+            --input: 217.2 32.6% 17.5%;
+            --ring: 224.3 76.3% 94.1%;
         }
         
-        /* Ethos custom classes */
-        .ethos-bg-base { background-color: var(--ethos-bg-base); }
-        .ethos-bg-container { background-color: var(--ethos-bg-container); }
-        .ethos-bg-elevated { background-color: var(--ethos-bg-elevated); }
-        .ethos-text-base { color: var(--ethos-text-base); }
-        .ethos-text-secondary { color: var(--ethos-text-secondary); }
-        .ethos-text-tertiary { color: var(--ethos-text-tertiary); }
-        .ethos-primary { color: var(--ethos-primary); }
-        .ethos-primary-bg { background-color: var(--ethos-primary); }
-        .ethos-border { border-color: var(--ethos-border); }
-        .ethos-success { color: var(--ethos-success); }
-        .ethos-error { color: var(--ethos-error); }
-        .ethos-warning { color: var(--ethos-warning); }
+        /* ShadCN Component Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            outline: none;
+            border: none;
+            cursor: pointer;
+        }
         
-        /* Hover states */
-        .ethos-primary-hover:hover { background-color: var(--ethos-primary-hover); }
-        .ethos-text-hover:hover { color: var(--ethos-primary); }
+        .btn:focus-visible {
+            box-shadow: 0 0 0 2px hsl(var(--ring));
+        }
         
-        /* Custom scrollbar for Ethos theme */
-        ::-webkit-scrollbar {
-            width: 8px;
+        .btn-primary {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            height: 2.5rem;
+            padding: 0 1rem;
         }
-        ::-webkit-scrollbar-track {
-            background: var(--ethos-bg-container);
+        
+        .btn-primary:hover {
+            background-color: hsl(var(--primary) / 0.9);
         }
-        ::-webkit-scrollbar-thumb {
-            background: var(--ethos-primary);
-            border-radius: 4px;
+        
+        .btn-secondary {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+            height: 2.5rem;
+            padding: 0 1rem;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--ethos-primary-hover);
+        
+        .btn-secondary:hover {
+            background-color: hsl(var(--secondary) / 0.8);
+        }
+        
+        .btn-ghost {
+            background-color: transparent;
+            color: hsl(var(--foreground));
+            height: 2.5rem;
+            padding: 0 1rem;
+        }
+        
+        .btn-ghost:hover {
+            background-color: hsl(var(--accent));
+            color: hsl(var(--accent-foreground));
+        }
+        
+        .card {
+            background-color: hsl(var(--card));
+            color: hsl(var(--card-foreground));
+            border: 1px solid hsl(var(--border));
+            border-radius: calc(var(--radius));
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        
+        .input {
+            display: flex;
+            height: 2.5rem;
+            width: 100%;
+            border-radius: calc(var(--radius) - 2px);
+            border: 1px solid hsl(var(--input));
+            background-color: hsl(var(--background));
+            padding: 0 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            outline: none;
+        }
+        
+        .input::placeholder {
+            color: hsl(var(--muted-foreground));
+        }
+        
+        .input:focus {
+            border-color: hsl(var(--ring));
+            box-shadow: 0 0 0 1px hsl(var(--ring));
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: calc(var(--radius) - 2px);
+            padding: 0.125rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .badge-default {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+        }
+        
+        .badge-secondary {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+        }
+        
+        .badge-success {
+            background-color: hsl(142.1 76.2% 36.3%);
+            color: hsl(355.7 100% 97.3%);
+        }
+        
+        .badge-warning {
+            background-color: hsl(32.1 94.6% 43.7%);
+            color: hsl(355.7 100% 97.3%);
+        }
+        
+        .badge-destructive {
+            background-color: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+        }
+        
+        .table {
+            width: 100%;
+            caption-side: bottom;
+            font-size: 0.875rem;
+        }
+        
+        .table th {
+            height: 3rem;
+            padding: 0 1rem;
+            text-align: left;
+            font-weight: 500;
+            color: hsl(var(--muted-foreground));
+            border-bottom: 1px solid hsl(var(--border));
+        }
+        
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid hsl(var(--border));
+            vertical-align: middle;
+        }
+        
+        .table tr:hover {
+            background-color: hsl(var(--muted) / 0.5);
         }
         
         /* Loading animation */
         .loading-pulse {
-            animation: pulse 1.5s ease-in-out infinite;
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         
         @keyframes pulse {
@@ -214,44 +361,15 @@ router.get("/dashboard", async (ctx) => {
             50% { opacity: 0.5; }
         }
         
-        /* Smooth theme transitions */
+        /* Smooth transitions */
         * {
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-        
-        /* Flash prevention */
-        html {
-            background-color: var(--ethos-bg-base);
-        }
-        
-        /* Table sorting icons */
-        .sort-icon {
-            display: inline-block;
-            width: 0;
-            height: 0;
-            vertical-align: middle;
-            margin-left: 5px;
-        }
-        .sort-asc {
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
-            border-bottom: 4px solid currentColor;
-        }
-        .sort-desc {
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
-            border-top: 4px solid currentColor;
-        }
-        .sort-none {
-            border-left: 4px solid transparent;
-            border-right: 4px solid transparent;
-            border-top: 4px solid #ccc;
-            border-bottom: 4px solid #ccc;
-            margin-top: -4px;
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
         }
     </style>
     <script>
-        // Flash prevention - apply theme before page loads
+        // Theme system with flash prevention
         (function() {
             const theme = localStorage.getItem('theme') || 'system';
             const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -263,114 +381,122 @@ router.get("/dashboard", async (ctx) => {
         })();
     </script>
 </head>
-<body class="ethos-bg-base ethos-text-base min-h-screen font-sans">
-    <div class="min-h-screen">
+<body class="bg-background text-foreground font-sans antialiased min-h-screen">
+    <div class="min-h-screen flex flex-col">
         <!-- Header -->
-        <header class="ethos-bg-elevated shadow-sm ethos-border border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center h-16">
+        <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 items-center justify-between">
                     <div class="flex items-center space-x-4">
-                        <h1 class="text-xl font-bold ethos-text-base">Ethos Agent Dashboard</h1>
+                        <div class="flex items-center space-x-2">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h1 class="text-xl font-semibold">Ethos Agent</h1>
+                        </div>
                         <div class="flex items-center space-x-2">
                             <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span class="ethos-text-secondary text-sm font-medium">Live</span>
+                            <span class="text-sm text-muted-foreground font-medium">Live</span>
                         </div>
                     </div>
                     
                     <!-- Theme Toggle -->
-                    <div class="flex items-center space-x-3">
-                        <button id="theme-toggle" class="p-2 ethos-bg-container rounded-lg ethos-text-secondary hover:ethos-text-base transition-colors">
-                            <span id="theme-icon">💻</span>
-                            <span id="theme-text" class="ml-1 text-sm">System</span>
-                        </button>
-                    </div>
+                    <button id="theme-toggle" class="btn btn-ghost">
+                        <span id="theme-icon">💻</span>
+                        <span id="theme-text" class="ml-2">System</span>
+                    </button>
                 </div>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center">
-                        <div class="p-3 ethos-primary-bg rounded-full">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
+        <main class="flex-1">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="card p-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-muted-foreground">Total Validations</p>
+                                <p class="text-2xl font-bold" id="total-validations">...</p>
+                            </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="ethos-text-tertiary text-sm font-medium">Total Validations</p>
-                            <p id="total-validations" class="text-2xl font-bold ethos-text-base">...</p>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-muted-foreground">Unique Validators</p>
+                                <p class="text-2xl font-bold" id="unique-validators">...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-muted-foreground">Avg Quality Score</p>
+                                <p class="text-2xl font-bold" id="avg-quality">...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-6">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-muted-foreground">System Status</p>
+                                <p class="text-2xl font-bold text-green-600">Healthy</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-blue-500 rounded-full">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="ethos-text-tertiary text-sm font-medium">Unique Validators</p>
-                            <p id="unique-validators" class="text-2xl font-bold ethos-text-base">...</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-purple-500 rounded-full">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="ethos-text-tertiary text-sm font-medium">Avg Quality Score</p>
-                            <p id="avg-quality" class="text-2xl font-bold ethos-text-base">...</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="ethos-bg-container rounded-lg p-6 shadow-sm border ethos-border">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-green-500 rounded-full">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                        <div class="ml-4">
-                            <p class="ethos-text-tertiary text-sm font-medium">System Status</p>
-                            <p class="text-2xl font-bold ethos-success">Healthy</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Data Table -->
-            <div class="ethos-bg-container rounded-lg border ethos-border shadow-sm">
-                <!-- Table Header -->
-                <div class="px-6 py-4 border-b ethos-border">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <!-- Data Table Card -->
+                <div class="card">
+                    <!-- Table Header -->
+                    <div class="flex items-center justify-between p-6 border-b">
                         <div>
-                            <h3 class="text-lg font-medium ethos-text-base">Tweet Validations</h3>
-                            <p class="mt-1 text-sm ethos-text-secondary">Quality analysis of Twitter engagement</p>
+                            <h3 class="text-lg font-semibold">Tweet Validations</h3>
+                            <p class="text-sm text-muted-foreground">Quality analysis of Twitter engagement</p>
                         </div>
                         <div class="flex items-center space-x-4">
-                            <!-- Global Search -->
+                            <!-- Search -->
                             <div class="relative">
-                                <input type="text" id="search-input" placeholder="Search all columns..." 
-                                       class="px-4 py-2 pr-10 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                    <svg class="h-5 w-5 ethos-text-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                                    </svg>
-                                </div>
+                                <svg class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                <input 
+                                    type="text" 
+                                    id="search-input" 
+                                    placeholder="Search validations..." 
+                                    class="input pl-10 w-64"
+                                >
                             </div>
+                            
                             <!-- Entries per page -->
-                            <select id="entries-per-page" class="px-4 py-2 ethos-bg-elevated ethos-text-base border ethos-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select id="entries-per-page" class="input w-20">
                                 <option value="10">10</option>
                                 <option value="25" selected>25</option>
                                 <option value="50">50</option>
@@ -378,89 +504,87 @@ router.get("/dashboard", async (ctx) => {
                             </select>
                         </div>
                     </div>
-                </div>
-                
-                <!-- Table Content -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y ethos-border">
-                        <thead class="ethos-bg-elevated">
-                            <tr>
-                                <!-- Author Column with Filter -->
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">
-                                    <div class="flex flex-col space-y-2">
-                                        <div class="flex items-center cursor-pointer hover:ethos-text-base" data-sort="tweetAuthor">
-                                            Author <span class="sort-icon sort-none ml-1"></span>
+                    
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th class="cursor-pointer select-none" data-sort="tweetAuthor">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Author</span>
+                                            <span class="sort-icon sort-none"></span>
                                         </div>
-                                        <select id="author-filter" class="text-xs px-2 py-1 ethos-bg-container ethos-text-base border ethos-border rounded focus:ring-1 focus:ring-blue-500">
-                                            <option value="">All Authors</option>
-                                        </select>
-                                    </div>
-                                </th>
-                                <!-- Validator Column with Filter -->
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">
-                                    <div class="flex flex-col space-y-2">
-                                        <div class="flex items-center cursor-pointer hover:ethos-text-base" data-sort="requestedBy">
-                                            Validator <span class="sort-icon sort-none ml-1"></span>
+                                    </th>
+                                    <th class="cursor-pointer select-none" data-sort="requestedBy">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Validator</span>
+                                            <span class="sort-icon sort-none"></span>
                                         </div>
-                                        <select id="validator-filter" class="text-xs px-2 py-1 ethos-bg-container ethos-text-base border ethos-border rounded focus:ring-1 focus:ring-blue-500">
-                                            <option value="">All Validators</option>
-                                        </select>
-                                    </div>
-                                </th>
-                                <!-- Other sortable columns -->
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="qualityScore">
-                                    Quality Score <span class="sort-icon sort-none ml-1"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="averageScore">
-                                    Avg Ethos Score <span class="sort-icon sort-none ml-1"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="totalEngagement">
-                                    Total Engagement <span class="sort-icon sort-none ml-1"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider cursor-pointer hover:ethos-text-base" data-sort="timestamp">
-                                    Date <span class="sort-icon sort-desc ml-1"></span>
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium ethos-text-secondary uppercase tracking-wider">
-                                    Actions
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body" class="divide-y ethos-border">
-                            <!-- Data will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Loading State -->
-                <div id="loading-state" class="text-center py-12">
-                    <div class="loading-pulse ethos-text-secondary">Loading validations...</div>
-                </div>
-                
-                <!-- Empty State -->
-                <div id="empty-state" class="text-center py-12 hidden">
-                    <svg class="mx-auto h-12 w-12 ethos-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium ethos-text-secondary">No validations found</h3>
-                    <p class="mt-1 text-sm ethos-text-tertiary">Try adjusting your search or filters.</p>
-                </div>
-                
-                <!-- Pagination -->
-                <div id="pagination" class="px-6 py-4 border-t ethos-border">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm ethos-text-secondary">
-                            Showing <span id="showing-from">0</span> to <span id="showing-to">0</span> of <span id="total-entries">0</span> entries
+                                    </th>
+                                    <th class="cursor-pointer select-none" data-sort="qualityScore">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Quality Score</span>
+                                            <span class="sort-icon sort-none"></span>
+                                        </div>
+                                    </th>
+                                    <th class="cursor-pointer select-none" data-sort="averageScore">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Avg Ethos Score</span>
+                                            <span class="sort-icon sort-none"></span>
+                                        </div>
+                                    </th>
+                                    <th class="cursor-pointer select-none" data-sort="totalEngagement">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Total Engagement</span>
+                                            <span class="sort-icon sort-none"></span>
+                                        </div>
+                                    </th>
+                                    <th class="cursor-pointer select-none" data-sort="timestamp">
+                                        <div class="flex items-center space-x-1">
+                                            <span>Date</span>
+                                            <span class="sort-icon sort-desc"></span>
+                                        </div>
+                                    </th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div id="loading-state" class="p-12 text-center">
+                        <div class="inline-flex items-center justify-center space-x-2">
+                            <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                            <span class="text-muted-foreground">Loading validations...</span>
                         </div>
-                        <div class="flex space-x-2">
-                            <button id="prev-page" class="px-3 py-1 text-sm ethos-bg-elevated ethos-text-base border ethos-border rounded hover:ethos-bg-container disabled:opacity-50 disabled:cursor-not-allowed">
-                                Previous
-                            </button>
-                            <div id="page-numbers" class="flex space-x-1">
-                                <!-- Page numbers will be inserted here -->
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="p-12 text-center hidden">
+                        <div class="mx-auto h-12 w-12 text-muted-foreground">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                            </svg>
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold">No validations found</h3>
+                        <p class="mt-2 text-sm text-muted-foreground">Try adjusting your search or filters.</p>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    <div id="pagination" class="flex items-center justify-between border-t px-6 py-4 hidden">
+                        <div class="text-sm text-muted-foreground">
+                            Showing <span id="showing-from">1</span> to <span id="showing-to">25</span> of <span id="total-entries">0</span> entries
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button id="prev-page" class="btn btn-secondary">Previous</button>
+                            <div id="page-numbers" class="flex items-center space-x-1">
+                                <!-- Dynamic page numbers -->
                             </div>
-                            <button id="next-page" class="px-3 py-1 text-sm ethos-bg-elevated ethos-text-base border ethos-border rounded hover:ethos-bg-container disabled:opacity-50 disabled:cursor-not-allowed">
-                                Next
-                            </button>
+                            <button id="next-page" class="btn btn-secondary">Next</button>
                         </div>
                     </div>
                 </div>
@@ -468,7 +592,7 @@ router.get("/dashboard", async (ctx) => {
         </main>
     </div>
 
-    <!-- JavaScript for Data Table -->
+    <!-- JavaScript -->
     <script>
         // Data table state
         let currentPage = 1;
@@ -549,20 +673,6 @@ router.get("/dashboard", async (ctx) => {
                 loadValidations();
             }, 300));
 
-            // Author filter (now integrated in table header)
-            document.getElementById('author-filter').addEventListener('change', function(e) {
-                currentAuthorFilter = e.target.value;
-                currentPage = 1;
-                loadValidations();
-            });
-
-            // Validator filter (now integrated in table header)
-            document.getElementById('validator-filter').addEventListener('change', function(e) {
-                currentValidatorFilter = e.target.value;
-                currentPage = 1;
-                loadValidations();
-            });
-
             // Entries per page
             document.getElementById('entries-per-page').addEventListener('change', function(e) {
                 currentLimit = parseInt(e.target.value);
@@ -570,7 +680,7 @@ router.get("/dashboard", async (ctx) => {
                 loadValidations();
             });
 
-            // Table header sorting (updated selector for new structure)
+            // Table header sorting
             document.querySelectorAll('[data-sort]').forEach(element => {
                 element.addEventListener('click', function() {
                     const sortBy = this.dataset.sort;
@@ -600,15 +710,15 @@ router.get("/dashboard", async (ctx) => {
             });
         }
 
-        // Update sort icons (updated selector for new structure)
+        // Update sort icons
         function updateSortIcons() {
             document.querySelectorAll('[data-sort] .sort-icon').forEach(icon => {
-                icon.className = 'sort-icon sort-none ml-1';
+                icon.className = 'sort-icon sort-none';
             });
             
-            const activeHeader = document.querySelector(\`[data-sort="\${currentSortBy}"] .sort-icon\`);
+            const activeHeader = document.querySelector(`[data-sort="${currentSortBy}"] .sort-icon`);
             if (activeHeader) {
-                activeHeader.className = \`sort-icon sort-\${currentSortOrder} ml-1\`;
+                activeHeader.className = `sort-icon sort-${currentSortOrder}`;
             }
         }
 
@@ -638,13 +748,11 @@ router.get("/dashboard", async (ctx) => {
                     validator: currentValidatorFilter
                 });
                 
-                const response = await fetch(\`/api/validations?\${params}\`);
+                const response = await fetch(`/api/validations?${params}`);
                 const result = await response.json();
                 
                 if (result.success) {
                     updateStats(result);
-                    updateAuthorFilter(result.filters.uniqueAuthors);
-                    updateValidatorFilter(result.filters.uniqueValidators);
                     renderTable(result.data);
                     renderPagination(result.pagination);
                     
@@ -658,13 +766,13 @@ router.get("/dashboard", async (ctx) => {
                 }
             } catch (error) {
                 console.error('Error loading validations:', error);
-                tableBody.innerHTML = \`
+                tableBody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="px-6 py-4 text-center ethos-text-secondary">
-                            Error loading data: \${error.message}
+                        <td colspan="7" class="p-12 text-center text-muted-foreground">
+                            Error loading data: ${error.message}
                         </td>
                     </tr>
-                \`;
+                `;
             } finally {
                 loadingState.classList.add('hidden');
                 isLoading = false;
@@ -691,41 +799,7 @@ router.get("/dashboard", async (ctx) => {
             }
         }
 
-        // Update author filter dropdown
-        function updateAuthorFilter(authors) {
-            const authorFilter = document.getElementById('author-filter');
-            const currentValue = authorFilter.value;
-            
-            authorFilter.innerHTML = '<option value="">All Authors</option>';
-            authors.forEach(author => {
-                const option = document.createElement('option');
-                option.value = author.handle;
-                option.textContent = \`@\${author.handle} (\${author.name})\`;
-                if (author.handle === currentValue) {
-                    option.selected = true;
-                }
-                authorFilter.appendChild(option);
-            });
-        }
-
-        // Update validator filter dropdown
-        function updateValidatorFilter(validators) {
-            const validatorFilter = document.getElementById('validator-filter');
-            const currentValue = validatorFilter.value;
-            
-            validatorFilter.innerHTML = '<option value="">All Validators</option>';
-            validators.forEach(validator => {
-                const option = document.createElement('option');
-                option.value = validator.handle;
-                option.textContent = \`@\${validator.handle} (\${validator.name})\`;
-                if (validator.handle === currentValue) {
-                    option.selected = true;
-                }
-                validatorFilter.appendChild(option);
-            });
-        }
-
-        // Render table rows
+        // Render table rows with ShadCN styling
         function renderTable(validations) {
             const tableBody = document.getElementById('table-body');
             
@@ -735,139 +809,123 @@ router.get("/dashboard", async (ctx) => {
                 const scoreBadge = getScoreBadge(validation.averageScore);
                 const date = new Date(validation.timestamp).toLocaleDateString();
                 
-                // Fix Twitter profile image URLs - try to construct actual profile URLs
-                const getTwitterProfileImage = (handle, avatar) => {
-                    // If we have a valid Twitter image URL, use it
+                // Twitter profile image handling
+                const getTwitterProfileImage = (handle, avatar, isValidator = false) => {
                     if (avatar && avatar.includes('twimg.com') && !avatar.includes('default_profile')) {
-                        // Convert _normal to _bigger for author images, keep _normal for validator images
-                        if (avatar.includes('_normal.')) {
+                        if (isValidator && avatar.includes('_bigger.')) {
+                            return avatar.replace('_bigger.', '_normal.');
+                        }
+                        if (!isValidator && avatar.includes('_normal.')) {
                             return avatar.replace('_normal.', '_bigger.');
                         }
                         return avatar;
                     }
-                    
-                    // If no profile image available, fall back to default
-                    return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png';
+                    return isValidator 
+                        ? 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'
+                        : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png';
                 };
                 
-                const getValidatorProfileImage = (handle, avatar) => {
-                    // For validators, keep the smaller _normal size
-                    if (avatar && avatar.includes('twimg.com') && !avatar.includes('default_profile')) {
-                        if (avatar.includes('_bigger.')) {
-                            return avatar.replace('_bigger.', '_normal.');
-                        }
-                        return avatar;
-                    }
-                    
-                    return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
-                };
+                const authorAvatar = getTwitterProfileImage(validation.tweetAuthorHandle, validation.tweetAuthorAvatar, false);
+                const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar, true);
                 
-                const authorAvatar = getTwitterProfileImage(validation.tweetAuthorHandle, validation.tweetAuthorAvatar);
-                const validatorAvatar = getValidatorProfileImage(validation.requestedByHandle, validation.requestedByAvatar);
-                
-                return \`
-                    <tr class="hover:ethos-bg-elevated transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <img class="h-10 w-10 rounded-full object-cover" src="\${authorAvatar}" alt="@\${validation.tweetAuthorHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'">
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium ethos-text-base">@\${validation.tweetAuthorHandle}</div>
-                                    <div class="text-xs ethos-text-tertiary truncate max-w-32">\${validation.tweetAuthor}</div>
+                return `
+                    <tr>
+                        <td>
+                            <div class="flex items-center space-x-3">
+                                <img class="h-10 w-10 rounded-full object-cover" src="${authorAvatar}" alt="@${validation.tweetAuthorHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'">
+                                <div>
+                                    <div class="font-medium">@${validation.tweetAuthorHandle}</div>
+                                    <div class="text-sm text-muted-foreground">${validation.tweetAuthor}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <img class="h-8 w-8 rounded-full object-cover" src="\${validatorAvatar}" alt="@\${validation.requestedByHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium ethos-text-base">@\${validation.requestedByHandle}</div>
+                        <td>
+                            <div class="flex items-center space-x-3">
+                                <img class="h-8 w-8 rounded-full object-cover" src="${validatorAvatar}" alt="@${validation.requestedByHandle}" onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'">
+                                <div>
+                                    <div class="font-medium">@${validation.requestedByHandle}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            \${qualityBadge}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            \${scoreBadge}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm ethos-text-base">\${validation.engagementStats.total_unique_users.toLocaleString()}</div>
-                            <div class="text-xs ethos-text-tertiary">
-                                \${validation.engagementStats.total_retweeters}RT • \${validation.engagementStats.total_repliers}replies • \${validation.engagementStats.total_quote_tweeters}QT
+                        <td>${qualityBadge}</td>
+                        <td>${scoreBadge}</td>
+                        <td>
+                            <div>
+                                <div class="font-medium">${validation.engagementStats.total_unique_users.toLocaleString()}</div>
+                                <div class="text-sm text-muted-foreground">
+                                    ${validation.engagementStats.total_retweeters}RT • ${validation.engagementStats.total_repliers}replies • ${validation.engagementStats.total_quote_tweeters}QT
+                                </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm ethos-text-tertiary">
-                            \${date}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <a href="\${validation.tweetUrl}" target="_blank" class="ethos-primary hover:underline">
+                        <td class="text-muted-foreground">${date}</td>
+                        <td>
+                            <a href="${validation.tweetUrl}" target="_blank" class="text-primary hover:underline">
                                 View Tweet →
                             </a>
                         </td>
                     </tr>
-                \`;
+                `;
             }).join('');
         }
 
-        // Get quality badge HTML
+        // Get quality badge with ShadCN styling
         function getQualityBadge(score) {
-            let bgClass, textClass;
+            let badgeClass;
             if (score >= 60) {
-                bgClass = 'bg-green-100 dark:bg-green-900';
-                textClass = 'text-green-800 dark:text-green-200';
+                badgeClass = 'badge badge-success';
             } else if (score >= 30) {
-                bgClass = 'bg-yellow-100 dark:bg-yellow-900';
-                textClass = 'text-yellow-800 dark:text-yellow-200';
+                badgeClass = 'badge badge-warning';
             } else {
-                bgClass = 'bg-red-100 dark:bg-red-900';
-                textClass = 'text-red-800 dark:text-red-200';
+                badgeClass = 'badge badge-destructive';
             }
             
-            return \`
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium \${bgClass} \${textClass}">
-                    \${score}%
-                </span>
-            \`;
+            return `<span class="${badgeClass}">${score}%</span>`;
         }
 
-        // Get score badge HTML
+        // Get score badge with ShadCN styling
         function getScoreBadge(score) {
             if (!score) {
-                return '<span class="text-sm ethos-text-tertiary">—</span>';
+                return '<span class="text-muted-foreground">—</span>';
             }
             
             let emoji = '⚪';
             let label = 'Neutral';
+            let textColor = 'text-muted-foreground';
             
             if (score < 800) {
                 emoji = '🔴';
                 label = 'Untrusted';
+                textColor = 'text-destructive';
             } else if (score < 1200) {
                 emoji = '🟡';
                 label = 'Questionable';
+                textColor = 'text-yellow-600';
             } else if (score < 1600) {
                 emoji = '⚪';
                 label = 'Neutral';
+                textColor = 'text-muted-foreground';
             } else if (score < 2000) {
                 emoji = '🔵';
                 label = 'Reputable';
+                textColor = 'text-blue-600';
             } else {
                 emoji = '🟢';
                 label = 'Exemplary';
+                textColor = 'text-green-600';
             }
             
-            return \`
-                <div class="flex items-center">
-                    <span class="text-lg mr-2">\${emoji}</span>
+            return `
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">${emoji}</span>
                     <div>
-                        <div class="text-sm font-medium ethos-text-base">\${score}</div>
-                        <div class="text-xs ethos-text-tertiary">\${label}</div>
+                        <div class="font-medium">${score}</div>
+                        <div class="text-sm ${textColor}">${label}</div>
                     </div>
                 </div>
-            \`;
+            `;
         }
 
-        // Render pagination
+        // Render pagination with ShadCN styling
         function renderPagination(pagination) {
             document.getElementById('showing-from').textContent = ((pagination.page - 1) * pagination.limit + 1);
             document.getElementById('showing-to').textContent = Math.min(pagination.page * pagination.limit, pagination.total);
@@ -879,7 +937,19 @@ router.get("/dashboard", async (ctx) => {
             prevButton.disabled = !pagination.hasPrev;
             nextButton.disabled = !pagination.hasNext;
             
-            // Render page numbers
+            if (!pagination.hasPrev) {
+                prevButton.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                prevButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            if (!pagination.hasNext) {
+                nextButton.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                nextButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // Render page numbers with ShadCN styling
             const pageNumbers = document.getElementById('page-numbers');
             pageNumbers.innerHTML = '';
             
@@ -900,11 +970,9 @@ router.get("/dashboard", async (ctx) => {
             for (let i = startPage; i <= endPage; i++) {
                 const pageButton = document.createElement('button');
                 pageButton.textContent = i;
-                pageButton.className = \`px-3 py-1 text-sm border ethos-border rounded \${
-                    i === currentPage 
-                        ? 'ethos-primary-bg text-white' 
-                        : 'ethos-bg-elevated ethos-text-base hover:ethos-bg-container'
-                }\`;
+                pageButton.className = i === currentPage 
+                    ? 'btn btn-primary'
+                    : 'btn btn-secondary';
                 
                 if (i !== currentPage) {
                     pageButton.addEventListener('click', () => {
@@ -916,6 +984,36 @@ router.get("/dashboard", async (ctx) => {
                 pageNumbers.appendChild(pageButton);
             }
         }
+
+        // Add missing sort icon styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .sort-icon {
+                display: inline-block;
+                width: 0;
+                height: 0;
+                vertical-align: middle;
+                margin-left: 5px;
+            }
+            .sort-asc {
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-bottom: 4px solid currentColor;
+            }
+            .sort-desc {
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 4px solid currentColor;
+            }
+            .sort-none {
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 4px solid hsl(var(--muted-foreground));
+                border-bottom: 4px solid hsl(var(--muted-foreground));
+                margin-top: -4px;
+            }
+        `;
+        document.head.appendChild(style);
 
         // Utility function for debouncing
         function debounce(func, wait) {
