@@ -594,6 +594,8 @@ router.get("/dashboard", async (ctx) => {
 
     <!-- JavaScript -->
     <script>
+        console.log('🚀 Dashboard JavaScript starting...');
+        
         // Data table state
         let currentPage = 1;
         let currentLimit = 25;
@@ -606,10 +608,27 @@ router.get("/dashboard", async (ctx) => {
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 DOM loaded, initializing dashboard...');
             setupThemeToggle();
             setupEventListeners();
+            
+            // Simple API test first
+            testAPI();
             loadValidations();
         });
+        
+        // Simple test function to verify API connectivity
+        async function testAPI() {
+            try {
+                console.log('🧪 Testing API connectivity...');
+                const response = await fetch('/api/validations?limit=1');
+                console.log('📡 Test API response status:', response.status);
+                const data = await response.json();
+                console.log('📊 Test API data:', data.success ? 'SUCCESS' : 'FAILED', 'Total validations:', data.pagination ? data.pagination.total : 'unknown');
+            } catch (error) {
+                console.error('❌ API test failed:', error);
+            }
+        }
 
         // Theme toggle functionality
         function setupThemeToggle() {
