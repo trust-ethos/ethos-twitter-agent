@@ -205,41 +205,102 @@ export class StorageService {
           const dbValidations = await this.database.getLatestValidations(limit);
           
           // Convert database format to ValidationRecord format
-          const validations: ValidationRecord[] = dbValidations.map(dbVal => ({
-            id: dbVal.validation_key,
-            tweetId: dbVal.tweet_id.toString(),
-            tweetAuthor: dbVal.engagement_data?.tweetAuthor || dbVal.author_display_name || "Unknown",
-            tweetAuthorHandle: dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username || "unknown",
-            tweetAuthorAvatar: dbVal.engagement_data?.tweetAuthorAvatar || `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png`,
-            requestedBy: dbVal.engagement_data?.requestedBy || "Unknown",
-            requestedByHandle: dbVal.engagement_data?.requestedByHandle || "unknown", 
-            requestedByAvatar: dbVal.engagement_data?.requestedByAvatar || `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`,
-            timestamp: dbVal.created_at,
-            tweetUrl: dbVal.engagement_data?.tweetUrl || `https://x.com/${dbVal.author_username}/status/${dbVal.tweet_id}`,
-            averageScore: dbVal.engagement_data?.averageScore || null,
-            engagementStats: {
-              total_retweeters: dbVal.engagement_data?.total_retweeters || 0,
-              total_repliers: dbVal.engagement_data?.total_repliers || 0,
-              total_quote_tweeters: dbVal.engagement_data?.total_quote_tweeters || 0,
-              total_unique_users: dbVal.total_unique_users,
-              reputable_retweeters: dbVal.engagement_data?.reputable_retweeters || 0,
-              reputable_repliers: dbVal.engagement_data?.reputable_repliers || 0,
-              reputable_quote_tweeters: dbVal.engagement_data?.reputable_quote_tweeters || 0,
-              reputable_total: dbVal.reputable_users,
-              reputable_percentage: parseFloat(dbVal.reputable_percentage.toString()),
-              ethos_active_retweeters: dbVal.engagement_data?.ethos_active_retweeters || 0,
-              ethos_active_repliers: dbVal.engagement_data?.ethos_active_repliers || 0,
-              ethos_active_quote_tweeters: dbVal.engagement_data?.ethos_active_quote_tweeters || 0,
-              ethos_active_total: dbVal.ethos_active_users,
-              ethos_active_percentage: parseFloat(dbVal.ethos_active_percentage.toString()),
-              retweeters_rate_limited: dbVal.engagement_data?.retweeters_rate_limited || false,
-              repliers_rate_limited: dbVal.engagement_data?.repliers_rate_limited || false,
-              quote_tweeters_rate_limited: dbVal.engagement_data?.quote_tweeters_rate_limited || false,
-            },
-            overallQuality: dbVal.engagement_data?.overallQuality as "high" | "medium" | "low" || "medium"
-          }));
+          const validations: ValidationRecord[] = [];
           
-          console.log(`📊 Retrieved ${validations.length} validations from PostgreSQL database`);
+          for (const dbVal of dbValidations) {
+            // Look up actual Twitter users to get real profile images
+            let tweetAuthorAvatar = dbVal.engagement_data?.tweetAuthorAvatar;
+            let requestedByAvatar = dbVal.engagement_data?.requestedByAvatar;
+            
+            // If no avatar in engagement_data, look up from twitter_users table
+            if (!tweetAuthorAvatar || tweetAuthorAvatar.includes('default_profile')) {
+              const authorHandle = dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username;
+              if (authorHandle) {
+                try {
+                  const authorUser = await this.database.client`
+                    SELECT profile_image_url FROM twitter_users 
+                    WHERE username = ${authorHandle} 
+                    AND profile_image_url IS NOT NULL 
+                    AND profile_image_url LIKE '%pbs.twimg.com%'
+                    LIMIT 1
+                  `;
+                  if (authorUser.length > 0) {
+                    // Convert to _bigger size for tweet authors
+                    tweetAuthorAvatar = this.getOptimizedImageUrl(authorUser[0].profile_image_url, '_bigger');
+                  }
+                } catch (lookupError) {
+                  console.log(`Could not look up avatar for author ${authorHandle}:`, lookupError);
+                }
+              }
+            }
+            
+            if (!requestedByAvatar || requestedByAvatar.includes('default_profile')) {
+              const validatorHandle = dbVal.engagement_data?.requestedByHandle;
+              if (validatorHandle) {
+                try {
+                  const validatorUser = await this.database.client`
+                    SELECT profile_image_url FROM twitter_users 
+                    WHERE username = ${validatorHandle} 
+                    AND profile_image_url IS NOT NULL 
+                    AND profile_image_url LIKE '%pbs.twimg.com%'
+                    LIMIT 1
+                  `;
+                  if (validatorUser.length > 0) {
+                    // Convert to _normal size for validators
+                    requestedByAvatar = this.getOptimizedImageUrl(validatorUser[0].profile_image_url, '_normal');
+                  }
+                } catch (lookupError) {
+                  console.log(`Could not look up avatar for validator ${validatorHandle}:`, lookupError);
+                }
+              }
+            }
+            
+            // Use fallback if still no avatar found
+            if (!tweetAuthorAvatar) {
+              tweetAuthorAvatar = `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png`;
+            }
+            if (!requestedByAvatar) {
+              requestedByAvatar = `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`;
+            }
+            
+            const validation: ValidationRecord = {
+              id: dbVal.validation_key,
+              tweetId: dbVal.tweet_id.toString(),
+              tweetAuthor: dbVal.engagement_data?.tweetAuthor || dbVal.author_display_name || "Unknown",
+              tweetAuthorHandle: dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username || "unknown",
+              tweetAuthorAvatar: tweetAuthorAvatar,
+              requestedBy: dbVal.engagement_data?.requestedBy || "Unknown",
+              requestedByHandle: dbVal.engagement_data?.requestedByHandle || "unknown", 
+              requestedByAvatar: requestedByAvatar,
+              timestamp: dbVal.created_at,
+              tweetUrl: dbVal.engagement_data?.tweetUrl || `https://x.com/${dbVal.author_username}/status/${dbVal.tweet_id}`,
+              averageScore: dbVal.engagement_data?.averageScore || null,
+              engagementStats: {
+                total_retweeters: dbVal.engagement_data?.total_retweeters || 0,
+                total_repliers: dbVal.engagement_data?.total_repliers || 0,
+                total_quote_tweeters: dbVal.engagement_data?.total_quote_tweeters || 0,
+                total_unique_users: dbVal.total_unique_users,
+                reputable_retweeters: dbVal.engagement_data?.reputable_retweeters || 0,
+                reputable_repliers: dbVal.engagement_data?.reputable_repliers || 0,
+                reputable_quote_tweeters: dbVal.engagement_data?.reputable_quote_tweeters || 0,
+                reputable_total: dbVal.reputable_users,
+                reputable_percentage: parseFloat(dbVal.reputable_percentage.toString()),
+                ethos_active_retweeters: dbVal.engagement_data?.ethos_active_retweeters || 0,
+                ethos_active_repliers: dbVal.engagement_data?.ethos_active_repliers || 0,
+                ethos_active_quote_tweeters: dbVal.engagement_data?.ethos_active_quote_tweeters || 0,
+                ethos_active_total: dbVal.ethos_active_users,
+                ethos_active_percentage: parseFloat(dbVal.ethos_active_percentage.toString()),
+                retweeters_rate_limited: dbVal.engagement_data?.retweeters_rate_limited || false,
+                repliers_rate_limited: dbVal.engagement_data?.repliers_rate_limited || false,
+                quote_tweeters_rate_limited: dbVal.engagement_data?.quote_tweeters_rate_limited || false,
+              },
+              overallQuality: dbVal.engagement_data?.overallQuality as "high" | "medium" | "low" || "medium"
+            };
+            
+            validations.push(validation);
+          }
+          
+          console.log(`📊 Retrieved ${validations.length} validations from PostgreSQL database with real avatars`);
           return validations;
         } catch (dbError) {
           console.error("❌ Failed to get validations from database:", dbError);
@@ -275,6 +336,32 @@ export class StorageService {
       console.error("❌ Error getting validations:", error);
       return [];
     }
+  }
+
+  /**
+   * Helper method to optimize Twitter profile image URLs for different sizes
+   */
+  private getOptimizedImageUrl(profileImageUrl: string, size: string): string {
+    if (!profileImageUrl || !profileImageUrl.includes('pbs.twimg.com')) {
+      return size === '_bigger' 
+        ? `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png`
+        : `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`;
+    }
+    
+    let url = profileImageUrl;
+    
+    // Replace size in the URL to get the right resolution
+    url = url.replace(/_normal\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+    url = url.replace(/_bigger\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+    url = url.replace(/_mini\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+    url = url.replace(/_400x400\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+    
+    // If no size found, append before extension
+    if (!url.includes(size)) {
+      url = url.replace(/\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+    }
+    
+    return url.replace(/^http:/, 'https:');
   }
 
   /**
