@@ -164,214 +164,336 @@ router.get("/dashboard", async (ctx) => {
       return "🟢";
     };
 
-    // Enhanced HTML dashboard with tabs
+    // Enhanced HTML dashboard with TailAdmin styling
     const html = `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Ethos Agent Dashboard</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 20px; background: #111827; color: #f9fafb; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header { background: #1f2937; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
-        
-        /* Tab navigation */
-        .tabs { background: #1f2937; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; overflow: hidden; }
-        .tab-nav { display: flex; border-bottom: 1px solid #374151; }
-        .tab-button { background: none; border: none; color: #9ca3af; padding: 15px 25px; cursor: pointer; font-size: 16px; font-weight: 500; transition: all 0.2s; }
-        .tab-button:hover { background: #374151; color: #f9fafb; }
-        .tab-button.active { background: #60a5fa; color: #111827; font-weight: 600; }
-        .tab-content { padding: 20px; }
-        .tab-panel { display: none; }
-        .tab-panel.active { display: block; }
-        
-        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .stat-card { background: #1f2937; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
-        .stat-number { font-size: 2rem; font-weight: bold; color: #60a5fa; }
-        .filter-section { background: #1f2937; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); border: 1px solid #374151; }
-        .filter-controls { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
-        .filter-label { font-weight: 600; color: #f9fafb; }
-        .filter-select { background: #374151; border: 1px solid #4b5563; color: #f9fafb; padding: 8px 12px; border-radius: 6px; font-size: 14px; }
-        .filter-select:focus { outline: none; border-color: #60a5fa; }
-        .clear-filter { background: #374151; border: 1px solid #4b5563; color: #f9fafb; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 14px; cursor: pointer; }
-        .clear-filter:hover { background: #4b5563; text-decoration: none; color: #f9fafb; }
-        .table-container { background: #1f2937; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.3); overflow: hidden; border: 1px solid #374151; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #374151; }
-        th { background: #374151; font-weight: 600; color: #f9fafb; }
-        .quality-high { color: #10b981; }
-        .quality-medium { color: #f59e0b; }
-        .quality-low { color: #ef4444; }
-        .empty-state { text-align: center; padding: 40px; color: #9ca3af; }
-        a { color: #60a5fa; text-decoration: none; }
-        a:hover { text-decoration: underline; color: #93c5fd; }
-        .avg-score { font-weight: bold; }
-        h1, h2, h3 { color: #f9fafb; }
-        p { color: #d1d5db; }
-        .filter-info { color: #9ca3af; font-size: 0.9rem; margin-top: 10px; }
-        .validators-grid { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .validator-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 2px solid #374151; transition: transform 0.2s ease; }
-        .validator-avatar:hover { transform: scale(1.1); border-color: #60a5fa; }
-        
-        /* Mobile responsive */
-        @media (max-width: 768px) {
-            .container { padding: 10px; }
-            .stats { grid-template-columns: 1fr; gap: 10px; }
-            .filter-controls { flex-direction: column; align-items: stretch; }
-            .filter-select { width: 100%; }
-            .tab-nav { flex-direction: column; }
-            .tab-button { text-align: left; }
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"},
+                        gray: {"50":"#f9fafb","100":"#f3f4f6","200":"#e5e7eb","300":"#d1d5db","400":"#9ca3af","500":"#6b7280","600":"#4b5563","700":"#374151","800":"#1f2937","900":"#111827","950":"#030712"}
+                    }
+                }
+            }
         }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #374151; }
+        ::-webkit-scrollbar-thumb { background: #6b7280; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        
+        /* Smooth transitions */
+        * { transition: all 0.2s ease; }
+        
+        /* Loading animation */
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* Custom button hover effects */
+        .btn-hover:hover { transform: translateY(-1px); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); }
+        
+        /* Card hover effects */
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1); }
+        
+        /* Glassmorphism effect */
+        .glass { backdrop-filter: blur(16px) saturate(180%); background-color: rgba(31, 41, 55, 0.75); border: 1px solid rgba(255, 255, 255, 0.125); }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 Ethos Agent Dashboard</h1>
-            <p>Real-time transparency into @ethosAgent commands</p>
-        </div>
-        
-        <div class="tabs">
-            <div class="tab-nav">
-                <button class="tab-button active">
-                    Validations (${stats.totalValidations})
-                </button>
-            </div>
-            
-            <div class="tab-content">
-                <!-- Validations Tab -->
-                <div id="validations-tab" class="tab-panel active">
-                    <div class="stats">
-                        <div class="stat-card">
-                            <h3>Total Validations</h3>
-                            <div class="stat-number">${stats.totalValidations}</div>
-                        </div>
-                        <div class="stat-card">
-                            <h3>Showing Results</h3>
-                            <div class="stat-number">${validations.length}</div>
-                            <p style="margin: 0; color: #9ca3af;">${authorFilter ? `Filtered by @${authorFilter}` : 'All validations'}</p>
-                        </div>
-                        <div class="stat-card">
-                            <h3>Top Validators</h3>
-                            <div class="stat-number">${topValidators.length}</div>
-                            ${topValidators.length > 0 ? `
-                                <div class="validators-grid">
-                                    ${topValidators.map(validator => `
-                                        <img src="${validator.avatar}" 
-                                             alt="@${validator.handle}" 
-                                             title="@${validator.handle} - ${validator.count} validation${validator.count !== 1 ? 's' : ''}" 
-                                             class="validator-avatar">
-                                    `).join('')}
-                                </div>
-                            ` : `<p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 0.9rem;">No validators yet</p>`}
+<body class="bg-gray-900 min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">E</span>
                         </div>
                     </div>
-
-                    ${authorFilter ? '' : `
-                    <div class="filter-section">
-                        <div class="filter-controls">
-                            <span class="filter-label">Filter by Tweet Author:</span>
-                            <select class="filter-select" onchange="filterByAuthor(this.value)">
-                                <option value="">All Authors (${allValidations.length} validations)</option>
-                                ${uniqueAuthors.map(author => `
-                                    <option value="${author.handle}" ${authorFilter === author.handle ? 'selected' : ''}>
-                                        @${author.handle} (${author.name})
-                                    </option>
-                                `).join('')}
-                            </select>
-                            ${authorFilter ? `<a href="/dashboard" class="clear-filter">Clear Filter</a>` : ''}
-                        </div>
-                        ${authorFilter ? `<div class="filter-info">Showing ${validations.length} validation${validations.length !== 1 ? 's' : ''} for @${authorFilter}</div>` : ''}
+                    <div>
+                        <h1 class="text-xl font-bold text-white">Ethos Agent Dashboard</h1>
+                        <p class="text-sm text-gray-400">Real-time transparency into @ethosAgent commands</p>
                     </div>
-                    `}
-                    
-                    <div class="table-container">
-                        <h2 style="margin: 0; padding: 20px; border-bottom: 1px solid #374151;">Recent Validations</h2>
-                        ${validations.length === 0 ? `
-                            <div class="empty-state">
-                                ${authorFilter ? `No validations found for @${authorFilter}.` : 'No validations found. Validations will appear here when users run @ethosAgent validate commands.'}
-                            </div>
-                        ` : `
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Tweet Author</th>
-                                        <th>Validator</th>
-                                        <th>Quality Score</th>
-                                        <th>Avg Score</th>
-                                        <th>Reputable (1600+)</th>
-                                        <th>Ethos Active</th>
-                                        <th>Timestamp</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${validations.map(v => {
-                                      // Calculate weighted quality score for display
-                                      const reputablePct = v.engagementStats.reputable_percentage || 0;
-                                      const ethosActivePct = v.engagementStats.ethos_active_percentage || 0;
-                                      const weightedScore = Math.round((reputablePct * 0.6) + (ethosActivePct * 0.4));
-                                      const qualityEmoji = getQualityEmoji(v.overallQuality);
-                                      const avgScoreEmoji = v.averageScore ? getEmojiForAvgScore(v.averageScore) : "—";
-                                      
-                                      return `
-                                        <tr>
-                                            <td>
-                                                <div style="display: flex; align-items: center; gap: 10px;">
-                                                    <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" 
-                                                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-                                                    <div>
-                                                        <strong>${v.tweetAuthor}</strong><br>
-                                                        <span style="color: #9ca3af;">@${v.tweetAuthorHandle}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style="display: flex; align-items: center; gap: 10px;">
-                                                    <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" 
-                                                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
-                                                    <div>
-                                                        <strong>${v.requestedBy}</strong><br>
-                                                        <span style="color: #9ca3af;">@${v.requestedByHandle}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style="text-align: center;">
-                                                <span style="font-size: 1.2rem;">${qualityEmoji}</span><br>
-                                                <strong class="quality-${v.overallQuality}">${v.overallQuality.toUpperCase()}</strong>
-                                            </td>
-                                            <td style="text-align: center;">
-                                                <span style="font-size: 1.2rem;">${avgScoreEmoji}</span><br>
-                                                <span class="avg-score">${weightedScore}%</span>
-                                            </td>
-                                            <td>
-                                                ${v.engagementStats.total_retweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100))} RT: ${Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)}% (${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})<br>` : ''}
-                                                ${v.engagementStats.total_repliers > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100))} Replies: ${Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100)}% (${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers})<br>` : ''}
-                                                ${v.engagementStats.total_quote_tweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100))} QT: ${Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)}% (${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters})` : ''}
-                                            </td>
-                                            <td>
-                                                ${v.engagementStats.total_retweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_retweeters / v.engagementStats.total_retweeters) * 100))} RT: ${Math.round((v.engagementStats.ethos_active_retweeters / v.engagementStats.total_retweeters) * 100)}% (${v.engagementStats.ethos_active_retweeters}/${v.engagementStats.total_retweeters})<br>` : ''}
-                                                ${v.engagementStats.total_repliers > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_repliers / v.engagementStats.total_repliers) * 100))} Replies: ${Math.round((v.engagementStats.ethos_active_repliers / v.engagementStats.total_repliers) * 100)}% (${v.engagementStats.ethos_active_repliers}/${v.engagementStats.total_repliers})<br>` : ''}
-                                                ${v.engagementStats.total_quote_tweeters > 0 ? `${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100))} QT: ${Math.round((v.engagementStats.ethos_active_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)}% (${v.engagementStats.ethos_active_quote_tweeters}/${v.engagementStats.total_quote_tweeters})` : ''}
-                                            </td>
-                                            <td>${new Date(v.timestamp).toLocaleString()}</td>
-                                            <td><a href="${v.tweetUrl}" target="_blank">View Tweet</a></td>
-                                        </tr>
-                                      `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        `}
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm text-gray-300">Live</span>
                     </div>
                 </div>
             </div>
         </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Validations Card -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white shadow-lg card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm font-medium">Total Validations</p>
+                        <p class="text-3xl font-bold">${stats.totalValidations}</p>
+                    </div>
+                    <div class="bg-blue-400 bg-opacity-30 rounded-lg p-3">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Showing Results Card -->
+            <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl p-6 text-white shadow-lg card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm font-medium">Showing Results</p>
+                        <p class="text-3xl font-bold">${validations.length}</p>
+                        <p class="text-green-100 text-xs mt-1">${authorFilter ? `Filtered by @${authorFilter}` : 'All validations'}</p>
+                    </div>
+                    <div class="bg-green-400 bg-opacity-30 rounded-lg p-3">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Validators Card -->
+            <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg card-hover">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-purple-100 text-sm font-medium">Top Validators</p>
+                        <p class="text-3xl font-bold">${topValidators.length}</p>
+                        ${topValidators.length > 0 ? `
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                ${topValidators.slice(0, 5).map(validator => `
+                                    <div class="group relative">
+                                        <img src="${validator.avatar}" 
+                                             alt="@${validator.handle}" 
+                                             class="w-8 h-8 rounded-full border-2 border-purple-400 hover:border-white transition-colors cursor-pointer">
+                                        <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                            @${validator.handle} - ${validator.count} validation${validator.count !== 1 ? 's' : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                ${topValidators.length > 5 ? `<div class="w-8 h-8 rounded-full bg-purple-400 bg-opacity-30 flex items-center justify-center text-xs font-medium">+${topValidators.length - 5}</div>` : ''}
+                            </div>
+                        ` : `<p class="text-purple-100 text-xs mt-2">No validators yet</p>`}
+                    </div>
+                    <div class="bg-purple-400 bg-opacity-30 rounded-lg p-3">
+                        <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        ${authorFilter ? '' : `
+        <!-- Filter Section -->
+        <div class="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700 shadow-lg">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"></path>
+                        </svg>
+                        <label class="text-sm font-medium text-gray-300">Filter by Tweet Author:</label>
+                    </div>
+                    <select class="bg-gray-700 border border-gray-600 text-white text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 px-3 py-2 min-w-0 flex-1 sm:flex-none sm:w-64" onchange="filterByAuthor(this.value)">
+                        <option value="">All Authors (${allValidations.length} validations)</option>
+                        ${uniqueAuthors.map(author => `
+                            <option value="${author.handle}" ${authorFilter === author.handle ? 'selected' : ''}>
+                                @${author.handle} (${author.name})
+                            </option>
+                        `).join('')}
+                    </select>
+                </div>
+                ${authorFilter ? `
+                <a href="/dashboard" class="inline-flex items-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors btn-hover">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Clear Filter
+                </a>
+                ` : ''}
+            </div>
+            ${authorFilter ? `
+            <div class="mt-4 p-4 bg-blue-900 bg-opacity-50 rounded-lg border border-blue-700">
+                <p class="text-blue-200 text-sm">Showing ${validations.length} validation${validations.length !== 1 ? 's' : ''} for @${authorFilter}</p>
+            </div>
+            ` : ''}
+        </div>
+        `}
+
+        <!-- Validations Table -->
+        <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-700">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Recent Validations
+                </h2>
+            </div>
+            
+            ${validations.length === 0 ? `
+                <div class="text-center py-16">
+                    <div class="w-16 h-16 mx-auto bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-300 mb-2">No Validations Found</h3>
+                    <p class="text-gray-500">
+                        ${authorFilter ? `No validations found for @${authorFilter}.` : 'Validations will appear here when users run @ethosAgent validate commands.'}
+                    </p>
+                </div>
+            ` : `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-700">
+                        <thead class="bg-gray-750">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Tweet Author</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Validator</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Quality</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Score</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Reputable (1600+)</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ethos Active</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Timestamp</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-gray-800 divide-y divide-gray-700">
+                            ${validations.map(v => {
+                              // Calculate weighted quality score for display
+                              const reputablePct = v.engagementStats.reputable_percentage || 0;
+                              const ethosActivePct = v.engagementStats.ethos_active_percentage || 0;
+                              const weightedScore = Math.round((reputablePct * 0.6) + (ethosActivePct * 0.4));
+                              const qualityEmoji = getQualityEmoji(v.overallQuality);
+                              const avgScoreEmoji = v.averageScore ? getEmojiForAvgScore(v.averageScore) : "—";
+                              const qualityColor = v.overallQuality === 'high' ? 'text-green-400' : v.overallQuality === 'medium' ? 'text-yellow-400' : 'text-red-400';
+                              
+                              return `
+                                <tr class="hover:bg-gray-750 transition-colors">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center space-x-3">
+                                            <img src="${v.tweetAuthorAvatar}" alt="${v.tweetAuthor}" 
+                                                 class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-600">
+                                            <div>
+                                                <div class="text-sm font-medium text-white">${v.tweetAuthor}</div>
+                                                <div class="text-sm text-gray-400">@${v.tweetAuthorHandle}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center space-x-3">
+                                            <img src="${v.requestedByAvatar}" alt="${v.requestedBy}" 
+                                                 class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-600">
+                                            <div>
+                                                <div class="text-sm font-medium text-white">${v.requestedBy}</div>
+                                                <div class="text-sm text-gray-400">@${v.requestedByHandle}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <div class="flex flex-col items-center">
+                                            <span class="text-2xl mb-1">${qualityEmoji}</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${qualityColor === 'text-green-400' ? 'bg-green-900 text-green-300' : qualityColor === 'text-yellow-400' ? 'bg-yellow-900 text-yellow-300' : 'bg-red-900 text-red-300'}">
+                                                ${v.overallQuality.toUpperCase()}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <div class="flex flex-col items-center">
+                                            <span class="text-2xl mb-1">${avgScoreEmoji}</span>
+                                            <span class="text-sm font-semibold text-white">${weightedScore}%</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                        ${v.engagementStats.total_retweeters > 0 ? `
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span>${getEmojiForPercentage(Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100))}</span>
+                                                <span>RT: ${Math.round((v.engagementStats.reputable_retweeters / v.engagementStats.total_retweeters) * 100)}% (${v.engagementStats.reputable_retweeters}/${v.engagementStats.total_retweeters})</span>
+                                            </div>
+                                        ` : ''}
+                                        ${v.engagementStats.total_repliers > 0 ? `
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span>${getEmojiForPercentage(Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100))}</span>
+                                                <span>Replies: ${Math.round((v.engagementStats.reputable_repliers / v.engagementStats.total_repliers) * 100)}% (${v.engagementStats.reputable_repliers}/${v.engagementStats.total_repliers})</span>
+                                            </div>
+                                        ` : ''}
+                                        ${v.engagementStats.total_quote_tweeters > 0 ? `
+                                            <div class="flex items-center space-x-2">
+                                                <span>${getEmojiForPercentage(Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100))}</span>
+                                                <span>QT: ${Math.round((v.engagementStats.reputable_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)}% (${v.engagementStats.reputable_quote_tweeters}/${v.engagementStats.total_quote_tweeters})</span>
+                                            </div>
+                                        ` : ''}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                        ${v.engagementStats.total_retweeters > 0 ? `
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span>${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_retweeters / v.engagementStats.total_retweeters) * 100))}</span>
+                                                <span>RT: ${Math.round((v.engagementStats.ethos_active_retweeters / v.engagementStats.total_retweeters) * 100)}% (${v.engagementStats.ethos_active_retweeters}/${v.engagementStats.total_retweeters})</span>
+                                            </div>
+                                        ` : ''}
+                                        ${v.engagementStats.total_repliers > 0 ? `
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span>${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_repliers / v.engagementStats.total_repliers) * 100))}</span>
+                                                <span>Replies: ${Math.round((v.engagementStats.ethos_active_repliers / v.engagementStats.total_repliers) * 100)}% (${v.engagementStats.ethos_active_repliers}/${v.engagementStats.total_repliers})</span>
+                                            </div>
+                                        ` : ''}
+                                        ${v.engagementStats.total_quote_tweeters > 0 ? `
+                                            <div class="flex items-center space-x-2">
+                                                <span>${getEmojiForPercentage(Math.round((v.engagementStats.ethos_active_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100))}</span>
+                                                <span>QT: ${Math.round((v.engagementStats.ethos_active_quote_tweeters / v.engagementStats.total_quote_tweeters) * 100)}% (${v.engagementStats.ethos_active_quote_tweeters}/${v.engagementStats.total_quote_tweeters})</span>
+                                            </div>
+                                        ` : ''}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                        ${new Date(v.timestamp).toLocaleString()}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <a href="${v.tweetUrl}" target="_blank" 
+                                           class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors btn-hover">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                            </svg>
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                              `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `}
+        </div>
         
-        <div style="text-align: center; margin-top: 40px; padding: 20px; color: #9ca3af; font-size: 0.9rem;">
-            <p>This dashboard shows validation commands processed by @ethosAgent on Twitter.</p>
-            <p>Learn more about Ethos at <a href="https://ethos.network" target="_blank">ethos.network</a></p>
+        <!-- Footer -->
+        <div class="text-center mt-12 py-8 border-t border-gray-700">
+            <div class="max-w-2xl mx-auto">
+                <p class="text-gray-400 mb-2">This dashboard shows validation commands processed by @ethosAgent on Twitter.</p>
+                <p class="text-gray-500 text-sm">
+                    Learn more about Ethos at 
+                    <a href="https://ethos.network" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors">ethos.network</a>
+                </p>
+            </div>
         </div>
     </div>
 
@@ -384,8 +506,19 @@ router.get("/dashboard", async (ctx) => {
             }
         }
         
-        // Auto refresh every 30 seconds
-        setTimeout(() => location.reload(), 30000);
+        // Auto refresh every 30 seconds with fade effect
+        setTimeout(() => {
+            document.body.style.opacity = '0.7';
+            setTimeout(() => location.reload(), 300);
+        }, 30000);
+        
+        // Add loading animation on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.style.opacity = '0';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
     </script>
 </body>
 </html>`;
