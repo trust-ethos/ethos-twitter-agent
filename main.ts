@@ -1933,6 +1933,123 @@ router.post("/test/create-sample", async (ctx) => {
   }
 });
 
+// Create sample validation data endpoint with real Twitter images
+router.post("/test/create-sample-with-real-images", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    
+    // Create sample validations with real Twitter profile images
+    const sampleUsers = [
+      { handle: "elonmusk", name: "Elon Musk" },
+      { handle: "naval", name: "Naval" },
+      { handle: "balajis", name: "Balaji Srinivasan" },
+      { handle: "vitalik", name: "Vitalik Buterin" },
+      { handle: "sama", name: "Sam Altman" }
+    ];
+
+    const validations = [];
+    
+    // Create 3 validations with real Twitter profile images
+    for (let i = 0; i < 3; i++) {
+      const validator = sampleUsers[i % sampleUsers.length];
+      const author = sampleUsers[(i + 1) % sampleUsers.length];
+      
+      // Fetch real Twitter profile images
+      let validatorUser, authorUser;
+      try {
+        validatorUser = await twitterService.getUserByUsername(validator.handle);
+        authorUser = await twitterService.getUserByUsername(author.handle);
+      } catch (error) {
+        console.log(`Failed to fetch user data: ${error.message}`);
+        // Use defaults if API fails
+        validatorUser = { profile_image_url: `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png` };
+        authorUser = { profile_image_url: `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png` };
+      }
+      
+      // Process profile images to get larger versions
+      const getOptimizedImageUrl = (user, size) => {
+        if (!user?.profile_image_url || !user.profile_image_url.includes('pbs.twimg.com')) {
+          return size === '_bigger' 
+            ? `https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png`
+            : `https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png`;
+        }
+        
+        let url = user.profile_image_url;
+        
+        // Replace size in the URL
+        url = url.replace(/_normal\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        url = url.replace(/_bigger\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        url = url.replace(/_mini\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        url = url.replace(/_400x400\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        
+        // If no size found, append before extension
+        if (!url.includes(size)) {
+          url = url.replace(/\.(jpg|jpeg|png|gif|webp)$/i, `${size}.$1`);
+        }
+        
+        return url.replace(/^http:/, 'https:');
+      };
+      
+      const sampleValidation = {
+        id: `real_images_${Date.now()}_${i}`,
+        tweetId: `987654321012345678${i}`,
+        tweetAuthor: author.name,
+        tweetAuthorHandle: author.handle,
+        tweetAuthorAvatar: getOptimizedImageUrl(authorUser, '_bigger'),
+        requestedBy: validator.name,
+        requestedByHandle: validator.handle,
+        requestedByAvatar: getOptimizedImageUrl(validatorUser, '_normal'),
+        timestamp: new Date(Date.now() - i * 120000).toISOString(), // Stagger timestamps
+        tweetUrl: `https://x.com/${author.handle}/status/987654321012345678${i}`,
+        averageScore: 1400 + (i * 250), // Varying scores
+        engagementStats: {
+          total_retweeters: 120 + (i * 30),
+          total_repliers: 60 + (i * 15),
+          total_quote_tweeters: 25 + (i * 8),
+          total_unique_users: 180 + (i * 40),
+          reputable_retweeters: 95 + (i * 24),
+          reputable_repliers: 48 + (i * 12),
+          reputable_quote_tweeters: 20 + (i * 6),
+          reputable_total: 163 + (i * 42),
+          reputable_percentage: 75 + (i * 3), // 75%, 78%, 81%
+          ethos_active_retweeters: 110 + (i * 28), 
+          ethos_active_repliers: 55 + (i * 14), 
+          ethos_active_quote_tweeters: 23 + (i * 7), 
+          ethos_active_total: 188 + (i * 49), 
+          ethos_active_percentage: 88 + (i * 2), // 88%, 90%, 92%
+          retweeters_rate_limited: false,
+          repliers_rate_limited: false,
+          quote_tweeters_rate_limited: false,
+        },
+        overallQuality: "high" as "high" | "medium" | "low"
+      };
+
+      await storageService.storeValidation(sampleValidation);
+      validations.push({
+        user: validator.handle,
+        author: author.handle,
+        validatorAvatar: sampleValidation.requestedByAvatar,
+        authorAvatar: sampleValidation.tweetAuthorAvatar
+      });
+    }
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Sample validation data created with real Twitter profile images",
+      count: 3,
+      validations: validations
+    };
+  } catch (error) {
+    console.error("❌ Failed to create sample data with real images:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Failed to create sample data with real images",
+      error: error.message
+    };
+  }
+});
+
 // Polling control endpoints
 router.get("/polling/status", (ctx) => {
   ctx.response.body = {
