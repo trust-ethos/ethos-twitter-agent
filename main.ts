@@ -506,14 +506,7 @@ router.get("/dashboard", async (ctx) => {
                                         <div class="text-sm ethos-text-tertiary">${validation.tweetAuthor}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex items-center">
-                                            <div class="flex-1">
-                                                <div class="text-sm font-medium ethos-text-base">${validation.averageScore}%</div>
-                                                <div class="w-full ethos-bg-base rounded-full h-1.5 mt-1">
-                                                    <div class="ethos-primary-bg h-1.5 rounded-full" style="width: ${validation.averageScore}%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <div class="text-sm font-medium ethos-text-base">${validation.averageScore}</div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm ethos-text-secondary">
                                         <div class="space-y-1">
