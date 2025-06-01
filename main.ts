@@ -849,7 +849,7 @@ router.get("/dashboard", async (ctx) => {
                     '</td>' +
                     '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="flex items-center space-x-3">' +
-                            '<img class="h-8 w-8 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
+                            '<img class="h-10 w-10 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
                             '<div>' +
                                 '<div class="font-medium" style="color: #EFEEE0D9;">@' + validation.requestedByHandle + '</div>' +
                             '</div>' +
