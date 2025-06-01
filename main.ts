@@ -851,7 +851,8 @@ router.get("/dashboard", async (ctx) => {
                         '<div class="flex items-center space-x-3">' +
                             '<img class="h-10 w-10 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
                             '<div>' +
-                                '<div class="font-medium" style="color: #EFEEE0D9;">@' + validation.requestedByHandle + '</div>' +
+                                '<div class="font-medium" style="color: #EFEEE0D9;">' + validation.requestedBy + '</div>' +
+                                '<div class="text-sm" style="color: #EFEEE099;">@' + validation.requestedByHandle + '</div>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
