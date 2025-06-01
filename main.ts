@@ -98,7 +98,7 @@ router.get("/dashboard", async (ctx) => {
   try {
     const html = `
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full dark">
 <head>
     <title>Ethos Agent Dashboard</title>
     <meta charset="utf-8">
@@ -110,39 +110,44 @@ router.get("/dashboard", async (ctx) => {
             theme: {
                 extend: {
                     colors: {
-                        // ShadCN-inspired color palette
-                        border: "hsl(var(--border))",
-                        input: "hsl(var(--input))",
-                        ring: "hsl(var(--ring))",
-                        background: "hsl(var(--background))",
-                        foreground: "hsl(var(--foreground))",
-                        primary: {
-                            DEFAULT: "hsl(var(--primary))",
-                            foreground: "hsl(var(--primary-foreground))"
+                        // Custom Ethos Theme Colors (direct hex values)
+                        success: '#127f31',
+                        primary: '#2E7BC3',
+                        warning: '#C29010',
+                        error: '#b72b38',
+                        // Dark theme using direct hex colors
+                        border: "#9E9C8D00",
+                        input: "#3c3c39",
+                        ring: "#2E7BC3",
+                        background: "#232320",
+                        foreground: "#EFEEE0D9",
+                        'primary-custom': {
+                            DEFAULT: "#2E7BC3",
+                            foreground: "#EFEEE0D9"
                         },
                         secondary: {
-                            DEFAULT: "hsl(var(--secondary))",
-                            foreground: "hsl(var(--secondary-foreground))"
+                            DEFAULT: "#2d2d2a",
+                            foreground: "#EFEEE0D9"
                         },
                         destructive: {
-                            DEFAULT: "hsl(var(--destructive))",
-                            foreground: "hsl(var(--destructive-foreground))"
+                            DEFAULT: "#b72b38",
+                            foreground: "#EFEEE0D9"
                         },
                         muted: {
-                            DEFAULT: "hsl(var(--muted))",
-                            foreground: "hsl(var(--muted-foreground))"
+                            DEFAULT: "#323232",
+                            foreground: "#EFEEE099"
                         },
                         accent: {
-                            DEFAULT: "hsl(var(--accent))",
-                            foreground: "hsl(var(--accent-foreground))"
+                            DEFAULT: "#2E7BC31A",
+                            foreground: "#EFEEE0D9"
                         },
                         popover: {
-                            DEFAULT: "hsl(var(--popover))",
-                            foreground: "hsl(var(--popover-foreground))"
+                            DEFAULT: "#232320",
+                            foreground: "#EFEEE0D9"
                         },
                         card: {
-                            DEFAULT: "hsl(var(--card))",
-                            foreground: "hsl(var(--card-foreground))"
+                            DEFAULT: "#232320",
+                            foreground: "#EFEEE0D9"
                         }
                     },
                     borderRadius: {
@@ -162,57 +167,32 @@ router.get("/dashboard", async (ctx) => {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* ShadCN Default Light Theme */
-            --background: 0 0% 100%;
-            --foreground: 222.2 84% 4.9%;
-            --card: 0 0% 100%;
-            --card-foreground: 222.2 84% 4.9%;
-            --popover: 0 0% 100%;
-            --popover-foreground: 222.2 84% 4.9%;
-            --primary: 221.2 83.2% 53.3%;
-            --primary-foreground: 210 40% 98%;
-            --secondary: 210 40% 96%;
-            --secondary-foreground: 222.2 84% 4.9%;
-            --muted: 210 40% 96%;
-            --muted-foreground: 215.4 16.3% 46.9%;
-            --accent: 210 40% 96%;
-            --accent-foreground: 222.2 84% 4.9%;
-            --destructive: 0 84.2% 60.2%;
-            --destructive-foreground: 210 40% 98%;
-            --border: 214.3 31.8% 91.4%;
-            --input: 214.3 31.8% 91.4%;
-            --ring: 221.2 83.2% 53.3%;
-            --success: 142.1 76.2% 36.3%;
-            --warning: 47.9 95.8% 53.1%;
+            /* Custom Ethos Dark Theme - Using exact hex colors */
+            --background: #232320; /* colorBgLayout */
+            --foreground: #EFEEE0D9; /* colorText */
+            --card: #2d2d2A; /* Updated container color */
+            --card-foreground: #EFEEE0D9; /* colorText */
+            --popover: #2d2d2A; /* Updated container color */
+            --popover-foreground: #EFEEE0D9; /* colorText */
+            --primary: #2E7BC3; /* colorPrimary */
+            --primary-foreground: #EFEEE0D9; /* colorText */
+            --secondary: #2d2d2a; /* Slightly lighter than background */
+            --secondary-foreground: #EFEEE0D9; /* colorText */
+            --muted: #323232; /* Muted background */
+            --muted-foreground: #EFEEE099; /* colorText with reduced opacity */
+            --accent: #2E7BC31A; /* Primary with transparency */
+            --accent-foreground: #EFEEE0D9; /* colorText */
+            --destructive: #b72b38; /* colorError */
+            --destructive-foreground: #EFEEE0D9; /* colorText */
+            --border: transparent; /* No borders */
+            --input: #3c3c39; /* Input background */
+            --ring: #2E7BC3; /* colorPrimary */
+            --success: #127f31; /* colorSuccess */
+            --warning: #C29010; /* colorWarning */
             --radius: 0.5rem;
         }
         
-        .dark {
-            /* ShadCN Default Dark Theme */
-            --background: 222.2 84% 4.9%;
-            --foreground: 210 40% 98%;
-            --card: 222.2 84% 4.9%;
-            --card-foreground: 210 40% 98%;
-            --popover: 222.2 84% 4.9%;
-            --popover-foreground: 210 40% 98%;
-            --primary: 217.2 91.2% 59.8%;
-            --primary-foreground: 222.2 84% 4.9%;
-            --secondary: 217.2 32.6% 17.5%;
-            --secondary-foreground: 210 40% 98%;
-            --muted: 217.2 32.6% 17.5%;
-            --muted-foreground: 215 20.2% 65.1%;
-            --accent: 217.2 32.6% 17.5%;
-            --accent-foreground: 210 40% 98%;
-            --destructive: 0 62.8% 30.6%;
-            --destructive-foreground: 210 40% 98%;
-            --border: 217.2 32.6% 17.5%;
-            --input: 217.2 32.6% 17.5%;
-            --ring: 224.3 76.3% 94.1%;
-            --success: 142.1 70.6% 45.3%;
-            --warning: 47.9 95.8% 53.1%;
-        }
-        
-        /* ShadCN Component Styles */
+        /* Enhanced Ethos Component Styles */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -225,52 +205,53 @@ router.get("/dashboard", async (ctx) => {
             outline: none;
             border: none;
             cursor: pointer;
+            background-color: var(--background);
+            color: var(--foreground);
         }
         
         .btn:focus-visible {
-            box-shadow: 0 0 0 2px hsl(var(--ring));
+            box-shadow: 0 0 0 2px var(--ring);
         }
         
         .btn-primary {
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background-color: var(--primary);
+            color: var(--primary-foreground);
             height: 2.5rem;
             padding: 0 1rem;
         }
         
         .btn-primary:hover {
-            background-color: hsl(var(--primary) / 0.9);
+            background-color: color-mix(in srgb, var(--primary) 90%, black);
         }
         
         .btn-secondary {
-            background-color: hsl(var(--secondary));
-            color: hsl(var(--secondary-foreground));
+            background-color: var(--secondary);
+            color: var(--secondary-foreground);
             height: 2.5rem;
             padding: 0 1rem;
         }
         
         .btn-secondary:hover {
-            background-color: hsl(var(--secondary) / 0.8);
+            background-color: color-mix(in srgb, var(--secondary) 80%, black);
         }
         
         .btn-ghost {
             background-color: transparent;
-            color: hsl(var(--foreground));
+            color: var(--foreground);
             height: 2.5rem;
             padding: 0 1rem;
         }
         
         .btn-ghost:hover {
-            background-color: hsl(var(--accent));
-            color: hsl(var(--accent-foreground));
+            background-color: var(--accent);
+            color: var(--accent-foreground);
         }
         
         .card {
-            background-color: hsl(var(--card));
-            color: hsl(var(--card-foreground));
-            border: 1px solid hsl(var(--border));
+            background-color: var(--card);
+            color: var(--card-foreground);
             border-radius: calc(var(--radius));
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
         }
         
         .input {
@@ -278,8 +259,9 @@ router.get("/dashboard", async (ctx) => {
             height: 2.5rem;
             width: 100%;
             border-radius: calc(var(--radius) - 2px);
-            border: 1px solid hsl(var(--input));
-            background-color: hsl(var(--background));
+            border: 1px solid var(--input);
+            background-color: var(--input);
+            color: var(--foreground);
             padding: 0 0.75rem;
             font-size: 0.875rem;
             transition: all 0.2s;
@@ -287,12 +269,12 @@ router.get("/dashboard", async (ctx) => {
         }
         
         .input::placeholder {
-            color: hsl(var(--muted-foreground));
+            color: var(--muted-foreground);
         }
         
         .input:focus {
-            border-color: hsl(var(--ring));
-            box-shadow: 0 0 0 1px hsl(var(--ring));
+            border-color: var(--ring);
+            box-shadow: 0 0 0 1px var(--ring);
         }
         
         .badge {
@@ -306,28 +288,28 @@ router.get("/dashboard", async (ctx) => {
         }
         
         .badge-default {
-            background-color: hsl(var(--primary));
-            color: hsl(var(--primary-foreground));
+            background-color: var(--primary);
+            color: var(--primary-foreground);
         }
         
         .badge-secondary {
-            background-color: hsl(var(--secondary));
-            color: hsl(var(--secondary-foreground));
+            background-color: var(--secondary);
+            color: var(--secondary-foreground);
         }
         
         .badge-success {
-            background-color: hsl(var(--success));
-            color: hsl(var(--primary-foreground));
+            background-color: var(--success);
+            color: var(--foreground);
         }
         
         .badge-warning {
-            background-color: hsl(var(--warning));
-            color: hsl(var(--primary-foreground));
+            background-color: var(--warning);
+            color: var(--foreground);
         }
         
         .badge-destructive {
-            background-color: hsl(var(--destructive));
-            color: hsl(var(--destructive-foreground));
+            background-color: var(--destructive);
+            color: var(--destructive-foreground);
         }
         
         .table {
@@ -341,18 +323,16 @@ router.get("/dashboard", async (ctx) => {
             padding: 0 1rem;
             text-align: left;
             font-weight: 500;
-            color: hsl(var(--muted-foreground));
-            border-bottom: 1px solid hsl(var(--border));
+            color: var(--muted-foreground);
         }
         
         .table td {
             padding: 1rem;
-            border-bottom: 1px solid hsl(var(--border));
             vertical-align: middle;
         }
         
         .table tr:hover {
-            background-color: hsl(var(--muted) / 0.5);
+            background-color: rgba(60, 60, 56, 0.5);
         }
         
         /* Loading animation */
@@ -371,50 +351,61 @@ router.get("/dashboard", async (ctx) => {
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 150ms;
         }
+        
+        /* Sort icons */
+        .sort-icon::after {
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 0;
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+        
+        .sort-none::after {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid var(--muted-foreground);
+        }
+        
+        .sort-asc::after {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid var(--primary);
+        }
+        
+        .sort-desc::after {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid var(--primary);
+        }
     </style>
-    <script>
-        // Theme system with flash prevention
-        (function() {
-            const theme = localStorage.getItem('theme') || 'system';
-            const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const shouldBeDark = theme === 'dark' || (theme === 'system' && systemDark);
-            
-            // Remove all theme classes first
-            document.documentElement.classList.remove('dark');
-            
-            // Apply dark class if needed
-            if (shouldBeDark) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
 </head>
-<body class="bg-background text-foreground font-sans antialiased min-h-screen">
+<body style="background-color: #232320; color: #EFEEE0D9;" class="font-sans antialiased min-h-screen">
     <div class="min-h-screen flex flex-col">
         <!-- Header -->
-        <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header class="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60" style="background-color: rgba(35, 35, 32, 0.95); border-color: #9E9C8D00;">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
                     <div class="flex items-center space-x-4">
                         <div class="flex items-center space-x-2">
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <h1 class="text-xl font-semibold">Ethos Agent</h1>
+                            <h1 class="text-xl font-semibold" style="color: #EFEEE0D9;">Ethos Agent</h1>
                         </div>
                         <div class="flex items-center space-x-2">
-                            <div class="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span class="text-sm text-muted-foreground font-medium">Live</span>
+                            <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
+                            <span class="text-sm font-medium" style="color: #EFEEE099;">Live</span>
                         </div>
                     </div>
                     
-                    <!-- Theme Toggle -->
-                    <button id="theme-toggle" class="btn btn-ghost">
-                        <span id="theme-icon">💻</span>
-                        <span id="theme-text" class="ml-2">System</span>
-                    </button>
+                    <!-- Version Info -->
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm" style="color: #EFEEE099;">Ethos Agent Dashboard</span>
+                    </div>
                 </div>
             </div>
         </header>
@@ -424,70 +415,70 @@ router.get("/dashboard", async (ctx) => {
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <!-- Stats Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="card p-6">
+                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
                         <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: rgba(46, 123, 195, 0.1); color: #2E7BC3;">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-muted-foreground">Total Validations</p>
-                                <p class="text-2xl font-bold" id="total-validations">...</p>
+                                <p class="text-sm font-medium" style="color: #EFEEE099;">Total Validations</p>
+                                <p class="text-2xl font-bold" id="total-validations" style="color: #EFEEE0D9;">...</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="card p-6">
+                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
                         <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-muted-foreground">Unique Validators</p>
-                                <p class="text-2xl font-bold" id="unique-validators">...</p>
+                                <p class="text-sm font-medium" style="color: #EFEEE099;">Unique Validators</p>
+                                <p class="text-2xl font-bold" id="unique-validators" style="color: #EFEEE0D9;">...</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="card p-6">
+                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
                         <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: #127f31; color: #EFEEE0D9;">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-muted-foreground">Avg Quality Score</p>
-                                <p class="text-2xl font-bold" id="avg-quality">...</p>
+                                <p class="text-sm font-medium" style="color: #EFEEE099;">Avg Quality Score</p>
+                                <p class="text-2xl font-bold" id="avg-quality" style="color: #EFEEE0D9;">...</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="card p-6">
+                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
                         <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: #127f31; color: #EFEEE0D9;">
                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-muted-foreground">System Status</p>
-                                <p class="text-2xl font-bold text-green-600">Healthy</p>
+                                <p class="text-sm font-medium" style="color: #EFEEE099;">System Status</p>
+                                <p class="text-2xl font-bold" style="color: #127f31;">Healthy</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Data Table Card -->
-                <div class="card">
+                <div class="rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
                     <!-- Table Header -->
-                    <div class="flex items-center justify-between p-6 border-b">
+                    <div class="flex items-center justify-between p-6">
                         <div>
-                            <h3 class="text-lg font-semibold">Tweet Validations</h3>
-                            <p class="text-sm text-muted-foreground">Quality analysis of Twitter engagement</p>
+                            <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">Tweet Validations</h3>
+                            <p class="text-sm" style="color: #EFEEE099;">Quality analysis of Twitter engagement</p>
                         </div>
                         <div class="flex items-center space-x-4">
                             <!-- Search -->
@@ -514,53 +505,53 @@ router.get("/dashboard", async (ctx) => {
                     </div>
                     
                     <!-- Table -->
-                    <div class="overflow-x-auto">
-                        <table class="table">
+                    <div class="overflow-x-auto" style="background-color: #2d2d2A;">
+                        <table class="table" style="width: 100%; font-size: 0.875rem; background-color: #2d2d2A;">
                             <thead>
                                 <tr>
-                                    <th class="cursor-pointer select-none" data-sort="tweetAuthor">
+                                    <th class="cursor-pointer select-none" data-sort="tweetAuthor" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Author</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="requestedBy">
+                                    <th class="cursor-pointer select-none" data-sort="requestedBy" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Validator</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="qualityScore">
+                                    <th class="cursor-pointer select-none" data-sort="qualityScore" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Quality Score</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="averageScore">
+                                    <th class="cursor-pointer select-none" data-sort="averageScore" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Avg Ethos Score</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="reputableEngagement">
+                                    <th class="cursor-pointer select-none" data-sort="reputableEngagement" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Reputable Engagement</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="ethosActiveEngagement">
+                                    <th class="cursor-pointer select-none" data-sort="ethosActiveEngagement" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Ethos Active Engagement</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="timestamp">
+                                    <th class="cursor-pointer select-none" data-sort="timestamp" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Date</span>
                                             <span class="sort-icon sort-desc"></span>
                                         </div>
                                     </th>
-                                    <th>Actions</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="table-body">
@@ -589,7 +580,7 @@ router.get("/dashboard", async (ctx) => {
                     </div>
                     
                     <!-- Pagination -->
-                    <div id="pagination" class="flex items-center justify-between border-t px-6 py-4 hidden">
+                    <div id="pagination" class="flex items-center justify-between px-6 py-4 hidden" style="background-color: #2d2d2A;">
                         <div class="text-sm text-muted-foreground">
                             Showing <span id="showing-from">1</span> to <span id="showing-to">25</span> of <span id="total-entries">0</span> entries
                         </div>
@@ -623,7 +614,6 @@ router.get("/dashboard", async (ctx) => {
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             console.log('📋 DOM loaded, initializing dashboard...');
-            setupThemeToggle();
             setupEventListeners();
             
             // Simple API test first
@@ -642,61 +632,6 @@ router.get("/dashboard", async (ctx) => {
             } catch (error) {
                 console.error('❌ API test failed:', error);
             }
-        }
-
-        // Theme toggle functionality
-        function setupThemeToggle() {
-            const themeToggle = document.getElementById('theme-toggle');
-            const themeIcon = document.getElementById('theme-icon');
-            const themeText = document.getElementById('theme-text');
-            
-            const themes = [
-                { name: 'light', icon: '☀️', text: 'Light' },
-                { name: 'dark', icon: '🌙', text: 'Dark' },
-                { name: 'system', icon: '💻', text: 'System' }
-            ];
-            
-            let currentTheme = localStorage.getItem('theme') || 'system';
-            
-            function applyTheme(theme) {
-                const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const shouldBeDark = theme === 'dark' || (theme === 'system' && systemDark);
-                
-                // Remove all theme classes first
-                document.documentElement.classList.remove('dark');
-                
-                // Apply dark class if needed
-                if (shouldBeDark) {
-                    document.documentElement.classList.add('dark');
-                }
-                
-                const themeData = themes.find(t => t.name === theme);
-                if (themeData) {
-                    themeIcon.textContent = themeData.icon;
-                    themeText.textContent = themeData.text;
-                }
-                
-                localStorage.setItem('theme', theme);
-            }
-            
-            function getNextTheme(current) {
-                const currentIndex = themes.findIndex(t => t.name === current);
-                const nextIndex = (currentIndex + 1) % themes.length;
-                return themes[nextIndex].name;
-            }
-            
-            applyTheme(currentTheme);
-            
-            themeToggle.addEventListener('click', () => {
-                currentTheme = getNextTheme(currentTheme);
-                applyTheme(currentTheme);
-            });
-            
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-                if (currentTheme === 'system') {
-                    applyTheme('system');
-                }
-            });
         }
 
         // Setup event listeners
@@ -900,42 +835,42 @@ router.get("/dashboard", async (ctx) => {
                 const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar, true);
                 
                 return '<tr>' +
-                    '<td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="flex items-center space-x-3">' +
                             '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
                             '<div>' +
-                                '<div class="font-medium">@' + validation.tweetAuthorHandle + '</div>' +
-                                '<div class="text-sm text-muted-foreground">' + validation.tweetAuthor + '</div>' +
+                                '<div class="font-medium" style="color: #EFEEE0D9;">@' + validation.tweetAuthorHandle + '</div>' +
+                                '<div class="text-sm" style="color: #EFEEE099;">' + validation.tweetAuthor + '</div>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
-                    '<td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="flex items-center space-x-3">' +
                             '<img class="h-8 w-8 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
                             '<div>' +
-                                '<div class="font-medium">@' + validation.requestedByHandle + '</div>' +
+                                '<div class="font-medium" style="color: #EFEEE0D9;">@' + validation.requestedByHandle + '</div>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
-                    '<td>' + qualityBadge + '</td>' +
-                    '<td>' + scoreBadge + '</td>' +
-                    '<td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' + qualityBadge + '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' + scoreBadge + '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="text-sm space-y-1">' +
-                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.reputable_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : 'text-muted-foreground">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
-                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.reputable_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : 'text-muted-foreground">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
-                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.reputable_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : 'text-muted-foreground">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
+                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
                         '</div>' +
                     '</td>' +
-                    '<td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="text-sm space-y-1">' +
-                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.ethos_active_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : 'text-muted-foreground">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
-                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.ethos_active_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : 'text-muted-foreground">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
-                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span class="text-muted-foreground">(' + validation.engagementStats.ethos_active_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : 'text-muted-foreground">0%</span> <span class="text-muted-foreground">(0 of 0)</span>') + '</div>' +
+                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
                         '</div>' +
                     '</td>' +
-                    '<td class="text-muted-foreground">' + date + '</td>' +
-                    '<td>' +
-                        '<a href="' + validation.tweetUrl + '" target="_blank" class="text-primary hover:underline">' +
+                    '<td style="padding: 1rem; vertical-align: middle; color: #EFEEE099;">' + date + '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
+                        '<a href="' + validation.tweetUrl + '" target="_blank" style="color: #2E7BC3;" class="hover:underline">' +
                             'View Tweet →' +
                         '</a>' +
                     '</td>' +
