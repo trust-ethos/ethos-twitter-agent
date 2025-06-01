@@ -838,7 +838,6 @@ router.get("/dashboard", async (ctx) => {
                             '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
                             '<div>' +
                                 '<div class="font-medium" style="color: #EFEEE0D9;">' + validation.tweetAuthor + '</div>' +
-                                '<div class="text-sm" style="color: #EFEEE099;">@' + validation.tweetAuthorHandle + '</div>' +
                                 '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm mt-1 hover:underline" style="color: #2E7BC3;">' +
                                     'View Tweet' +
                                     '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
