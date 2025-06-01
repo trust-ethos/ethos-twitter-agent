@@ -358,26 +358,31 @@ router.get("/dashboard", async (ctx) => {
             display: inline-block;
             width: 0;
             height: 0;
-            margin-left: 4px;
+            margin-left: 6px;
             vertical-align: middle;
+            position: relative;
+            top: -1px;
         }
         
         .sort-none::after {
             border-left: 4px solid transparent;
             border-right: 4px solid transparent;
             border-bottom: 4px solid var(--muted-foreground);
+            opacity: 0.5;
         }
         
         .sort-asc::after {
             border-left: 4px solid transparent;
             border-right: 4px solid transparent;
-            border-bottom: 4px solid var(--primary);
+            border-bottom: 5px solid var(--primary);
+            top: -2px;
         }
         
         .sort-desc::after {
             border-left: 4px solid transparent;
             border-right: 4px solid transparent;
-            border-top: 4px solid var(--primary);
+            border-top: 5px solid var(--primary);
+            top: 1px;
         }
     </style>
 </head>
@@ -509,17 +514,11 @@ router.get("/dashboard", async (ctx) => {
                         <table class="table" style="width: 100%; font-size: 0.875rem; background-color: #2d2d2A;">
                             <thead>
                                 <tr>
-                                    <th class="cursor-pointer select-none" data-sort="tweetAuthor" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
-                                        <div class="flex items-center space-x-1">
-                                            <span>Author</span>
-                                            <span class="sort-icon sort-none"></span>
-                                        </div>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
+                                        <span>Author</span>
                                     </th>
-                                    <th class="cursor-pointer select-none" data-sort="requestedBy" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
-                                        <div class="flex items-center space-x-1">
-                                            <span>Validator</span>
-                                            <span class="sort-icon sort-none"></span>
-                                        </div>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
+                                        <span>Validator</span>
                                     </th>
                                     <th class="cursor-pointer select-none" data-sort="qualityScore" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
