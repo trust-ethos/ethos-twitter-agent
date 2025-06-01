@@ -550,7 +550,6 @@ router.get("/dashboard", async (ctx) => {
                                             <span class="sort-icon sort-desc"></span>
                                         </div>
                                     </th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="table-body">
@@ -838,8 +837,14 @@ router.get("/dashboard", async (ctx) => {
                         '<div class="flex items-center space-x-3">' +
                             '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
                             '<div>' +
-                                '<div class="font-medium" style="color: #EFEEE0D9;">@' + validation.tweetAuthorHandle + '</div>' +
-                                '<div class="text-sm" style="color: #EFEEE099;">' + validation.tweetAuthor + '</div>' +
+                                '<div class="font-medium" style="color: #EFEEE0D9;">' + validation.tweetAuthor + '</div>' +
+                                '<div class="text-sm" style="color: #EFEEE099;">@' + validation.tweetAuthorHandle + '</div>' +
+                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm mt-1 hover:underline" style="color: #2E7BC3;">' +
+                                    'View Tweet' +
+                                    '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                    '</svg>' +
+                                '</a>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
@@ -868,11 +873,6 @@ router.get("/dashboard", async (ctx) => {
                         '</div>' +
                     '</td>' +
                     '<td style="padding: 1rem; vertical-align: middle; color: #EFEEE099;">' + date + '</td>' +
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<a href="' + validation.tweetUrl + '" target="_blank" style="color: #2E7BC3;" class="hover:underline">' +
-                            'View Tweet →' +
-                        '</a>' +
-                    '</td>' +
                 '</tr>';
             }).join('');
         }
