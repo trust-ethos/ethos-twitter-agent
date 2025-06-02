@@ -954,6 +954,17 @@ Link to tweet: ${originalTweetLink}`;
           response += `\n${avgEmoji} ${averageScore} avg score of all engagers`;
         }
 
+        // Add sampling information if used
+        if (engagementStats.is_sampled) {
+          const sampledUsers = engagementStats.sample_size || 0;
+          const estimatedTotal = engagementStats.estimated_total_engagers || 0;
+          if (estimatedTotal > 0) {
+            response += `\n\n📊 High engagement detected: analyzed ${sampledUsers} users (sampled from ~${estimatedTotal} total engagers)`;
+          } else {
+            response += `\n\n📊 Sampling used: analyzed ${sampledUsers} representative users`;
+          }
+        }
+
         // Link to validation leaderboard
         response += `\n\nView all validations: https://validate.ethos.network`;
 
@@ -971,25 +982,6 @@ Link to tweet: ${originalTweetLink}`;
 
     } catch (error) {
       console.error("❌ Error processing validate command:", error);
-      
-      // Handle specific engagement volume errors
-      if (error instanceof Error) {
-        if (error.message === 'ENGAGEMENT_TOO_HIGH_SHARES') {
-          return {
-            success: false,
-            message: "Tweet has too many retweets/quotes to process",
-            replyText: "Sorry, that tweet has too many retweets and quote tweets for me to process right now (>500). Try a tweet with less engagement."
-          };
-        }
-        
-        if (error.message === 'ENGAGEMENT_TOO_HIGH_COMMENTS') {
-          return {
-            success: false,
-            message: "Tweet has too many comments to process",
-            replyText: "Sorry, that tweet has too many comments for me to process right now (>300). Try a tweet with less engagement."
-          };
-        }
-      }
       
       return {
         success: false,

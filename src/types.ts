@@ -81,4 +81,8 @@ export interface EngagementStats {
   retweeters_rate_limited: boolean;
   repliers_rate_limited: boolean;
   quote_tweeters_rate_limited: boolean;
+  // Sampling information
+  is_sampled: boolean; // Whether sampling was used due to high engagement
+  sample_size?: number; // Total users analyzed when sampling was used
+  estimated_total_engagers?: number; // Estimated total engagers (from metrics API)
 } 

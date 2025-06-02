@@ -675,7 +675,7 @@ export class TwitterService {
    * - We use HTTP headers to detect when we're close to limits
    * - Only wait when we actually hit rate limits (429) or run out of requests
    */
-  async getRetweeters(tweetId: string): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
+  async getRetweeters(tweetId: string, maxPages: number = 50): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
     const retweeters: EngagingUser[] = [];
     let nextToken: string | undefined = undefined;
     let pageCount = 0;
@@ -731,7 +731,7 @@ export class TwitterService {
         nextToken = data.meta?.next_token;
         
         // Smart rate limiting: only wait if we're close to the limit and have more pages
-        if (nextToken && pageCount < 50) {
+        if (nextToken && pageCount < maxPages) {
           if (remaining <= 1) {
             // We're out of requests, stop this collection and move to next stat
             console.log(`⏰ Rate limit exhausted (${remaining} remaining), moving to next stat type...`);
@@ -752,7 +752,7 @@ export class TwitterService {
         break;
       }
       
-    } while (nextToken && pageCount < 50);
+    } while (nextToken && pageCount < maxPages);
 
     console.log(`🎯 Total retweeters collected: ${retweeters.length}${rateLimited ? ' (rate limited)' : ''}`);
     return { users: retweeters, rateLimited };
@@ -761,7 +761,7 @@ export class TwitterService {
   /**
    * Get users who replied to a specific tweet with pagination
    */
-  async getRepliers(tweetId: string): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
+  async getRepliers(tweetId: string, maxPages: number = 50): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
     const repliers: EngagingUser[] = [];
     let nextToken: string | undefined = undefined;
     let pageCount = 0;
@@ -830,7 +830,7 @@ export class TwitterService {
         nextToken = data.meta?.next_token;
         
         // Smart rate limiting: only wait if we're close to the limit and have more pages
-        if (nextToken && pageCount < 50) {
+        if (nextToken && pageCount < maxPages) {
           if (remaining <= 1) {
             // We're out of requests, stop this collection and move to next stat
             console.log(`⏰ Rate limit exhausted (${remaining} remaining), moving to next stat type...`);
@@ -851,7 +851,7 @@ export class TwitterService {
         break;
       }
       
-    } while (nextToken && pageCount < 50);
+    } while (nextToken && pageCount < maxPages);
 
     // Deduplicate repliers by username
     const uniqueRepliers = Array.from(
@@ -865,7 +865,7 @@ export class TwitterService {
   /**
    * Get users who quoted a specific tweet with pagination
    */
-  async getQuoteTweeters(tweetId: string): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
+  async getQuoteTweeters(tweetId: string, maxPages: number = 50): Promise<{ users: EngagingUser[]; rateLimited: boolean }> {
     const quoteTweeters: EngagingUser[] = [];
     let nextToken: string | undefined = undefined;
     let pageCount = 0;
@@ -933,7 +933,7 @@ export class TwitterService {
         nextToken = data.meta?.next_token;
         
         // Smart rate limiting: only wait if we're close to the limit and have more pages
-        if (nextToken && pageCount < 50) {
+        if (nextToken && pageCount < maxPages) {
           if (remaining <= 1) {
             // We're out of requests, stop this collection and move to next stat
             console.log(`⏰ Rate limit exhausted (${remaining} remaining), moving to next stat type...`);
@@ -954,7 +954,7 @@ export class TwitterService {
         break;
       }
       
-    } while (nextToken && pageCount < 50);
+    } while (nextToken && pageCount < maxPages);
 
     console.log(`🎯 Total quote tweeters collected: ${quoteTweeters.length}${rateLimited ? ' (rate limited)' : ''}`);
     return { users: quoteTweeters, rateLimited };
@@ -1057,9 +1057,12 @@ export class TwitterService {
       console.log(`🚫 Excluding user @${excludeUsername} from engagement calculations`);
     }
 
-    // First, check tweet engagement volume to avoid processing massive tweets
+    // First, check tweet engagement volume for sampling strategy
     console.log(`📊 Checking tweet engagement volume...`);
     const metrics = await this.getTweetMetrics(tweetId);
+    
+    let useSampling = false;
+    let maxPagesPerType = 50; // Default: no limit for small tweets
     
     if (metrics) {
       const totalShares = metrics.retweet_count + metrics.quote_count;
@@ -1067,49 +1070,84 @@ export class TwitterService {
       
       console.log(`📊 Tweet metrics: ${metrics.retweet_count} retweets, ${metrics.quote_count} quotes, ${metrics.reply_count} replies, ${metrics.like_count} likes`);
       
-      // Check if engagement volume is too high for rate limiting
-      // With smart rate limiting, we can handle more volume efficiently
-      if (totalShares > 500) {
-        console.log(`⚠️ Too many shares (${totalShares}) - exceeds 500 limit`);
-        throw new Error('ENGAGEMENT_TOO_HIGH_SHARES');
+      // Determine sampling strategy based on engagement volume
+      if (totalShares > 2000 || totalComments > 1000) {
+        // Very high engagement: aggressive sampling
+        maxPagesPerType = 3; // ~300 users per type max
+        useSampling = true;
+        console.log(`🎯 Very high engagement detected - using aggressive sampling (max 3 pages per type)`);
+      } else if (totalShares > 500 || totalComments > 300) {
+        // High engagement: moderate sampling  
+        maxPagesPerType = 5; // ~500 users per type max
+        useSampling = true;
+        console.log(`🎯 High engagement detected - using moderate sampling (max 5 pages per type)`);
+      } else {
+        console.log(`✅ Normal engagement volume - no sampling needed`);
       }
       
-      if (totalComments > 300) {
-        console.log(`⚠️ Too many comments (${totalComments}) - exceeds 300 limit`);
-        throw new Error('ENGAGEMENT_TOO_HIGH_COMMENTS');
+      // Estimate time and sample size
+      const estimatedPagesTotal = Math.min(
+        Math.ceil(totalShares / 100) + Math.ceil(totalComments / 100),
+        maxPagesPerType * 3 // 3 engagement types
+      );
+      const estimatedMinutes = Math.max(1, Math.ceil(estimatedPagesTotal / 5) * 15);
+      console.log(`⏰ Estimated analysis time: ~${estimatedMinutes} minutes (${estimatedPagesTotal} pages)`);
+      
+      if (useSampling) {
+        const sampleSize = maxPagesPerType * 100 * 3; // Rough estimate
+        console.log(`🔬 Will analyze ~${sampleSize} users (sampled from ${totalShares + totalComments} total engagers)`);
       }
-      
-      // Estimate time required (much faster now with smart rate limiting)
-      const estimatedPages = Math.ceil(totalShares / 100) + Math.ceil(totalComments / 100);
-      const estimatedMinutes = Math.max(1, Math.ceil(estimatedPages / 5) * 15); // 5 requests per 15 min window
-      console.log(`⏰ Estimated analysis time: ~${estimatedMinutes} minutes (${estimatedPages} pages)`);
-      
-      console.log(`✅ Engagement volume acceptable, proceeding with analysis...`);
     } else {
-      console.log(`⚠️ Could not fetch tweet metrics, proceeding anyway...`);
+      console.log(`⚠️ Could not fetch tweet metrics, using default sampling strategy...`);
+      maxPagesPerType = 5; // Default moderate sampling when metrics unavailable
+      useSampling = true;
     }
 
-    // Get retweeters and repliers sequentially to avoid rate limits
-    console.log(`🔄 Fetching retweeters...`);
-    const retweetersResult = await this.getRetweeters(tweetId);
+    // Get engagement data with sampling limits
+    console.log(`🔄 Fetching retweeters (max ${maxPagesPerType} pages)...`);
+    const retweetersResult = await this.getRetweeters(tweetId, maxPagesPerType);
     
-    // If we're rate limited on retweeters, we might want to still try the other endpoints
-    // as they may have different rate limit pools or the limit may have reset
-    console.log(`🔄 Fetching repliers...`);
-    const repliersResult = await this.getRepliers(tweetId);
+    console.log(`🔄 Fetching repliers (max ${maxPagesPerType} pages)...`);
+    const repliersResult = await this.getRepliers(tweetId, maxPagesPerType);
 
-    // Get quote tweeters
-    console.log(`🔄 Fetching quote tweeters...`);
-    const quoteTweetersResult = await this.getQuoteTweeters(tweetId);
+    console.log(`🔄 Fetching quote tweeters (max ${maxPagesPerType} pages)...`);
+    const quoteTweetersResult = await this.getQuoteTweeters(tweetId, maxPagesPerType);
     
-    // Log overall rate limiting status
+    // Check if any data collection was limited
     const anyRateLimited = retweetersResult.rateLimited || repliersResult.rateLimited || quoteTweetersResult.rateLimited;
-    if (anyRateLimited) {
-      console.log(`⚠️ Some data collection was rate limited - results may be incomplete`);
+    const anySampled = useSampling || anyRateLimited;
+    
+    if (anySampled) {
+      console.log(`🎯 Sampling was used - results represent a sample of the total engagement`);
+    }
+
+    // Apply random sampling if we got too much data
+    let finalRetweeters = retweetersResult.users;
+    let finalRepliers = repliersResult.users;
+    let finalQuoteTweeters = quoteTweetersResult.users;
+    
+    if (useSampling) {
+      // Apply additional random sampling to ensure representative results
+      const maxSampleSize = 300; // Max users per engagement type
+      
+      if (finalRetweeters.length > maxSampleSize) {
+        finalRetweeters = this.randomSample(finalRetweeters, maxSampleSize);
+        console.log(`🎲 Randomly sampled ${maxSampleSize} retweeters from ${retweetersResult.users.length}`);
+      }
+      
+      if (finalRepliers.length > maxSampleSize) {
+        finalRepliers = this.randomSample(finalRepliers, maxSampleSize);
+        console.log(`🎲 Randomly sampled ${maxSampleSize} repliers from ${repliersResult.users.length}`);
+      }
+      
+      if (finalQuoteTweeters.length > maxSampleSize) {
+        finalQuoteTweeters = this.randomSample(finalQuoteTweeters, maxSampleSize);
+        console.log(`🎲 Randomly sampled ${maxSampleSize} quote tweeters from ${quoteTweetersResult.users.length}`);
+      }
     }
 
     // Combine and deduplicate users
-    const allUsers = [...retweetersResult.users, ...repliersResult.users, ...quoteTweetersResult.users];
+    const allUsers = [...finalRetweeters, ...finalRepliers, ...finalQuoteTweeters];
     const uniqueUserMap = new Map<string, EngagingUser>();
     
     for (const user of allUsers) {
@@ -1127,7 +1165,7 @@ export class TwitterService {
     const uniqueUsers = Array.from(uniqueUserMap.values());
     
     console.log(`\n📊 === FETCHING ETHOS SCORES ===`);
-    console.log(`🔄 Checking Ethos scores for ${uniqueUsers.length} unique users...`);
+    console.log(`🔄 Checking Ethos scores for ${uniqueUsers.length} unique users${anySampled ? ' (sampled)' : ''}...`);
 
     // Get all usernames for bulk API call
     const usernames = uniqueUsers.map(user => user.username);
@@ -1244,7 +1282,11 @@ export class TwitterService {
       users_with_scores: usersWithScores,
       retweeters_rate_limited: retweetersResult.rateLimited,
       repliers_rate_limited: repliersResult.rateLimited,
-      quote_tweeters_rate_limited: quoteTweetersResult.rateLimited
+      quote_tweeters_rate_limited: quoteTweetersResult.rateLimited,
+      // Sampling information
+      is_sampled: anySampled,
+      sample_size: anySampled ? uniqueUsers.length : undefined,
+      estimated_total_engagers: metrics ? (metrics.retweet_count + metrics.quote_count + metrics.reply_count) : undefined
     };
   }
 
@@ -1285,5 +1327,15 @@ export class TwitterService {
       console.error(`❌ Error checking Ethos activity for @${username}:`, error);
       return false;
     }
+  }
+
+  private randomSample<T>(array: T[], size: number): T[] {
+    const shuffled = array.slice(0),
+          sampled = new Array(size);
+    while (size--) {
+      const x = shuffled.splice(Math.floor(Math.random() * shuffled.length), 1)[0];
+      sampled[size] = x;
+    }
+    return sampled;
   }
 }
