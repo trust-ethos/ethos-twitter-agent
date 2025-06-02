@@ -514,12 +514,8 @@ router.get("/dashboard", async (ctx) => {
                         <table class="table" style="width: 100%; font-size: 0.875rem; background-color: #2d2d2A;">
                             <thead>
                                 <tr>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
-                                        <span>Author</span>
-                                    </th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
-                                        <span>Validator</span>
-                                    </th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Tweet Content</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Validator</th>
                                     <th class="cursor-pointer select-none" data-sort="qualityScore" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
                                             <span>Quality Score</span>
@@ -1320,7 +1316,7 @@ router.get("/author/:handle", async (ctx) => {
                         <table class="w-full">
                             <thead>
                                 <tr>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Tweet</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Tweet Content</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Validator</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Quality Score</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Reputable Engagement</th>
@@ -1426,13 +1422,24 @@ router.get("/author/:handle", async (ctx) => {
                 
                 const row = document.createElement('tr');
                 row.innerHTML = 
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline transition-colors duration-200" style="color: #2E7BC3;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' +
-                            'View Tweet' +
-                            '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
-                            '</svg>' +
-                        '</a>' +
+                    '<td style="padding: 1rem; vertical-align: middle; max-width: 300px;">' +
+                        '<div class="space-y-2">' +
+                            '<div class="text-sm" style="color: #EFEEE0D9; line-height: 1.4;">' +
+                                (validation.tweetContent ? 
+                                    (validation.tweetContent.length > 120 ? 
+                                        validation.tweetContent.substring(0, 120) + '...' : 
+                                        validation.tweetContent
+                                    ) : 
+                                    'Tweet content not available'
+                                ) +
+                            '</div>' +
+                            '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-xs hover:underline transition-colors duration-200" style="color: #2E7BC3;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' +
+                                'View Tweet' +
+                                '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                '</svg>' +
+                            '</a>' +
+                        '</div>' +
                     '</td>' +
                     '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="flex items-center space-x-3">' +

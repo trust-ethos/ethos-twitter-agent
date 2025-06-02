@@ -15,6 +15,7 @@ interface ValidationRecord {
   tweetAuthor: string;
   tweetAuthorHandle: string;
   tweetAuthorAvatar: string;
+  tweetContent?: string; // Tweet text content
   requestedBy: string;
   requestedByHandle: string;
   requestedByAvatar: string;
@@ -273,6 +274,7 @@ export class StorageService {
               tweetAuthor: dbVal.engagement_data?.tweetAuthor || dbVal.author_display_name || "Unknown",
               tweetAuthorHandle: dbVal.engagement_data?.tweetAuthorHandle || dbVal.author_username || "unknown",
               tweetAuthorAvatar: tweetAuthorAvatar,
+              tweetContent: dbVal.tweet_content,
               requestedBy: dbVal.engagement_data?.requestedBy || "Unknown",
               requestedByHandle: dbVal.engagement_data?.requestedByHandle || "unknown", 
               requestedByAvatar: requestedByAvatar,
