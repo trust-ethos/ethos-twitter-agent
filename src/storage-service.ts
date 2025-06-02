@@ -132,7 +132,7 @@ export class StorageService {
           await this.database.upsertTweet({
             id: tweetId,
             author_id: authorId,
-            content: `Tweet being validated (ID: ${validation.tweetId})`,
+            content: null, // Don't use placeholder content
             published_at: analysisDate // Use analysis date as fallback
           });
 

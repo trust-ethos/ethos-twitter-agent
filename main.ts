@@ -1423,23 +1423,30 @@ router.get("/author/:handle", async (ctx) => {
                 const row = document.createElement('tr');
                 row.innerHTML = 
                     '<td style="padding: 1rem; vertical-align: middle; max-width: 300px;">' +
-                        '<div class="space-y-2">' +
-                            '<div class="text-sm" style="color: #EFEEE0D9; line-height: 1.4;">' +
-                                (validation.tweetContent ? 
+                        (validation.tweetContent && validation.tweetContent !== 'Tweet content not available' && !validation.tweetContent.includes('Tweet being validated') ? 
+                            '<div class="space-y-2">' +
+                                '<div class="text-sm" style="color: #EFEEE0D9; line-height: 1.4;">' +
                                     (validation.tweetContent.length > 120 ? 
                                         validation.tweetContent.substring(0, 120) + '...' : 
                                         validation.tweetContent
-                                    ) : 
-                                    'Tweet content not available'
-                                ) +
-                            '</div>' +
-                            '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
-                                'View Tweet' +
-                                '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
-                                '</svg>' +
-                            '</a>' +
-                        '</div>' +
+                                    ) +
+                                '</div>' +
+                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
+                                    'View Tweet' +
+                                    '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                    '</svg>' +
+                                '</a>' +
+                            '</div>' :
+                            '<div>' +
+                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
+                                    'View Tweet' +
+                                    '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                    '</svg>' +
+                                '</a>' +
+                            '</div>'
+                        ) +
                     '</td>' +
                     '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="flex items-center space-x-3">' +
