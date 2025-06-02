@@ -2232,10 +2232,11 @@ router.get("/test/storage-service/:tweetId", async (ctx) => {
 router.get("/test/validate/:tweetId", async (ctx) => {
   try {
     const tweetId = ctx.params.tweetId;
-    console.log(`🧪 Testing validation for tweet ID: ${tweetId}`);
+    const excludeUsername = ctx.request.url.searchParams.get('excludeUsername');
+    console.log(`🧪 Testing validation for tweet ID: ${tweetId}${excludeUsername ? ` (excluding @${excludeUsername})` : ''}`);
     
     // Analyze engagement using TwitterService
-    const engagementStats = await twitterService.analyzeEngagement(tweetId);
+    const engagementStats = await twitterService.analyzeEngagement(tweetId, excludeUsername || undefined);
     
     // Calculate overall quality based on weighted engagement stats
     const totalEngagers = engagementStats.total_retweeters + engagementStats.total_repliers + engagementStats.total_quote_tweeters;

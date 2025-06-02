@@ -764,7 +764,7 @@ Link to tweet: ${originalTweetLink}`;
       console.log(`🔍 Processing validate command for tweet: ${originalTweetId} requested by @${mentionerUsername}`);
 
       // Analyze engagement using TwitterService
-      const engagementStats = await this.twitterService.analyzeEngagement(originalTweetId);
+      const engagementStats = await this.twitterService.analyzeEngagement(originalTweetId, mentionerUsername);
 
       // Get original tweet author information for storage
       const originalTweet = await this.twitterService.getTweetById(originalTweetId);

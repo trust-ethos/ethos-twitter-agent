@@ -1048,9 +1048,14 @@ export class TwitterService {
 
   /**
    * Analyze engagement quality of a tweet by checking Ethos scores of retweeters and repliers
+   * @param tweetId - The ID of the tweet to analyze
+   * @param excludeUsername - Optional username to exclude from calculations (typically the user who requested the validation)
    */
-  async analyzeEngagement(tweetId: string): Promise<EngagementStats> {
+  async analyzeEngagement(tweetId: string, excludeUsername?: string): Promise<EngagementStats> {
     console.log(`🔍 === ANALYZING ENGAGEMENT FOR TWEET ${tweetId} ===`);
+    if (excludeUsername) {
+      console.log(`🚫 Excluding user @${excludeUsername} from engagement calculations`);
+    }
 
     // First, check tweet engagement volume to avoid processing massive tweets
     console.log(`📊 Checking tweet engagement volume...`);
@@ -1108,6 +1113,12 @@ export class TwitterService {
     const uniqueUserMap = new Map<string, EngagingUser>();
     
     for (const user of allUsers) {
+      // Skip the user who requested the validation
+      if (excludeUsername && user.username.toLowerCase() === excludeUsername.toLowerCase()) {
+        console.log(`🚫 Excluding @${user.username} from engagement analysis (validation requestor)`);
+        continue;
+      }
+      
       if (!uniqueUserMap.has(user.username)) {
         uniqueUserMap.set(user.username, user);
       }
