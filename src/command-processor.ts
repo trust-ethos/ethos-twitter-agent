@@ -839,7 +839,18 @@ Link to tweet: ${originalTweetLink}`;
         console.log(`✅ Successfully stored validation for tweet ${originalTweetId}`);
       } catch (error) {
         console.error("❌ Failed to store validation:", error);
-        // Continue processing even if storage fails
+        // Send Slack notification for storage failure
+        await this.slackService.notifyError(
+          "validate command storage failure", 
+          error instanceof Error ? error.message : String(error),
+          `@${mentionerUsername} trying to validate tweet ${originalTweetId}`
+        );
+        
+        return {
+          success: false,
+          message: "Failed to store validation data",
+          replyText: this.getStandardErrorMessage()
+        };
       }
 
       // Format the response
@@ -944,7 +955,7 @@ Link to tweet: ${originalTweetLink}`;
         }
 
         // Link to validation leaderboard
-        response += `\n\nview all validations: https://ethos-agent-twitter.deno.dev/dashboard`;
+        response += `\n\nView all validations: https://validate.ethos.network`;
 
         replyText = response;
       }
