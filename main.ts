@@ -837,7 +837,7 @@ router.get("/dashboard", async (ctx) => {
                         '<div class="flex items-center space-x-3">' +
                             '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
                             '<div>' +
-                                '<div class="font-medium" style="color: #EFEEE0D9;">' + validation.tweetAuthor + '</div>' +
+                                '<a href="/author/' + validation.tweetAuthorHandle + '" class="font-medium hover:underline" style="color: #EFEEE0D9;">' + validation.tweetAuthor + '</a>' +
                                 '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm mt-1 hover:underline" style="color: #2E7BC3;">' +
                                     'View Tweet' +
                                     '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
@@ -1037,6 +1037,455 @@ router.get("/dashboard", async (ctx) => {
   }
 });
 
+// Author profile route - shows specific author's validated tweets and stats
+router.get("/author/:handle", async (ctx) => {
+  const authorHandle = ctx.params.handle;
+  
+  try {
+    const html = `
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+    <title>@${authorHandle} - Author Profile | Ethos Agent</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // Custom Ethos Theme Colors (direct hex values)
+                        success: '#127f31',
+                        primary: '#2E7BC3',
+                        warning: '#C29010',
+                        error: '#b72b38',
+                        // Dark theme using direct hex colors
+                        border: "#9E9C8D00",
+                        input: "#3c3c39",
+                        ring: "#2E7BC3",
+                        background: "#232320",
+                        foreground: "#EFEEE0D9",
+                        'primary-custom': {
+                            DEFAULT: "#2E7BC3",
+                            foreground: "#EFEEE0D9"
+                        },
+                        secondary: {
+                            DEFAULT: "#2d2d2a",
+                            foreground: "#EFEEE0D9"
+                        },
+                        destructive: {
+                            DEFAULT: "#b72b38",
+                            foreground: "#EFEEE0D9"
+                        },
+                        muted: {
+                            DEFAULT: "#323232",
+                            foreground: "#EFEEE099"
+                        },
+                        accent: {
+                            DEFAULT: "#2E7BC31A",
+                            foreground: "#EFEEE0D9"
+                        },
+                        popover: {
+                            DEFAULT: "#232320",
+                            foreground: "#EFEEE0D9"
+                        },
+                        card: {
+                            DEFAULT: "#232320",
+                            foreground: "#EFEEE0D9"
+                        }
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)"
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Custom Ethos Dark Theme - Using exact hex colors */
+            --background: #232320; /* colorBgLayout */
+            --foreground: #EFEEE0D9; /* colorText */
+            --card: #2d2d2A; /* Updated container color */
+            --card-foreground: #EFEEE0D9; /* colorText */
+            --popover: #2d2d2A; /* Updated container color */
+            --popover-foreground: #EFEEE0D9; /* colorText */
+            --primary: #2E7BC3; /* colorPrimary */
+            --primary-foreground: #EFEEE0D9; /* colorText */
+            --secondary: #2d2d2a; /* Slightly lighter than background */
+            --secondary-foreground: #EFEEE0D9; /* colorText */
+            --muted: #323232; /* Muted background */
+            --muted-foreground: #EFEEE099; /* colorText with reduced opacity */
+            --accent: #2E7BC31A; /* Primary with transparency */
+            --accent-foreground: #EFEEE0D9; /* colorText */
+            --destructive: #b72b38; /* colorError */
+            --destructive-foreground: #EFEEE0D9; /* colorText */
+            --border: transparent; /* No borders */
+            --input: #3c3c39; /* Input background */
+            --ring: #2E7BC3; /* colorPrimary */
+            --success: #127f31; /* colorSuccess */
+            --warning: #C29010; /* colorWarning */
+            --radius: 0.5rem;
+        }
+        
+        /* Enhanced Ethos Component Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+            outline: none;
+            text-decoration: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: var(--primary-foreground);
+            padding: 0.5rem 1rem;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+            padding: 0.5rem 1rem;
+        }
+        
+        .btn-secondary:hover {
+            background: #404040;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, var(--primary), var(--success));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .ethos-card {
+            background: var(--card);
+            color: var(--card-foreground);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .ethos-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+        
+        .table-container {
+            background: var(--card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .loading-spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 2px solid var(--primary);
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .score-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .score-high {
+            background: rgba(18, 127, 49, 0.2);
+            color: var(--success);
+        }
+        
+        .score-medium {
+            background: rgba(194, 144, 16, 0.2);
+            color: var(--warning);
+        }
+        
+        .score-low {
+            background: rgba(183, 43, 56, 0.2);
+            color: var(--destructive);
+        }
+    </style>
+</head>
+<body style="background-color: #232320; color: #EFEEE0D9; font-family: 'Inter', sans-serif;" class="min-h-screen">
+    <div class="container mx-auto p-6 max-w-7xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center space-x-4">
+                <a href="/dashboard" class="btn btn-secondary">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to Dashboard
+                </a>
+                <h1 class="text-3xl font-bold gradient-text">Author Profile</h1>
+            </div>
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loading" class="flex items-center justify-center py-12">
+            <div class="loading-spinner"></div>
+            <span class="ml-3 text-lg">Loading author profile...</span>
+        </div>
+        
+        <!-- Error State -->
+        <div id="error" class="hidden p-6 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span id="error-message" class="text-red-400"></span>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div id="content" class="hidden space-y-6">
+            <!-- Author Info Card -->
+            <div class="ethos-card">
+                <div class="flex items-center space-x-4">
+                    <img id="author-avatar" class="h-16 w-16 rounded-full object-cover" src="" alt="">
+                    <div class="flex-1">
+                        <h2 id="author-name" class="text-2xl font-bold" style="color: #EFEEE0D9;"></h2>
+                        <p id="author-handle" class="text-lg" style="color: #EFEEE099;"></p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm" style="color: #EFEEE099;">Overall Score</div>
+                        <div id="author-score" class="text-2xl font-bold"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="ethos-card text-center">
+                    <div class="text-2xl font-bold" style="color: #2E7BC3;" id="total-validations">-</div>
+                    <div class="text-sm" style="color: #EFEEE099;">Total Validations</div>
+                </div>
+                <div class="ethos-card text-center">
+                    <div class="text-2xl font-bold" style="color: #127f31;" id="avg-quality">-</div>
+                    <div class="text-sm" style="color: #EFEEE099;">Avg Quality Score</div>
+                </div>
+                <div class="ethos-card text-center">
+                    <div class="text-2xl font-bold" style="color: #C29010;" id="avg-engagement">-</div>
+                    <div class="text-sm" style="color: #EFEEE099;">Avg Engagement</div>
+                </div>
+                <div class="ethos-card text-center">
+                    <div class="text-2xl font-bold" style="color: #EFEEE0D9;" id="latest-validation">-</div>
+                    <div class="text-sm" style="color: #EFEEE099;">Latest Validation</div>
+                </div>
+            </div>
+            
+            <!-- Validations Table -->
+            <div class="table-container">
+                <div style="padding: 1.5rem; background: #2d2d2A;">
+                    <h3 class="text-xl font-semibold mb-4" style="color: #EFEEE0D9;">Validated Tweets</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Tweet</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Validator</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Quality Score</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Engagement</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="validations-table">
+                                <!-- Dynamic content will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="hidden text-center py-12">
+                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg" style="color: #EFEEE099;">No validations found for this author</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const authorHandle = '${authorHandle}';
+        
+        async function loadAuthorProfile() {
+            try {
+                const response = await fetch('/api/author/' + authorHandle);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load author profile');
+                }
+                
+                // Hide loading, show content
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('content').classList.remove('hidden');
+                
+                // Populate author info
+                const authorInfo = data.authorInfo;
+                document.getElementById('author-avatar').src = getOptimizedImageUrl(authorInfo.profileImageUrl, 'bigger');
+                document.getElementById('author-name').textContent = authorInfo.name;
+                document.getElementById('author-handle').textContent = '@' + authorInfo.handle;
+                
+                // Populate stats
+                const stats = data.stats;
+                document.getElementById('total-validations').textContent = stats.totalValidations;
+                document.getElementById('avg-quality').textContent = stats.avgQualityScore.toFixed(1) + '%';
+                document.getElementById('avg-engagement').textContent = stats.avgEngagement.toLocaleString();
+                document.getElementById('latest-validation').textContent = stats.latestValidation;
+                
+                // Set overall score with color coding
+                const scoreElement = document.getElementById('author-score');
+                const overallScore = stats.overallScore;
+                scoreElement.textContent = overallScore.toFixed(1);
+                
+                if (overallScore >= 70) {
+                    scoreElement.style.color = '#127f31';
+                } else if (overallScore >= 40) {
+                    scoreElement.style.color = '#C29010';
+                } else {
+                    scoreElement.style.color = '#b72b38';
+                }
+                
+                // Populate validations table
+                const validations = data.validations;
+                if (validations.length === 0) {
+                    document.getElementById('empty-state').classList.remove('hidden');
+                } else {
+                    renderValidationsTable(validations);
+                }
+                
+            } catch (error) {
+                console.error('Error loading author profile:', error);
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('error').classList.remove('hidden');
+                document.getElementById('error-message').textContent = error.message;
+            }
+        }
+        
+        function renderValidationsTable(validations) {
+            const tbody = document.getElementById('validations-table');
+            tbody.innerHTML = '';
+            
+            validations.forEach(validation => {
+                const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + 
+                                   (validation.engagementStats.ethos_active_percentage * 0.4);
+                const totalEngagement = validation.engagementStats.total_unique_users;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = 
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
+                        '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline" style="color: #2E7BC3;">' +
+                            'View Tweet' +
+                            '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                            '</svg>' +
+                        '</a>' +
+                    '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
+                        '<div class="flex items-center space-x-3">' +
+                            '<img class="h-8 w-8 rounded-full object-cover" src="' + getOptimizedImageUrl(validation.requestedByProfileImage, 'normal') + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=\\'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png\\'">' +
+                            '<div>' +
+                                '<div class="font-medium text-sm" style="color: #EFEEE0D9;">' + validation.requestedBy + '</div>' +
+                                '<div class="text-xs" style="color: #EFEEE099;">@' + validation.requestedByHandle + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
+                        '<span class="score-badge ' + getScoreClass(qualityScore) + '">' + qualityScore.toFixed(1) + '%</span>' +
+                    '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
+                        '<div class="text-sm" style="color: #EFEEE0D9;">' + totalEngagement.toLocaleString() + ' total</div>' +
+                        '<div class="text-xs" style="color: #EFEEE099;">' + validation.engagementStats.reputable_total + ' reputable</div>' +
+                    '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
+                        '<div class="text-sm" style="color: #EFEEE0D9;">' + formatDate(validation.timestamp) + '</div>' +
+                    '</td>';
+                
+                tbody.appendChild(row);
+            });
+        }
+        
+        function getOptimizedImageUrl(profileImageUrl, size) {
+            if (!profileImageUrl) return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
+            if (profileImageUrl.includes('twimg.com')) {
+                return profileImageUrl.replace('_normal', '_' + size);
+            }
+            return profileImageUrl;
+        }
+        
+        function getScoreClass(score) {
+            if (score >= 70) return 'score-high';
+            if (score >= 40) return 'score-medium';
+            return 'score-low';
+        }
+        
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+        
+        // Load the profile on page load
+        loadAuthorProfile();
+    </script>
+</body>
+</html>
+    `;
+    
+    ctx.response.headers.set("Content-Type", "text/html");
+    ctx.response.body = html;
+  } catch (error) {
+    console.error("❌ Author profile error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = "Internal server error";
+  }
+});
+
 // Dashboard API endpoint
 router.get("/api/validations", async (ctx) => {
   try {
@@ -1203,6 +1652,112 @@ router.get("/api/validations", async (ctx) => {
     };
   }
 });
+
+// Author profile API endpoint
+router.get("/api/author/:handle", async (ctx) => {
+  try {
+    const authorHandle = ctx.params.handle;
+    const storageService = commandProcessor['storageService'];
+    
+    // Get all validations for this specific author
+    const allValidations = await storageService.getRecentValidations(1000);
+    const authorValidations = allValidations.filter(v => 
+      v.tweetAuthorHandle.toLowerCase() === authorHandle.toLowerCase()
+    );
+    
+    if (authorValidations.length === 0) {
+      ctx.response.status = 404;
+      ctx.response.body = {
+        success: false,
+        message: "Author not found or no validations available"
+      };
+      return;
+    }
+    
+    // Get author info from the first validation
+    const firstValidation = authorValidations[0];
+    const authorInfo = {
+      handle: firstValidation.tweetAuthorHandle,
+      name: firstValidation.tweetAuthor,
+      profileImageUrl: firstValidation.tweetAuthorProfileImage
+    };
+    
+    // Calculate statistics
+    const stats = calculateAuthorStats(authorValidations);
+    
+    // Sort validations by timestamp (newest first)
+    const sortedValidations = authorValidations.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    ctx.response.headers.set("Content-Type", "application/json");
+    ctx.response.body = {
+      success: true,
+      authorInfo,
+      stats,
+      validations: sortedValidations,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error("❌ Author API error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { 
+      success: false,
+      error: "API temporarily unavailable",
+      message: error.message 
+    };
+  }
+});
+
+// Helper function to calculate author statistics
+function calculateAuthorStats(validations) {
+  const totalValidations = validations.length;
+  
+  // Calculate average quality score
+  let totalQualityScore = 0;
+  let totalEngagement = 0;
+  
+  validations.forEach(validation => {
+    const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + 
+                        (validation.engagementStats.ethos_active_percentage * 0.4);
+    totalQualityScore += qualityScore;
+    totalEngagement += validation.engagementStats.total_unique_users;
+  });
+  
+  const avgQualityScore = totalValidations > 0 ? totalQualityScore / totalValidations : 0;
+  const avgEngagement = totalValidations > 0 ? Math.round(totalEngagement / totalValidations) : 0;
+  
+  // Calculate overall score (weighted combination of quality and engagement)
+  const overallScore = (avgQualityScore * 0.7) + (Math.min(avgEngagement / 100, 30) * 0.3); // Cap engagement influence at 100 users = 30 points
+  
+  // Get latest validation date
+  const latestValidation = validations.length > 0 ? 
+    formatRelativeTime(validations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0].timestamp) : 
+    'Never';
+  
+  return {
+    totalValidations,
+    avgQualityScore,
+    avgEngagement,
+    overallScore,
+    latestValidation
+  };
+}
+
+// Helper function to format relative time
+function formatRelativeTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 // Health check endpoint
 router.get("/", (ctx) => {
