@@ -399,7 +399,7 @@ router.get("/dashboard", async (ctx) => {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color='#1E5A96'" onmouseout="this.style.color='#2E7BC3'">Ethos Agent</a>
+                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">Ethos Agent</a>
                         </div>
                         <div class="flex items-center space-x-2">
                             <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
@@ -837,8 +837,8 @@ router.get("/dashboard", async (ctx) => {
                         '<div class="flex items-center space-x-3">' +
                             '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
                             '<div>' +
-                                '<div><a href="/author/' + validation.tweetAuthorHandle + '" class="font-medium hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=\'#1E5A96\'" onmouseout="this.style.color=\'#2E7BC3\'">' + validation.tweetAuthor + ' →</a></div>' +
-                                '<div class="mt-1"><a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099;" onmouseover="this.style.color=\'#2E7BC3\'" onmouseout="this.style.color=\'#EFEEE099\'">' +
+                                '<div><a href="/author/' + validation.tweetAuthorHandle + '" class="font-medium hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' + validation.tweetAuthor + ' →</a></div>' +
+                                '<div class="mt-1"><a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099;" onmouseover="this.style.color=&quot;#2E7BC3&quot;" onmouseout="this.style.color=&quot;#EFEEE099&quot;">' +
                                     'View Tweet' +
                                     '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                                         '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
@@ -1427,7 +1427,7 @@ router.get("/author/:handle", async (ctx) => {
                 const row = document.createElement('tr');
                 row.innerHTML = 
                     '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline transition-colors duration-200" style="color: #2E7BC3;" onmouseover="this.style.color=\'#1E5A96\'" onmouseout="this.style.color=\'#2E7BC3\'">' +
+                        '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline transition-colors duration-200" style="color: #2E7BC3;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' +
                             'View Tweet' +
                             '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
