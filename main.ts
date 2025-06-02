@@ -399,7 +399,7 @@ router.get("/dashboard", async (ctx) => {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <h1 class="text-xl font-semibold" style="color: #EFEEE0D9;">Ethos Agent</h1>
+                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color='#1E5A96'" onmouseout="this.style.color='#2E7BC3'">Ethos Agent</a>
                         </div>
                         <div class="flex items-center space-x-2">
                             <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
@@ -837,13 +837,13 @@ router.get("/dashboard", async (ctx) => {
                         '<div class="flex items-center space-x-3">' +
                             '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
                             '<div>' +
-                                '<a href="/author/' + validation.tweetAuthorHandle + '" class="font-medium hover:underline" style="color: #EFEEE0D9;">' + validation.tweetAuthor + '</a>' +
-                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm mt-1 hover:underline" style="color: #2E7BC3;">' +
+                                '<div><a href="/author/' + validation.tweetAuthorHandle + '" class="font-medium hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=\'#1E5A96\'" onmouseout="this.style.color=\'#2E7BC3\'">' + validation.tweetAuthor + ' →</a></div>' +
+                                '<div class="mt-1"><a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099;" onmouseover="this.style.color=\'#2E7BC3\'" onmouseout="this.style.color=\'#EFEEE099\'">' +
                                     'View Tweet' +
                                     '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                                         '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
                                     '</svg>' +
-                                '</a>' +
+                                '</a></div>' +
                             '</div>' +
                         '</div>' +
                     '</td>' +
@@ -1323,7 +1323,8 @@ router.get("/author/:handle", async (ctx) => {
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Tweet</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Validator</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Quality Score</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Engagement</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Reputable Engagement</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Ethos Active Engagement</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Date</th>
                                 </tr>
                             </thead>
@@ -1412,10 +1413,21 @@ router.get("/author/:handle", async (ctx) => {
                                    (validation.engagementStats.ethos_active_percentage * 0.4);
                 const totalEngagement = validation.engagementStats.total_unique_users;
                 
+                // Helper function to get percentage color class
+                function getPercentageColorClass(percentage) {
+                    if (percentage >= 60) {
+                        return 'text-green-600 dark:text-green-400';
+                    } else if (percentage >= 30) {
+                        return 'text-yellow-600 dark:text-yellow-400';
+                    } else {
+                        return 'text-red-600 dark:text-red-400';
+                    }
+                }
+                
                 const row = document.createElement('tr');
                 row.innerHTML = 
                     '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline" style="color: #2E7BC3;">' +
+                        '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-sm hover:underline transition-colors duration-200" style="color: #2E7BC3;" onmouseover="this.style.color=\'#1E5A96\'" onmouseout="this.style.color=\'#2E7BC3\'">' +
                             'View Tweet' +
                             '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
@@ -1435,8 +1447,18 @@ router.get("/author/:handle", async (ctx) => {
                         '<span class="score-badge ' + getScoreClass(qualityScore) + '">' + qualityScore.toFixed(1) + '%</span>' +
                     '</td>' +
                     '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<div class="text-sm" style="color: #EFEEE0D9;">' + totalEngagement.toLocaleString() + ' total</div>' +
-                        '<div class="text-xs" style="color: #EFEEE099;">' + validation.engagementStats.reputable_total + ' reputable</div>' +
+                        '<div class="text-sm space-y-1">' +
+                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td style="padding: 1rem; vertical-align: middle;">' +
+                        '<div class="text-sm space-y-1">' +
+                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                        '</div>' +
                     '</td>' +
                     '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="text-sm" style="color: #EFEEE0D9;">' + formatDate(validation.timestamp) + '</div>' +
