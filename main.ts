@@ -1469,11 +1469,26 @@ router.get("/author/:handle", async (ctx) => {
         }
         
         function getOptimizedImageUrl(profileImageUrl, size) {
-            if (!profileImageUrl) return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
-            if (profileImageUrl.includes('twimg.com')) {
-                return profileImageUrl.replace('_normal', '_' + size);
+            if (!profileImageUrl || !profileImageUrl.includes('pbs.twimg.com')) {
+                return size === 'bigger' 
+                    ? 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'
+                    : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
             }
-            return profileImageUrl;
+            
+            let url = profileImageUrl;
+            
+            // Replace size in the URL to get the right resolution
+            url = url.replace(/_normal\.(jpg|jpeg|png|gif|webp)$/i, '_' + size + '.$1');
+            url = url.replace(/_bigger\.(jpg|jpeg|png|gif|webp)$/i, '_' + size + '.$1');
+            url = url.replace(/_mini\.(jpg|jpeg|png|gif|webp)$/i, '_' + size + '.$1');
+            url = url.replace(/_400x400\.(jpg|jpeg|png|gif|webp)$/i, '_' + size + '.$1');
+            
+            // If no size found, append before extension
+            if (!url.includes('_' + size)) {
+                url = url.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '_' + size + '.$1');
+            }
+            
+            return url.replace(/^http:/, 'https:');
         }
         
         function getScoreClass(score) {
@@ -1701,7 +1716,7 @@ router.get("/api/author/:handle", async (ctx) => {
     const authorInfo = {
       handle: firstValidation.tweetAuthorHandle,
       name: firstValidation.tweetAuthor,
-      profileImageUrl: firstValidation.tweetAuthorProfileImage
+      profileImageUrl: firstValidation.tweetAuthorAvatar
     };
     
     // Calculate statistics
