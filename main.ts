@@ -1812,7 +1812,7 @@ function formatRelativeTime(timestamp) {
 
 // Health check endpoint
 router.get("/", (ctx) => {
-  ctx.response.body = { status: "Ethos Twitter Agent is running" };
+  ctx.response.redirect("/dashboard");
 });
 
 // Test Twitter API credentials
@@ -2834,5 +2834,10 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/test/validate/:tweetId - Test tweet validation`);
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
 }
+
+// Redirect root to dashboard
+router.get("/", (ctx) => {
+  ctx.response.redirect("/dashboard");
+});
 
 await app.listen({ port });
