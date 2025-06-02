@@ -59,21 +59,20 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
 
 // Set up Deno.cron() directly for Deno Deploy (alternative to deno.json cron)
-if (usePolling) {
-  try {
-    Deno.cron("ethosAgent-polling", "* * * * *", async () => {
-      console.log("🕐 Deno.cron triggered: Checking for new mentions");
-      try {
-        await pollingService.runSinglePoll();
-        console.log("✅ Deno.cron polling cycle completed");
-      } catch (error) {
-        console.error("❌ Deno.cron polling failed:", error);
-      }
-    });
-    console.log("🕐 Deno.cron() registered for polling every minute");
-  } catch (error) {
-    console.log("⚠️ Deno.cron() not available (likely running locally):", error.message);
-  }
+// Poll for mentions every 2 minutes to reduce Twitter API usage
+try {
+  Deno.cron("ethosAgent-polling", "*/2 * * * *", async () => {
+    console.log("🕐 Deno.cron triggered: Checking for new mentions");
+    try {
+      await pollingService.runSinglePoll();
+      console.log("✅ Deno.cron polling cycle completed");
+    } catch (error) {
+      console.error("❌ Deno.cron polling failed:", error);
+    }
+  });
+  console.log("🕐 Deno.cron() registered for polling every 2 minutes");
+} catch (error) {
+  console.log("⚠️ Deno.cron() not available (likely running locally):", error.message);
 }
 
 // Set up rate limit cleanup cron job (runs every hour)
@@ -2673,7 +2672,7 @@ router.post("/polling/stop", async (ctx) => {
   };
 });
 
-// Deno Deploy Cron endpoint - runs every minute (fallback for JSON cron)
+// Deno Deploy Cron endpoint - runs every 2 minutes (fallback for JSON cron)
 router.post("/cron/poll-mentions", async (ctx) => {
   try {
     console.log("🕐 HTTP Cron triggered: Checking for new mentions");
@@ -2806,8 +2805,8 @@ const port = parseInt(Deno.env.get("PORT") || "8000");
 console.log(`🚀 Ethos Twitter Agent starting on port ${port}`);
 
 if (usePolling) {
-  console.log(`🔄 Running in POLLING mode (good for Basic Twitter API plan)`);
-  console.log(`🕐 Polling every minute via Deno Deploy Cron`);
+  console.log("🔄 Running in POLLING mode (good for Basic Twitter API plan)");
+  console.log("🕐 Polling every 2 minutes via Deno Deploy Cron");
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter (disabled in polling mode)`);
   console.log(`🧪 Test endpoints:`);
   console.log(`   GET  http://localhost:${port}/test/twitter - Test API credentials`);
@@ -2816,11 +2815,10 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
   console.log(`   POST http://localhost:${port}/polling/start - Start polling`);
   console.log(`   POST http://localhost:${port}/polling/stop - Stop polling`);
-  console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every minute)`);
-  
-  // Initialize polling service but don't start continuous polling
-  // Deno Deploy cron will call /cron/poll-mentions every minute
+  console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every 2 minutes)`);
+  console.log(``);
   console.log(`🔧 Polling service initialized for cron-based polling`);
+  // Deno Deploy cron will call /cron/poll-mentions every 2 minutes
 } else {
   console.log(`🔗 Running in WEBHOOK mode (requires paid Twitter API plan)`);
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter`);
