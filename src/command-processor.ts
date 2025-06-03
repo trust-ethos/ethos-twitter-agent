@@ -917,24 +917,24 @@ Link to tweet: ${originalTweetLink}`;
           
           // Determine comparison text and emoji based on relative performance
           if (Math.abs(percentDifference) < 5) { // Within 5% is considered "at average"
-            comparisonText = "(at average)";
+            comparisonText = `(at average, ${currentAverage.toFixed(0)}%)`;
             relativeEmoji = "⚪";
           } else if (percentDifference > 0) {
             // Above average
             if (percentDifference >= 50) {
-              comparisonText = "(above average)";
+              comparisonText = `(above average, ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🟢"; // Green: 50%+ above average
             } else {
-              comparisonText = "(above average)";
+              comparisonText = `(above average, ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🔵"; // Blue: 0-50% above average
             }
           } else {
             // Below average
             if (Math.abs(percentDifference) >= 50) {
-              comparisonText = "(below average)";
+              comparisonText = `(below average, ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🔴"; // Red: 50%+ below average
             } else {
-              comparisonText = "(below average)";
+              comparisonText = `(below average, ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🟡"; // Yellow: 0-50% below average
             }
           }
