@@ -99,9 +99,41 @@ router.get("/dashboard", async (ctx) => {
 <!DOCTYPE html>
 <html lang="en" class="h-full dark">
 <head>
-    <title>Ethos Agent Dashboard</title>
+    <title>Ethos Agent Dashboard - Twitter Validation Analytics</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, reputable users, and validation statistics.">
+    <meta name="keywords" content="Ethos, Twitter, validation, engagement, analytics, reputation, quality score">
+    <meta name="author" content="Ethos">
+    
+    <!-- OpenGraph tags -->
+    <meta property="og:title" content="Ethos Agent Dashboard - Twitter Validation Analytics">
+    <meta property="og:description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, reputable users, and validation statistics.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://validate.ethos.network/dashboard">
+    <meta property="og:site_name" content="Ethos Network">
+    <meta property="og:image" content="https://validate.ethos.network/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Ethos Agent Dashboard showing Twitter validation analytics">
+    
+    <!-- Twitter Card tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ethosAgent">
+    <meta name="twitter:creator" content="@ethosAgent">
+    <meta name="twitter:title" content="Ethos Agent Dashboard - Twitter Validation Analytics">
+    <meta name="twitter:description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, reputable users, and validation statistics.">
+    <meta name="twitter:image" content="https://validate.ethos.network/og-image.png">
+    <meta name="twitter:image:alt" content="Ethos Agent Dashboard showing Twitter validation analytics">
+    
+    <!-- Additional meta tags -->
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#2E7BC3">
+    <link rel="canonical" href="https://validate.ethos.network/dashboard">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232E7BC3'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -1036,9 +1068,41 @@ router.get("/author/:handle", async (ctx) => {
 <!DOCTYPE html>
 <html lang="en" class="h-full dark">
 <head>
-    <title>@${authorHandle} - Author Profile | Ethos Agent</title>
+    <title>@${authorHandle} - Author Profile | Ethos Agent Dashboard</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View Twitter validation analytics for @${authorHandle}. See engagement quality scores, validation history, and reputation metrics from Ethos Agent.">
+    <meta name="keywords" content="Ethos, Twitter, validation, ${authorHandle}, engagement, analytics, reputation, quality score">
+    <meta name="author" content="Ethos">
+    
+    <!-- OpenGraph tags -->
+    <meta property="og:title" content="@${authorHandle} - Author Profile | Ethos Agent">
+    <meta property="og:description" content="View Twitter validation analytics for @${authorHandle}. See engagement quality scores, validation history, and reputation metrics from Ethos Agent.">
+    <meta property="og:type" content="profile">
+    <meta property="og:url" content="https://validate.ethos.network/author/${authorHandle}">
+    <meta property="og:site_name" content="Ethos Network">
+    <meta property="og:image" content="https://validate.ethos.network/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="@${authorHandle} Twitter validation analytics on Ethos Agent">
+    
+    <!-- Twitter Card tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ethosAgent">
+    <meta name="twitter:creator" content="@ethosAgent">
+    <meta name="twitter:title" content="@${authorHandle} - Author Profile | Ethos Agent">
+    <meta name="twitter:description" content="View Twitter validation analytics for @${authorHandle}. See engagement quality scores, validation history, and reputation metrics.">
+    <meta name="twitter:image" content="https://validate.ethos.network/og-image.png">
+    <meta name="twitter:image:alt" content="@${authorHandle} Twitter validation analytics on Ethos Agent">
+    
+    <!-- Additional meta tags -->
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#2E7BC3">
+    <link rel="canonical" href="https://validate.ethos.network/author/${authorHandle}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232E7BC3'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -1137,100 +1201,188 @@ router.get("/author/:handle", async (ctx) => {
             border-radius: calc(var(--radius) - 2px);
             font-size: 0.875rem;
             font-weight: 500;
-            transition: all 0.15s ease-in-out;
-            cursor: pointer;
+            transition: all 0.2s;
             outline: none;
-            text-decoration: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: none;
+            cursor: pointer;
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+        
+        .btn:focus-visible {
+            box-shadow: 0 0 0 2px var(--ring);
         }
         
         .btn-primary {
-            background: var(--primary);
+            background-color: var(--primary);
             color: var(--primary-foreground);
-            padding: 0.5rem 1rem;
+            height: 2.5rem;
+            padding: 0 1rem;
         }
         
         .btn-primary:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            background-color: color-mix(in srgb, var(--primary) 90%, black);
         }
         
         .btn-secondary {
-            background: var(--secondary);
+            background-color: var(--secondary);
             color: var(--secondary-foreground);
-            padding: 0.5rem 1rem;
+            height: 2.5rem;
+            padding: 0 1rem;
         }
         
         .btn-secondary:hover {
-            background: #404040;
+            background-color: color-mix(in srgb, var(--secondary) 80%, black);
         }
         
-        .gradient-text {
-            background: linear-gradient(135deg, var(--primary), var(--success));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .btn-ghost {
+            background-color: transparent;
+            color: var(--foreground);
+            height: 2.5rem;
+            padding: 0 1rem;
         }
         
-        .ethos-card {
-            background: var(--card);
+        .btn-ghost:hover {
+            background-color: var(--accent);
+            color: var(--accent-foreground);
+        }
+        
+        .card {
+            background-color: var(--card);
             color: var(--card-foreground);
-            padding: 1.5rem;
-            border-radius: var(--radius);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            transition: all 0.2s ease-in-out;
+            border-radius: calc(var(--radius));
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
         }
         
-        .ethos-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        .input {
+            display: flex;
+            height: 2.5rem;
+            width: 100%;
+            border-radius: calc(var(--radius) - 2px);
+            border: 1px solid var(--input);
+            background-color: var(--input);
+            color: var(--foreground);
+            padding: 0 0.75rem;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            outline: none;
         }
         
-        .table-container {
-            background: var(--card);
-            border-radius: var(--radius);
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        .input::placeholder {
+            color: var(--muted-foreground);
         }
         
-        .loading-spinner {
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 2px solid var(--primary);
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
+        .input:focus {
+            border-color: var(--ring);
+            box-shadow: 0 0 0 1px var(--ring);
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .score-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 1rem;
-            font-size: 0.75rem;
-            font-weight: 600;
+        .badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.25rem;
+            border-radius: calc(var(--radius) - 2px);
+            padding: 0.125rem 0.625rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
         }
         
-        .score-high {
-            background: rgba(18, 127, 49, 0.2);
-            color: var(--success);
+        .badge-default {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
         }
         
-        .score-medium {
-            background: rgba(194, 144, 16, 0.2);
-            color: var(--warning);
+        .badge-secondary {
+            background-color: var(--secondary);
+            color: var(--secondary-foreground);
         }
         
-        .score-low {
-            background: rgba(183, 43, 56, 0.2);
-            color: var(--destructive);
+        .badge-success {
+            background-color: var(--success);
+            color: var(--foreground);
+        }
+        
+        .badge-warning {
+            background-color: var(--warning);
+            color: var(--foreground);
+        }
+        
+        .badge-destructive {
+            background-color: var(--destructive);
+            color: var(--destructive-foreground);
+        }
+        
+        .table {
+            width: 100%;
+            caption-side: bottom;
+            font-size: 0.875rem;
+        }
+        
+        .table th {
+            height: 3rem;
+            padding: 0 1rem;
+            text-align: left;
+            font-weight: 500;
+            color: var(--muted-foreground);
+        }
+        
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+        
+        .table tr:hover {
+            background-color: rgba(60, 60, 56, 0.5);
+        }
+        
+        /* Loading animation */
+        .loading-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Smooth transitions */
+        * {
+            transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 150ms;
+        }
+        
+        /* Sort icons */
+        .sort-icon::after {
+            content: '';
+            display: inline-block;
+            width: 0;
+            height: 0;
+            margin-left: 6px;
+            vertical-align: middle;
+            position: relative;
+            top: -1px;
+        }
+        
+        .sort-none::after {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 4px solid var(--muted-foreground);
+            opacity: 0.5;
+        }
+        
+        .sort-asc::after {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-bottom: 5px solid var(--primary);
+            top: -2px;
+        }
+        
+        .sort-desc::after {
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--primary);
+            top: 1px;
         }
     </style>
 </head>
