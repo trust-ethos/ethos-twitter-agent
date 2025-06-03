@@ -902,10 +902,54 @@ Link to tweet: ${originalTweetLink}`;
 
         // Calculate weighted quality score for header
         const weightedQualityDisplayScore = Math.round(weightedQualityScore);
-        const qualityEmoji = getEmojiForPercentage(weightedQualityDisplayScore);
+        
+        // Get current average validation score to compare against
+        let currentAverage: number;
+        let comparisonText: string;
+        let relativeEmoji: string;
+        
+        try {
+          const validationStats = await this.storageService.getValidationStats();
+          currentAverage = validationStats.averageQualityScore || 50; // Fallback to 50% if no data
+          
+          const difference = weightedQualityDisplayScore - currentAverage;
+          const percentDifference = currentAverage > 0 ? (difference / currentAverage) * 100 : 0;
+          
+          // Determine comparison text and emoji based on relative performance
+          if (Math.abs(percentDifference) < 5) { // Within 5% is considered "at average"
+            comparisonText = "(at average)";
+            relativeEmoji = "⚪";
+          } else if (percentDifference > 0) {
+            // Above average
+            if (percentDifference >= 50) {
+              comparisonText = "(above average)";
+              relativeEmoji = "🟢"; // Green: 50%+ above average
+            } else {
+              comparisonText = "(above average)";
+              relativeEmoji = "🔵"; // Blue: 0-50% above average
+            }
+          } else {
+            // Below average
+            if (Math.abs(percentDifference) >= 50) {
+              comparisonText = "(below average)";
+              relativeEmoji = "🔴"; // Red: 50%+ below average
+            } else {
+              comparisonText = "(below average)";
+              relativeEmoji = "🟡"; // Yellow: 0-50% below average
+            }
+          }
+          
+          console.log(`📊 Validation comparison: ${weightedQualityDisplayScore}% vs avg ${currentAverage.toFixed(1)}% (${percentDifference.toFixed(1)}% difference) -> ${comparisonText}`);
+          
+        } catch (error) {
+          console.error("❌ Failed to get validation stats for comparison:", error);
+          // Fallback to old format if stats unavailable
+          comparisonText = "";
+          relativeEmoji = getEmojiForPercentage(weightedQualityDisplayScore);
+        }
 
-        // Vertical listing response format (easier to read)
-        let response = `Ethos social validation score: ${qualityEmoji} ${weightedQualityDisplayScore}%\n\n`;
+        // Vertical listing response format with relative comparison
+        let response = `Ethos social validation: ${relativeEmoji} ${weightedQualityDisplayScore}% ${comparisonText}\n\n`;
         
         response += "Reputable profile scoring\n";
         

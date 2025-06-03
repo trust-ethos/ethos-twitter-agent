@@ -371,17 +371,40 @@ export class StorageService {
   }
 
   /**
-   * Get validation stats
+   * Get validation stats including average quality score
    */
-  async getValidationStats(): Promise<{ totalValidations: number; lastUpdated: string }> {
+  async getValidationStats(): Promise<{ totalValidations: number; lastUpdated: string; averageQualityScore: number }> {
     try {
+      let totalValidations = 0;
+      let qualityScoreSum = 0;
+      let validationsWithScores = 0;
+      
       // First try to get from PostgreSQL database
       if (this.database) {
         try {
           const stats = await this.database.getStats();
-          console.log(`📊 Retrieved validation stats from PostgreSQL database: ${stats.validations} validations`);
+          totalValidations = stats.validations || 0;
+          
+          // Get quality scores from database
+          const qualityData = await this.database.client`
+            SELECT reputable_percentage, ethos_active_percentage 
+            FROM tweet_validations 
+            WHERE reputable_percentage IS NOT NULL 
+            AND ethos_active_percentage IS NOT NULL
+          `;
+          
+          for (const row of qualityData) {
+            const weightedScore = (parseFloat(row.reputable_percentage.toString()) * 0.6) + (parseFloat(row.ethos_active_percentage.toString()) * 0.4);
+            qualityScoreSum += weightedScore;
+            validationsWithScores++;
+          }
+          
+          const averageQualityScore = validationsWithScores > 0 ? qualityScoreSum / validationsWithScores : 50;
+          
+          console.log(`📊 Retrieved validation stats from PostgreSQL database: ${totalValidations} validations, avg quality: ${averageQualityScore.toFixed(1)}%`);
           return {
-            totalValidations: stats.validations || 0,
+            totalValidations,
+            averageQualityScore,
             lastUpdated: new Date().toISOString()
           };
         } catch (dbError) {
@@ -391,26 +414,40 @@ export class StorageService {
       }
 
       // Fallback to KV storage
-      let totalValidations = 0;
-      
       if (this.kv) {
-        const iter = this.kv.list({ prefix: ["validation"] });
-        for await (const _ of iter) {
+        const iter = this.kv.list<ValidationRecord>({ prefix: ["validation"] });
+        for await (const entry of iter) {
           totalValidations++;
+          if (entry.value.engagementStats) {
+            const weightedScore = (entry.value.engagementStats.reputable_percentage * 0.6) + (entry.value.engagementStats.ethos_active_percentage * 0.4);
+            qualityScoreSum += weightedScore;
+            validationsWithScores++;
+          }
         }
         console.log(`📊 Retrieved validation stats from KV storage: ${totalValidations} validations`);
       } else {
+        // Use local fallback
         totalValidations = this.validationsMap.size;
+        for (const validation of this.validationsMap.values()) {
+          if (validation.engagementStats) {
+            const weightedScore = (validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4);
+            qualityScoreSum += weightedScore;
+            validationsWithScores++;
+          }
+        }
         console.log(`📊 Retrieved validation stats from local storage: ${totalValidations} validations`);
       }
 
+      const averageQualityScore = validationsWithScores > 0 ? qualityScoreSum / validationsWithScores : 50;
+      
       return {
         totalValidations,
+        averageQualityScore,
         lastUpdated: new Date().toISOString()
       };
     } catch (error) {
       console.error("❌ Error getting validation stats:", error);
-      return { totalValidations: 0, lastUpdated: new Date().toISOString() };
+      return { totalValidations: 0, averageQualityScore: 50, lastUpdated: new Date().toISOString() };
     }
   }
 
