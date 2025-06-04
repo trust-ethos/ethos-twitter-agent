@@ -922,10 +922,10 @@ Link to tweet: ${originalTweetLink}`;
           } else if (percentDifference > 0) {
             // Above average
             if (percentDifference >= 50) {
-              comparisonText = `(above average, ${currentAverage.toFixed(0)}%)`;
+              comparisonText = `(above avg of ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🟢"; // Green: 50%+ above average
             } else {
-              comparisonText = `(above average, ${currentAverage.toFixed(0)}%)`;
+              comparisonText = `(above avg of ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🔵"; // Blue: 0-50% above average
             }
           } else {
