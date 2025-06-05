@@ -487,7 +487,7 @@ router.get("/dashboard", async (ctx) => {
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-sm font-medium" style="color: #EFEEE099;">Avg Quality Score</p>
+                                <p class="text-sm font-medium" style="color: #EFEEE099;">7-Day Avg Quality Score</p>
                                 <p class="text-2xl font-bold" id="avg-quality" style="color: #EFEEE0D9;">...</p>
                             </div>
                         </div>
@@ -1442,7 +1442,7 @@ router.get("/author/:handle", async (ctx) => {
                 </div>
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #127f31;" id="avg-quality">-</div>
-                    <div class="text-sm" style="color: #EFEEE099;">Avg Quality Score</div>
+                    <div class="text-sm" style="color: #EFEEE099;">7-Day Avg Quality Score</div>
                 </div>
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #C29010;" id="avg-engagement">-</div>
