@@ -939,7 +939,7 @@ Link to tweet: ${originalTweetLink}`;
             }
           }
           
-          console.log(`📊 Validation comparison: ${weightedQualityDisplayScore}% vs avg ${currentAverage.toFixed(1)}% (${percentDifference.toFixed(1)}% difference) -> ${comparisonText}`);
+          console.log(`📊 Validation comparison: ${weightedQualityDisplayScore}% vs 7-day avg ${currentAverage.toFixed(1)}% (${percentDifference.toFixed(1)}% difference) -> ${comparisonText}`);
           
         } catch (error) {
           console.error("❌ Failed to get validation stats for comparison:", error);

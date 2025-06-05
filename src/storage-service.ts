@@ -385,12 +385,13 @@ export class StorageService {
           const stats = await this.database.getStats();
           totalValidations = stats.validations || 0;
           
-          // Get quality scores from database
+          // Get quality scores from database (7-day rolling window)
           const qualityData = await this.database.client`
             SELECT reputable_percentage, ethos_active_percentage 
             FROM tweet_validations 
             WHERE reputable_percentage IS NOT NULL 
             AND ethos_active_percentage IS NOT NULL
+            AND created_at >= NOW() - INTERVAL '7 days'
           `;
           
           for (const row of qualityData) {
@@ -401,7 +402,7 @@ export class StorageService {
           
           const averageQualityScore = validationsWithScores > 0 ? qualityScoreSum / validationsWithScores : 50;
           
-          console.log(`📊 Retrieved validation stats from PostgreSQL database: ${totalValidations} validations, avg quality: ${averageQualityScore.toFixed(1)}%`);
+          console.log(`📊 Retrieved validation stats from PostgreSQL database (7-day window): ${totalValidations} validations, avg quality: ${averageQualityScore.toFixed(1)}%`);
           return {
             totalValidations,
             averageQualityScore,
@@ -413,29 +414,39 @@ export class StorageService {
         }
       }
 
-      // Fallback to KV storage
+      // Fallback to KV storage (7-day rolling window)
       if (this.kv) {
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
         const iter = this.kv.list<ValidationRecord>({ prefix: ["validation"] });
         for await (const entry of iter) {
-          totalValidations++;
-          if (entry.value.engagementStats) {
-            const weightedScore = (entry.value.engagementStats.reputable_percentage * 0.6) + (entry.value.engagementStats.ethos_active_percentage * 0.4);
-            qualityScoreSum += weightedScore;
-            validationsWithScores++;
+          // Only include validations from the last 7 days
+          if (entry.value.timestamp >= sevenDaysAgo) {
+            totalValidations++;
+            if (entry.value.engagementStats) {
+              const weightedScore = (entry.value.engagementStats.reputable_percentage * 0.6) + (entry.value.engagementStats.ethos_active_percentage * 0.4);
+              qualityScoreSum += weightedScore;
+              validationsWithScores++;
+            }
           }
         }
-        console.log(`📊 Retrieved validation stats from KV storage: ${totalValidations} validations`);
+        console.log(`📊 Retrieved validation stats from KV storage (7-day window): ${totalValidations} validations`);
       } else {
-        // Use local fallback
-        totalValidations = this.validationsMap.size;
+        // Use local fallback (7-day rolling window)
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        let localValidationsCount = 0;
         for (const validation of this.validationsMap.values()) {
-          if (validation.engagementStats) {
-            const weightedScore = (validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4);
-            qualityScoreSum += weightedScore;
-            validationsWithScores++;
+          // Only include validations from the last 7 days
+          if (validation.timestamp >= sevenDaysAgo) {
+            localValidationsCount++;
+            if (validation.engagementStats) {
+              const weightedScore = (validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4);
+              qualityScoreSum += weightedScore;
+              validationsWithScores++;
+            }
           }
         }
-        console.log(`📊 Retrieved validation stats from local storage: ${totalValidations} validations`);
+        totalValidations = localValidationsCount;
+        console.log(`📊 Retrieved validation stats from local storage (7-day window): ${totalValidations} validations`);
       }
 
       const averageQualityScore = validationsWithScores > 0 ? qualityScoreSum / validationsWithScores : 50;
