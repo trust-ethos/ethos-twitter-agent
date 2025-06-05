@@ -931,10 +931,10 @@ Link to tweet: ${originalTweetLink}`;
           } else {
             // Below average
             if (Math.abs(percentDifference) >= 50) {
-              comparisonText = `(below average, ${currentAverage.toFixed(0)}%)`;
+              comparisonText = `(below avg of ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🔴"; // Red: 50%+ below average
             } else {
-              comparisonText = `(below average, ${currentAverage.toFixed(0)}%)`;
+              comparisonText = `(below avg of ${currentAverage.toFixed(0)}%)`;
               relativeEmoji = "🟡"; // Yellow: 0-50% below average
             }
           }
