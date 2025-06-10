@@ -4,6 +4,7 @@
 import { TwitterService } from "./twitter-service.ts";
 import { CommandProcessor } from "./command-processor.ts";
 import { SlackService } from "./slack-service.ts";
+import { DeduplicationService } from "./deduplication-service.ts";
 
 interface PollingState {
   lastTweetId: string | null;
@@ -18,7 +19,7 @@ export class PollingService {
   private slackService: SlackService;
   private botUsername: string;
   private lastTweetId: string | null = null;
-  private processedTweetIds: Set<string> = new Set(); // Track processed tweets
+  private deduplicationService: DeduplicationService;
   private isPolling: boolean = false;
   private pollInterval: number = 30 * 1000; // 30 seconds (was 3 minutes)
   private maxMentions: number = 5; // Process 5 mentions at a time (was 3)
@@ -33,6 +34,7 @@ export class PollingService {
     this.commandProcessor = commandProcessor;
     this.slackService = new SlackService();
     this.botUsername = botUsername;
+    this.deduplicationService = DeduplicationService.getInstance();
     
     // Load persisted state on startup
     this.initializeKV();
@@ -63,7 +65,6 @@ export class PollingService {
       if (result.value) {
         const state = result.value;
         this.lastTweetId = state.lastTweetId;
-        this.processedTweetIds = new Set(state.processedTweetIds);
         
         console.log(`📂 Loaded KV state: ${state.processedTweetIds.length} processed tweets, last tweet: ${state.lastTweetId}`);
         console.log(`💾 State last saved: ${state.lastSaved}`);
@@ -87,7 +88,7 @@ export class PollingService {
     try {
       const state: PollingState = {
         lastTweetId: this.lastTweetId,
-        processedTweetIds: Array.from(this.processedTweetIds),
+        processedTweetIds: [],
         botUsername: this.botUsername,
         lastSaved: new Date().toISOString()
       };
@@ -179,7 +180,7 @@ export class PollingService {
       // Process each mention
       for (const mention of mentionsToProcess) {
         // Skip if we've already processed this tweet
-        if (this.processedTweetIds.has(mention.id)) {
+        if (this.deduplicationService.hasProcessed(mention.id)) {
           console.log(`⏭️ Skipping already processed tweet: ${mention.id}`);
           continue;
         }
@@ -187,15 +188,9 @@ export class PollingService {
         await this.processMention(mention, users);
         
         // Mark as processed and update last processed tweet ID
-        this.processedTweetIds.add(mention.id);
+        this.deduplicationService.markProcessed(mention.id);
         this.lastTweetId = mention.id;
         processedAny = true;
-        
-        // Keep processed IDs list reasonable (last 1000 tweets)
-        if (this.processedTweetIds.size > 1000) {
-          const oldestIds = Array.from(this.processedTweetIds).slice(0, 500);
-          oldestIds.forEach(id => this.processedTweetIds.delete(id));
-        }
       }
 
       // Save state after processing mentions

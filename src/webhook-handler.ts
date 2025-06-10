@@ -3,18 +3,21 @@ import type { TwitterWebhookEvent } from "./types.ts";
 import type { CommandProcessor } from "./command-processor.ts";
 import type { TwitterService } from "./twitter-service.ts";
 import { SlackService } from "./slack-service.ts";
+import { DeduplicationService } from "./deduplication-service.ts";
 
 export class TwitterWebhookHandler {
   private commandProcessor: CommandProcessor;
   private twitterService: TwitterService;
   private slackService: SlackService;
   private botUsername: string;
+  private deduplicationService: DeduplicationService;
 
   constructor(commandProcessor: CommandProcessor, twitterService: TwitterService) {
     this.commandProcessor = commandProcessor;
     this.twitterService = twitterService;
     this.slackService = new SlackService();
     this.botUsername = Deno.env.get("BOT_USERNAME") || "ethosAgent";
+    this.deduplicationService = DeduplicationService.getInstance();
   }
 
   /**
@@ -77,8 +80,17 @@ export class TwitterWebhookHandler {
    */
   private async processMention(tweet: any, event: TwitterWebhookEvent) {
     try {
+      // Skip if we've already processed this tweet (deduplication)
+      if (this.deduplicationService.hasProcessed(tweet.id)) {
+        console.log(`⏭️ Skipping already processed tweet: ${tweet.id}`);
+        return;
+      }
+
       console.log(`📢 Processing mention in tweet: ${tweet.id}`);
       console.log(`📝 Tweet text: "${tweet.text}"`);
+
+      // Mark as processed early to prevent race conditions
+      this.deduplicationService.markProcessed(tweet.id);
 
       // Debug: Log detailed tweet structure for save command debugging
       console.log(`🔍 Tweet structure debugging:`);

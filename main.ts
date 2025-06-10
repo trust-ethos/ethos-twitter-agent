@@ -59,9 +59,9 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
 
 // Set up Deno.cron() directly for Deno Deploy (alternative to deno.json cron)
-// Poll for mentions every 2 minutes to reduce Twitter API usage
+// Poll for mentions every 1 minute for faster response times
 try {
-  Deno.cron("ethosAgent-polling", "*/2 * * * *", async () => {
+  Deno.cron("ethosAgent-polling", "*/1 * * * *", async () => {
     console.log("🕐 Deno.cron triggered: Checking for new mentions");
     try {
       await pollingService.runSinglePoll();
@@ -70,7 +70,7 @@ try {
       console.error("❌ Deno.cron polling failed:", error);
     }
   });
-  console.log("🕐 Deno.cron() registered for polling every 2 minutes");
+  console.log("🕐 Deno.cron() registered for polling every 1 minute");
 } catch (error) {
   console.log("⚠️ Deno.cron() not available (likely running locally):", error.message);
 }
@@ -2970,7 +2970,7 @@ if (usePolling) {
   console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every 2 minutes)`);
   console.log(``);
   console.log(`🔧 Polling service initialized for cron-based polling`);
-  // Deno Deploy cron will call /cron/poll-mentions every 2 minutes
+  // Deno Deploy cron will call /cron/poll-mentions every 1 minute
 } else {
   console.log(`🔗 Running in WEBHOOK mode (requires paid Twitter API plan)`);
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter`);
