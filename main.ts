@@ -2982,8 +2982,39 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
 }
 
+// Helper function to check admin API key
+function checkAdminAuth(ctx: any): boolean {
+  const adminApiKey = Deno.env.get("ADMIN_API_KEY");
+  
+  if (!adminApiKey) {
+    console.warn("⚠️ ADMIN_API_KEY not configured - admin endpoints disabled");
+    ctx.response.status = 503;
+    ctx.response.body = {
+      status: "error",
+      message: "Admin endpoints not configured"
+    };
+    return false;
+  }
+  
+  const providedKey = ctx.request.headers.get("Authorization")?.replace("Bearer ", "") || 
+                     ctx.request.url.searchParams.get("key");
+  
+  if (!providedKey || providedKey !== adminApiKey) {
+    ctx.response.status = 401;
+    ctx.response.body = {
+      status: "error",
+      message: "Unauthorized - invalid or missing API key"
+    };
+    return false;
+  }
+  
+  return true;
+}
+
 // Admin endpoint to view blocklist
 router.get("/admin/blocklist", async (ctx) => {
+  if (!checkAdminAuth(ctx)) return;
+  
   try {
     const blocklistService = BlocklistService.getInstance();
     const blockedUsers = await blocklistService.getBlockedUsers();
@@ -3006,6 +3037,8 @@ router.get("/admin/blocklist", async (ctx) => {
 
 // Admin endpoint to add user to blocklist
 router.post("/admin/blocklist/add", async (ctx) => {
+  if (!checkAdminAuth(ctx)) return;
+  
   try {
     const body = await ctx.request.body().value;
     const { username, reason } = body;
