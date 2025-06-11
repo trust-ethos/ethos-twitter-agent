@@ -3,18 +3,21 @@ import type { TwitterService } from "./twitter-service.ts";
 import { EthosService } from "./ethos-service.ts";
 import { StorageService } from "./storage-service.ts";
 import { SlackService } from "./slack-service.ts";
+import { BlocklistService } from "./blocklist-service.ts";
 
 export class CommandProcessor {
   private twitterService: TwitterService;
   private ethosService: EthosService;
   private storageService: StorageService;
   private slackService: SlackService;
+  private blocklistService: BlocklistService;
 
   constructor(twitterService: TwitterService) {
     this.twitterService = twitterService;
     this.ethosService = new EthosService();
     this.storageService = new StorageService();
     this.slackService = new SlackService();
+    this.blocklistService = BlocklistService.getInstance();
   }
 
   /**
@@ -167,6 +170,17 @@ export class CommandProcessor {
    */
   async processCommand(command: Command, allUsers?: TwitterUser[]): Promise<CommandResult> {
     console.log(`🎯 Processing command: ${command.type} with args:`, command.args);
+
+    // Check if the user is blocked
+    const isBlocked = await this.blocklistService.isBlocked(command.mentionedUser.username, command.mentionedUser.id);
+    if (isBlocked) {
+      console.log(`🚫 Ignoring command from blocked user: @${command.mentionedUser.username} (${command.mentionedUser.id})`);
+      return {
+        success: false,
+        message: "User is blocked",
+        replyText: undefined // Don't reply to blocked users
+      };
+    }
 
     try {
       switch (command.type) {

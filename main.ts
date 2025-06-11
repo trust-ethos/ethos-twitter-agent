@@ -5,6 +5,7 @@ import { TwitterService } from "./src/twitter-service.ts";
 import { CommandProcessor } from "./src/command-processor.ts";
 import { PollingService } from "./src/polling-service.ts";
 import { initDatabase } from "./src/database.ts";
+import { BlocklistService } from "./src/blocklist-service.ts";
 
 // Load environment variables
 await load({ export: true });
@@ -2980,6 +2981,60 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/test/validate/:tweetId - Test tweet validation`);
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
 }
+
+// Admin endpoint to view blocklist
+router.get("/admin/blocklist", async (ctx) => {
+  try {
+    const blocklistService = BlocklistService.getInstance();
+    const blockedUsers = await blocklistService.getBlockedUsers();
+    const stats = await blocklistService.getStats();
+    
+    ctx.response.body = {
+      status: "success",
+      stats,
+      blockedUsers
+    };
+  } catch (error) {
+    console.error("❌ Failed to get blocklist:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Failed to get blocklist"
+    };
+  }
+});
+
+// Admin endpoint to add user to blocklist
+router.post("/admin/blocklist/add", async (ctx) => {
+  try {
+    const body = await ctx.request.body().value;
+    const { username, reason } = body;
+    
+    if (!username) {
+      ctx.response.status = 400;
+      ctx.response.body = {
+        status: "error",
+        message: "Username is required"
+      };
+      return;
+    }
+    
+    const blocklistService = BlocklistService.getInstance();
+    await blocklistService.blockUser(username, undefined, reason || "Added via API");
+    
+    ctx.response.body = {
+      status: "success",
+      message: `Blocked user @${username}`
+    };
+  } catch (error) {
+    console.error("❌ Failed to add user to blocklist:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Failed to add user to blocklist"
+    };
+  }
+});
 
 // Redirect root to dashboard
 router.get("/", (ctx) => {
