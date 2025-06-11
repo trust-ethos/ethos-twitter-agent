@@ -949,7 +949,7 @@ Link to tweet: ${originalTweetLink}`;
         }
 
         // Vertical listing response format with relative comparison
-        let response = `Ethos social validation: ${relativeEmoji} ${weightedQualityDisplayScore}% ${comparisonText}\n\n`;
+        let response = `Ethos Tweet validation: ${relativeEmoji} ${weightedQualityDisplayScore}% ${comparisonText}\n\n`;
         
         response += "Reputable profile scoring\n";
         

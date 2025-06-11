@@ -81,7 +81,7 @@ export class TwitterWebhookHandler {
   private async processMention(tweet: any, event: TwitterWebhookEvent) {
     try {
       // Skip if we've already processed this tweet (deduplication)
-      if (this.deduplicationService.hasProcessed(tweet.id)) {
+      if (await this.deduplicationService.hasProcessed(tweet.id)) {
         console.log(`⏭️ Skipping already processed tweet: ${tweet.id}`);
         return;
       }
@@ -90,7 +90,7 @@ export class TwitterWebhookHandler {
       console.log(`📝 Tweet text: "${tweet.text}"`);
 
       // Mark as processed early to prevent race conditions
-      this.deduplicationService.markProcessed(tweet.id);
+      await this.deduplicationService.markProcessed(tweet.id);
 
       // Debug: Log detailed tweet structure for save command debugging
       console.log(`🔍 Tweet structure debugging:`);

@@ -179,16 +179,16 @@ export class PollingService {
 
       // Process each mention
       for (const mention of mentionsToProcess) {
-        // Skip if we've already processed this tweet
-        if (this.deduplicationService.hasProcessed(mention.id)) {
+                // Skip if we've already processed this tweet
+        if (await this.deduplicationService.hasProcessed(mention.id)) {
           console.log(`⏭️ Skipping already processed tweet: ${mention.id}`);
           continue;
         }
-        
+
         await this.processMention(mention, users);
         
         // Mark as processed and update last processed tweet ID
-        this.deduplicationService.markProcessed(mention.id);
+        await this.deduplicationService.markProcessed(mention.id);
         this.lastTweetId = mention.id;
         processedAny = true;
       }
