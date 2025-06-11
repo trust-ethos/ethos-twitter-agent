@@ -1302,7 +1302,7 @@ export class TwitterService {
       
       if (userStatsResponse.ok) {
         const userStats = await userStatsResponse.json();
-        console.log(`📊 User stats for @${username}:`, JSON.stringify(userStats, null, 2));
+        console.log(`📊 Fetched user stats for @${username}`);
         
         if (userStats.ok && userStats.data) {
           const reviewsReceived = userStats.data.reviews?.received || 0;

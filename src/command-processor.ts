@@ -663,8 +663,8 @@ Link to tweet: ${originalTweetLink}`;
         // 📝 RATE LIMITING: Record successful command usage
         await this.storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "save");
         
-        // Log the response data to understand its structure
-        console.log(`🔍 Review creation response data:`, JSON.stringify(reviewResult.data, null, 2));
+        // Log successful review creation
+        console.log(`🔍 Review creation successful`);
         
         // Check if the response includes a review link or data to construct one
         let reviewLink = "";

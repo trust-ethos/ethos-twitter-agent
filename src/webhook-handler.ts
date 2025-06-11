@@ -56,7 +56,7 @@ export class TwitterWebhookHandler {
       const event: TwitterWebhookEvent = body;
 
       // Log the raw event for debugging
-      console.log("📋 Webhook event data:", JSON.stringify(event, null, 2));
+      console.log("📋 Processing webhook event");
 
       // Process mentions
       if (event.data && event.data.length > 0) {

@@ -76,7 +76,7 @@ export class EthosService {
         
         if (scoresResponse.ok) {
           const scoresData = await scoresResponse.json();
-          console.log(`✅ Scores API response data:`, JSON.stringify(scoresData, null, 2));
+                      console.log(`✅ Scores API response received`);
           
           if (scoresData.ok && scoresData.data && typeof scoresData.data.score === 'number') {
             score = scoresData.data.score;
@@ -124,7 +124,7 @@ export class EthosService {
       }
 
       const data = await statsResponse.json();
-      console.log(`✅ Ethos stats received:`, JSON.stringify(data, null, 2));
+              console.log(`✅ Ethos stats received for user`);
 
       // Combine the score from scores API with stats from stats API
       const stats: EthosUserStats = {
@@ -136,7 +136,7 @@ export class EthosService {
         }
       };
 
-      console.log(`📊 Final stats object:`, JSON.stringify(stats, null, 2));
+              console.log(`📊 Final stats object compiled`);
 
       return {
         success: true,
@@ -236,7 +236,7 @@ export class EthosService {
       }
       
       const data = await response.json();
-      console.log(`📡 Addresses API response data:`, JSON.stringify(data, null, 2));
+              console.log(`📡 Addresses API response received`);
       
       if (!data.ok || !data.data) {
         console.log(`⚠️ Unexpected addresses API response structure`);
