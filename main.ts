@@ -279,7 +279,8 @@ router.get("/leaderboard", async (ctx) => {
                     
                     <div class="flex items-center space-x-4">
                         <a href="/dashboard" class="btn btn-secondary text-sm">All Validations</a>
-                        <span class="text-sm" style="color: #EFEEE099;">Validation Leaderboard</span>
+                        <a href="/validators" class="btn btn-secondary text-sm">Validator Leaderboard</a>
+                        <span class="text-sm" style="color: #EFEEE099;">Tweet Leaderboard</span>
                     </div>
                 </div>
             </div>
@@ -861,7 +862,8 @@ router.get("/dashboard", async (ctx) => {
                     
                     <!-- Navigation Links -->
                     <div class="flex items-center space-x-4">
-                        <a href="/leaderboard" class="btn btn-secondary text-sm">🏆 Leaderboard</a>
+                                                    <a href="/leaderboard" class="btn btn-secondary text-sm">🏆 Tweet Leaderboard</a>
+                            <a href="/validators" class="btn btn-secondary text-sm">🏅 Validator Leaderboard</a>
                         <span class="text-sm" style="color: #EFEEE099;">Ethos Agent Dashboard</span>
                     </div>
                 </div>
@@ -3458,6 +3460,496 @@ router.get("/test/twitter-users", async (ctx) => {
       status: "error",
       message: "Twitter users test failed",
       error: error.message
+    };
+  }
+});
+
+// Validator Leaderboard route - shows who has performed the most validations
+router.get("/validators", async (ctx) => {
+  try {
+    const html = `
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+    <title>Validator Leaderboard - Top Validators | Ethos Agent</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Leaderboard showing the most active validators who have performed the most Twitter validations using Ethos Agent.">
+    <meta name="keywords" content="Ethos, Twitter, validation, validators, leaderboard, active users">
+    <meta name="author" content="Ethos">
+    
+    <!-- OpenGraph tags -->
+    <meta property="og:title" content="Validator Leaderboard - Top Validators | Ethos Agent">
+    <meta property="og:description" content="Leaderboard showing the most active validators who have performed the most Twitter validations using Ethos Agent.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://validate.ethos.network/validators">
+    <meta property="og:site_name" content="Ethos Network">
+    <meta property="og:image" content="https://validate.ethos.network/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Ethos Agent Validator Leaderboard">
+    
+    <!-- Twitter Card tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ethosAgent">
+    <meta name="twitter:creator" content="@ethosAgent">
+    <meta name="twitter:title" content="Validator Leaderboard - Top Validators | Ethos Agent">
+    <meta name="twitter:description" content="Leaderboard showing the most active validators who have performed the most Twitter validations using Ethos Agent.">
+    <meta name="twitter:image" content="https://validate.ethos.network/og-image.png">
+    <meta name="twitter:image:alt" content="Ethos Agent Validator Leaderboard">
+    
+    <!-- Additional meta tags -->
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#2E7BC3">
+    <link rel="canonical" href="https://validate.ethos.network/validators">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232E7BC3'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        success: '#127f31',
+                        primary: '#2E7BC3',
+                        warning: '#C29010',
+                        error: '#b72b38',
+                        border: "#9E9C8D00",
+                        input: "#3c3c39",
+                        ring: "#2E7BC3",
+                        background: "#232320",
+                        foreground: "#EFEEE0D9",
+                        'primary-custom': {
+                            DEFAULT: "#2E7BC3",
+                            foreground: "#EFEEE0D9"
+                        },
+                        secondary: {
+                            DEFAULT: "#2d2d2a",
+                            foreground: "#EFEEE0D9"
+                        },
+                        muted: {
+                            DEFAULT: "#323232",
+                            foreground: "#EFEEE099"
+                        },
+                        card: {
+                            DEFAULT: "#232320",
+                            foreground: "#EFEEE0D9"
+                        }
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)"
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #232320;
+            --foreground: #EFEEE0D9;
+            --card: #2d2d2A;
+            --card-foreground: #EFEEE0D9;
+            --primary: #2E7BC3;
+            --primary-foreground: #EFEEE0D9;
+            --secondary: #2d2d2a;
+            --secondary-foreground: #EFEEE0D9;
+            --muted: #323232;
+            --muted-foreground: #EFEEE099;
+            --accent: #2E7BC31A;
+            --accent-foreground: #EFEEE0D9;
+            --destructive: #b72b38;
+            --destructive-foreground: #EFEEE0D9;
+            --success: #127f31;
+            --warning: #C29010;
+            --radius: 0.5rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            outline: none;
+            border: none;
+            cursor: pointer;
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            height: 2.5rem;
+            padding: 0 1rem;
+        }
+        
+        .btn-primary:hover {
+            background-color: color-mix(in srgb, var(--primary) 90%, black);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--secondary-foreground);
+            height: 2.5rem;
+            padding: 0 1rem;
+        }
+        
+        .btn-secondary:hover {
+            background-color: color-mix(in srgb, var(--secondary) 80%, black);
+        }
+        
+        .card {
+            background-color: var(--card);
+            color: var(--card-foreground);
+            border-radius: calc(var(--radius));
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+        }
+        
+        .trophy-gold { color: #FFD700; }
+        .trophy-silver { color: #C0C0C0; }
+        .trophy-bronze { color: #CD7F32; }
+        .rank-4-10 { color: #2E7BC3; }
+        .rank-11-25 { color: #EFEEE099; }
+        
+        .validator-card {
+            background: linear-gradient(135deg, var(--card) 0%, rgba(46, 123, 195, 0.05) 100%);
+            border: 1px solid rgba(46, 123, 195, 0.1);
+        }
+        
+        .validator-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body style="background-color: #232320; color: #EFEEE0D9;" class="font-sans antialiased min-h-screen">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60" style="background-color: rgba(35, 35, 32, 0.95); border-color: #9E9C8D00;">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;">Ethos Agent</a>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
+                            <span class="text-sm font-medium" style="color: #EFEEE099;">Live</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <a href="/dashboard" class="btn btn-secondary text-sm">All Validations</a>
+                        <a href="/leaderboard" class="btn btn-secondary text-sm">Tweet Leaderboard</a>
+                        <span class="text-sm" style="color: #EFEEE099;">Validator Leaderboard</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Page Header -->
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold mb-4" style="color: #EFEEE0D9;">
+                        🏅 Validator Leaderboard
+                    </h1>
+                    <p class="text-lg" style="color: #EFEEE099;">
+                        Most active validators who have performed the most Twitter validations
+                    </p>
+                    <p class="text-sm mt-2" style="color: #EFEEE099;">
+                        (Minimum 3 validations required)
+                    </p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="text-center py-12">
+                    <div class="inline-flex items-center justify-center space-x-2">
+                        <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                        <span class="text-muted-foreground">Loading validator leaderboard...</span>
+                    </div>
+                </div>
+
+                <!-- Validator Leaderboard -->
+                <div id="validator-leaderboard" class="hidden">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="grid gap-4" id="validator-items">
+                            <!-- Dynamic content will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-12">
+                    <div class="mx-auto h-12 w-12 text-gray-400 mb-4">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg" style="color: #EFEEE099;">No validator data available</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Fetch validator leaderboard data
+        async function loadValidatorLeaderboard() {
+            try {
+                const response = await fetch('/api/validators');
+                const result = await response.json();
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    displayValidatorLeaderboard(result.data);
+                } else {
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('Error loading validator leaderboard:', error);
+                showEmptyState();
+            }
+        }
+
+        function displayValidatorLeaderboard(validators) {
+            const container = document.getElementById('validator-items');
+            container.innerHTML = '';
+            
+            validators.forEach((validator, index) => {
+                const rank = index + 1;
+                const rankEmoji = getRankEmoji(rank);
+                const rankClass = getRankClass(rank);
+                
+                const validatorCard = document.createElement('div');
+                validatorCard.className = \`validator-card card p-6 transition-all duration-300 hover:scale-105\`;
+                validatorCard.innerHTML = \`
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 text-primary font-bold text-lg">
+                                <span class="\${rankClass}">\${rankEmoji}</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <img 
+                                    src="\${validator.profileImageUrl}" 
+                                    alt="\${validator.displayName}" 
+                                    class="w-12 h-12 rounded-full object-cover border-2 border-primary/20"
+                                    onerror="this.src='https://via.placeholder.com/48x48/2E7BC3/FFFFFF?text=\${validator.displayName.charAt(0).toUpperCase()}'"
+                                >
+                                <div>
+                                    <h3 class="font-semibold text-lg" style="color: #EFEEE0D9;">\${validator.displayName}</h3>
+                                    <p class="text-sm" style="color: #EFEEE099;">@\${validator.handle}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-primary">\${validator.totalValidations}</div>
+                            <div class="text-sm" style="color: #EFEEE099;">validations</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-gray-700 grid grid-cols-2 gap-4">
+                        <div class="text-center">
+                            <div class="text-lg font-semibold text-primary">\${validator.averageQualityScore.toFixed(1)}%</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Avg Quality Score</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-semibold text-primary">\${validator.averageEthosScore ? validator.averageEthosScore : 'N/A'}</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Avg Ethos Score</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t border-gray-700">
+                        <div class="text-sm" style="color: #EFEEE099;">
+                            <strong>Most Recent:</strong> \${formatRelativeTime(validator.lastValidation)}
+                        </div>
+                        <div class="text-sm mt-1" style="color: #EFEEE099;">
+                            <strong>First Validation:</strong> \${formatRelativeTime(validator.firstValidation)}
+                        </div>
+                    </div>
+                \`;
+                
+                container.appendChild(validatorCard);
+            });
+            
+            // Hide loading, show content
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('validator-leaderboard').classList.remove('hidden');
+        }
+
+        function getRankEmoji(rank) {
+            if (rank === 1) return '🥇';
+            if (rank === 2) return '🥈';
+            if (rank === 3) return '🥉';
+            return \`#\${rank}\`;
+        }
+
+        function getRankClass(rank) {
+            if (rank === 1) return 'trophy-gold';
+            if (rank === 2) return 'trophy-silver';
+            if (rank === 3) return 'trophy-bronze';
+            if (rank <= 10) return 'rank-4-10';
+            return 'rank-11-25';
+        }
+
+        function formatRelativeTime(timestamp) {
+            const now = new Date();
+            const date = new Date(timestamp);
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) return 'just now';
+            if (diffInSeconds < 3600) return Math.floor(diffInSeconds / 60) + 'm ago';
+            if (diffInSeconds < 86400) return Math.floor(diffInSeconds / 3600) + 'h ago';
+            if (diffInSeconds < 2592000) return Math.floor(diffInSeconds / 86400) + 'd ago';
+            return Math.floor(diffInSeconds / 2592000) + 'mo ago';
+        }
+
+        function showEmptyState() {
+            document.getElementById('loading-state').classList.add('hidden');
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadValidatorLeaderboard);
+    </script>
+</body>
+</html>
+    `;
+    
+    ctx.response.headers.set("Content-Type", "text/html");
+    ctx.response.body = html;
+  } catch (error) {
+    console.error("❌ Validator leaderboard page error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = "Internal server error";
+  }
+});
+
+// Validator Leaderboard API endpoint - aggregates data by validator (requestedBy)
+router.get("/api/validators", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    
+    // Get all validations
+    const allValidations = await storageService.getRecentValidations(1000);
+    
+    if (allValidations.length === 0) {
+      ctx.response.headers.set("Content-Type", "application/json");
+      ctx.response.body = {
+        success: true,
+        data: [],
+        message: "No validation data available"
+      };
+      return;
+    }
+    
+    // Group validations by validator handle
+    const validatorMap = new Map();
+    
+    for (const validation of allValidations) {
+      const handle = validation.requestedByHandle.toLowerCase();
+      
+      if (!validatorMap.has(handle)) {
+        validatorMap.set(handle, {
+          handle: validation.requestedByHandle,
+          displayName: validation.requestedBy,
+          profileImageUrl: validation.requestedByAvatar,
+          validations: [],
+          totalValidations: 0,
+          totalQualityScore: 0,
+          totalEthosScore: 0,
+          ethosScoreCount: 0,
+          firstValidation: validation.timestamp,
+          lastValidation: validation.timestamp
+        });
+      }
+      
+      const validator = validatorMap.get(handle);
+      validator.validations.push(validation);
+      validator.totalValidations++;
+      
+      // Calculate quality score (weighted: 60% reputable + 40% ethos active)
+      const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + 
+                          (validation.engagementStats.ethos_active_percentage * 0.4);
+      validator.totalQualityScore += qualityScore;
+      
+      // Add average ethos score if available
+      if (validation.averageScore && validation.averageScore > 0) {
+        validator.totalEthosScore += validation.averageScore;
+        validator.ethosScoreCount++;
+      }
+      
+      // Track first and last validation dates
+      if (new Date(validation.timestamp) < new Date(validator.firstValidation)) {
+        validator.firstValidation = validation.timestamp;
+      }
+      if (new Date(validation.timestamp) > new Date(validator.lastValidation)) {
+        validator.lastValidation = validation.timestamp;
+      }
+    }
+    
+    // Convert to leaderboard format and calculate averages
+    // Only include validators with at least 3 validations
+    const validatorLeaderboard = Array.from(validatorMap.values())
+      .filter(validator => validator.totalValidations >= 3)
+      .map(validator => ({
+        handle: validator.handle,
+        displayName: validator.displayName,
+        profileImageUrl: validator.profileImageUrl,
+        totalValidations: validator.totalValidations,
+        averageQualityScore: validator.totalQualityScore / validator.totalValidations,
+        averageEthosScore: validator.ethosScoreCount > 0 
+          ? Math.round(validator.totalEthosScore / validator.ethosScoreCount)
+          : null,
+        firstValidation: validator.firstValidation,
+        lastValidation: validator.lastValidation
+      }));
+    
+    // Sort by total validations (descending), then by average quality score
+    validatorLeaderboard.sort((a, b) => {
+      if (b.totalValidations !== a.totalValidations) {
+        return b.totalValidations - a.totalValidations;
+      }
+      return b.averageQualityScore - a.averageQualityScore;
+    });
+    
+    // Return top 50 validators
+    const topValidators = validatorLeaderboard.slice(0, 50);
+    
+    ctx.response.headers.set("Content-Type", "application/json");
+    ctx.response.body = {
+      success: true,
+      data: topValidators,
+      total: validatorLeaderboard.length,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error("❌ Validator leaderboard API error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { 
+      success: false,
+      error: "Validator leaderboard API temporarily unavailable",
+      message: error.message 
     };
   }
 });
