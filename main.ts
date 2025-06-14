@@ -93,6 +93,386 @@ try {
   console.log("⚠️ Deno.cron() for rate limit cleanup not available (likely running locally):", error.message);
 }
 
+// Leaderboard route - shows top targets of validations
+router.get("/leaderboard", async (ctx) => {
+  try {
+    const html = `
+<!DOCTYPE html>
+<html lang="en" class="h-full dark">
+<head>
+    <title>Validation Leaderboard - Top Targets | Ethos Agent</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Leaderboard showing the top 25 targets of Twitter validations by Ethos Agent, ranked by average quality score.">
+    <meta name="keywords" content="Ethos, Twitter, validation, leaderboard, top targets, quality score">
+    <meta name="author" content="Ethos">
+    
+    <!-- OpenGraph tags -->
+    <meta property="og:title" content="Validation Leaderboard - Top Targets | Ethos Agent">
+    <meta property="og:description" content="Leaderboard showing the top 25 targets of Twitter validations by Ethos Agent, ranked by average quality score.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://validate.ethos.network/leaderboard">
+    <meta property="og:site_name" content="Ethos Network">
+    <meta property="og:image" content="https://validate.ethos.network/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Ethos Agent Validation Leaderboard">
+    
+    <!-- Twitter Card tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@ethosAgent">
+    <meta name="twitter:creator" content="@ethosAgent">
+    <meta name="twitter:title" content="Validation Leaderboard - Top Targets | Ethos Agent">
+    <meta name="twitter:description" content="Leaderboard showing the top 25 targets of Twitter validations by Ethos Agent, ranked by average quality score.">
+    <meta name="twitter:image" content="https://validate.ethos.network/og-image.png">
+    <meta name="twitter:image:alt" content="Ethos Agent Validation Leaderboard">
+    
+    <!-- Additional meta tags -->
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#2E7BC3">
+    <link rel="canonical" href="https://validate.ethos.network/leaderboard">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232E7BC3'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        success: '#127f31',
+                        primary: '#2E7BC3',
+                        warning: '#C29010',
+                        error: '#b72b38',
+                        border: "#9E9C8D00",
+                        input: "#3c3c39",
+                        ring: "#2E7BC3",
+                        background: "#232320",
+                        foreground: "#EFEEE0D9",
+                        'primary-custom': {
+                            DEFAULT: "#2E7BC3",
+                            foreground: "#EFEEE0D9"
+                        },
+                        secondary: {
+                            DEFAULT: "#2d2d2a",
+                            foreground: "#EFEEE0D9"
+                        },
+                        muted: {
+                            DEFAULT: "#323232",
+                            foreground: "#EFEEE099"
+                        },
+                        card: {
+                            DEFAULT: "#232320",
+                            foreground: "#EFEEE0D9"
+                        }
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)"
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background: #232320;
+            --foreground: #EFEEE0D9;
+            --card: #2d2d2A;
+            --card-foreground: #EFEEE0D9;
+            --primary: #2E7BC3;
+            --primary-foreground: #EFEEE0D9;
+            --secondary: #2d2d2a;
+            --secondary-foreground: #EFEEE0D9;
+            --muted: #323232;
+            --muted-foreground: #EFEEE099;
+            --accent: #2E7BC31A;
+            --accent-foreground: #EFEEE0D9;
+            --destructive: #b72b38;
+            --destructive-foreground: #EFEEE0D9;
+            --success: #127f31;
+            --warning: #C29010;
+            --radius: 0.5rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            outline: none;
+            border: none;
+            cursor: pointer;
+            background-color: var(--background);
+            color: var(--foreground);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--primary-foreground);
+            height: 2.5rem;
+            padding: 0 1rem;
+        }
+        
+        .btn-primary:hover {
+            background-color: color-mix(in srgb, var(--primary) 90%, black);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: var(--secondary-foreground);
+            height: 2.5rem;
+            padding: 0 1rem;
+        }
+        
+        .btn-secondary:hover {
+            background-color: color-mix(in srgb, var(--secondary) 80%, black);
+        }
+        
+        .card {
+            background-color: var(--card);
+            color: var(--card-foreground);
+            border-radius: calc(var(--radius));
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+        }
+        
+        .trophy-gold { color: #FFD700; }
+        .trophy-silver { color: #C0C0C0; }
+        .trophy-bronze { color: #CD7F32; }
+        .rank-4-10 { color: #2E7BC3; }
+        .rank-11-25 { color: #EFEEE099; }
+    </style>
+</head>
+<body style="background-color: #232320; color: #EFEEE0D9;" class="font-sans antialiased min-h-screen">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60" style="background-color: rgba(35, 35, 32, 0.95); border-color: #9E9C8D00;">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-2">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;">Ethos Agent</a>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
+                            <span class="text-sm font-medium" style="color: #EFEEE099;">Live</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <a href="/dashboard" class="btn btn-secondary text-sm">All Validations</a>
+                        <span class="text-sm" style="color: #EFEEE099;">Validation Leaderboard</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Page Header -->
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold mb-4" style="color: #EFEEE0D9;">
+                        🏆 Validation Leaderboard
+                    </h1>
+                    <p class="text-lg" style="color: #EFEEE099;">
+                        Top 25 targets of Twitter validations, ranked by average quality score
+                    </p>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading-state" class="text-center py-12">
+                    <div class="inline-flex items-center justify-center space-x-2">
+                        <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                        <span class="text-muted-foreground">Loading leaderboard...</span>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div id="leaderboard" class="hidden">
+                    <div class="grid gap-4" id="leaderboard-items">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-12">
+                    <div class="mx-auto h-12 w-12 text-gray-400 mb-4">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <p class="text-lg" style="color: #EFEEE099;">No validation data available</p>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Initialize the leaderboard
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🏆 Loading leaderboard...');
+            loadLeaderboard();
+        });
+
+        // Load leaderboard data
+        async function loadLeaderboard() {
+            const loadingState = document.getElementById('loading-state');
+            const emptyState = document.getElementById('empty-state');
+            const leaderboard = document.getElementById('leaderboard');
+            
+            try {
+                console.log('📡 Fetching leaderboard data...');
+                const response = await fetch('/api/leaderboard');
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+                
+                const result = await response.json();
+                console.log('📊 Leaderboard data:', result);
+                
+                if (result.success && result.data.length > 0) {
+                    renderLeaderboard(result.data);
+                    loadingState.classList.add('hidden');
+                    leaderboard.classList.remove('hidden');
+                } else {
+                    loadingState.classList.add('hidden');
+                    emptyState.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('❌ Error loading leaderboard:', error);
+                loadingState.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+            }
+        }
+
+        // Render the leaderboard
+        function renderLeaderboard(data) {
+            const container = document.getElementById('leaderboard-items');
+            container.innerHTML = '';
+            
+            data.forEach((item, index) => {
+                const rank = index + 1;
+                const card = createLeaderboardCard(item, rank);
+                container.appendChild(card);
+            });
+        }
+
+        // Create a leaderboard card for each user
+        function createLeaderboardCard(item, rank) {
+            const card = document.createElement('div');
+            card.className = 'card p-6';
+            
+            // Get rank styling
+            let rankIcon, rankClass;
+            if (rank === 1) {
+                rankIcon = '🥇';
+                rankClass = 'trophy-gold';
+            } else if (rank === 2) {
+                rankIcon = '🥈';
+                rankClass = 'trophy-silver';
+            } else if (rank === 3) {
+                rankIcon = '🥉';
+                rankClass = 'trophy-bronze';
+            } else if (rank <= 10) {
+                rankIcon = rank.toString();
+                rankClass = 'rank-4-10';
+            } else {
+                rankIcon = rank.toString();
+                rankClass = 'rank-11-25';
+            }
+
+            const qualityScore = Math.round(item.averageQualityScore);
+            const scoreColor = qualityScore >= 60 ? '#127f31' : qualityScore >= 30 ? '#C29010' : '#b72b38';
+            
+            card.innerHTML = \`
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-full \${rankClass}" style="background-color: rgba(46, 123, 195, 0.1); font-size: 1.5rem; font-weight: bold;">
+                            \${rankIcon}
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <img 
+                                src="\${getOptimizedImageUrl(item.profileImageUrl, 'bigger')}" 
+                                alt="\${item.displayName}" 
+                                class="h-12 w-12 rounded-full object-cover"
+                                onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'"
+                            >
+                            <div>
+                                <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">\${item.displayName}</h3>
+                                <p class="text-sm" style="color: #EFEEE099;">@\${item.handle}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-6">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold" style="color: \${scoreColor};">\${qualityScore}%</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Quality Score</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-semibold" style="color: #2E7BC3;">\${item.totalValidations}</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Validations</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-xl font-semibold" style="color: #EFEEE0D9;">\${item.averageEthosScore || 'N/A'}</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Avg Ethos Score</div>
+                        </div>
+                        <div>
+                            <a href="/author/\${item.handle}" class="btn btn-primary text-sm">View Profile</a>
+                        </div>
+                    </div>
+                </div>
+            \`;
+            
+            return card;
+        }
+
+        // Utility function for optimized image URLs
+        function getOptimizedImageUrl(profileImageUrl, size) {
+            if (!profileImageUrl || !profileImageUrl.includes('pbs.twimg.com')) {
+                return size === 'bigger' 
+                    ? 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'
+                    : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png';
+            }
+            
+            let url = profileImageUrl;
+            url = url.replace(/_normal|_bigger|_mini|_400x400/g, '_' + size);
+            return url;
+        }
+    </script>
+</body>
+</html>
+    `;
+
+    ctx.response.headers.set("Content-Type", "text/html");
+    ctx.response.body = html;
+  } catch (error) {
+    console.error("❌ Leaderboard error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "Leaderboard temporarily unavailable" };
+  }
+});
+
 // Dashboard route - serve the modern Tailwind data table
 router.get("/dashboard", async (ctx) => {
   try {
@@ -439,8 +819,9 @@ router.get("/dashboard", async (ctx) => {
                         </div>
                     </div>
                     
-                    <!-- Version Info -->
-                    <div class="flex items-center space-x-2">
+                    <!-- Navigation Links -->
+                    <div class="flex items-center space-x-4">
+                        <a href="/leaderboard" class="btn btn-secondary text-sm">🏆 Leaderboard</a>
                         <span class="text-sm" style="color: #EFEEE099;">Ethos Agent Dashboard</span>
                     </div>
                 </div>
@@ -1681,6 +2062,94 @@ router.get("/author/:handle", async (ctx) => {
     console.error("❌ Author profile error:", error);
     ctx.response.status = 500;
     ctx.response.body = "Internal server error";
+  }
+});
+
+// Leaderboard API endpoint - aggregates data by tweet author
+router.get("/api/leaderboard", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    
+    // Get all validations
+    const allValidations = await storageService.getRecentValidations(1000);
+    
+    if (allValidations.length === 0) {
+      ctx.response.headers.set("Content-Type", "application/json");
+      ctx.response.body = {
+        success: true,
+        data: [],
+        message: "No validation data available"
+      };
+      return;
+    }
+    
+    // Group validations by tweet author handle
+    const authorMap = new Map();
+    
+    for (const validation of allValidations) {
+      const handle = validation.tweetAuthorHandle.toLowerCase();
+      
+      if (!authorMap.has(handle)) {
+        authorMap.set(handle, {
+          handle: validation.tweetAuthorHandle,
+          displayName: validation.tweetAuthor,
+          profileImageUrl: validation.tweetAuthorAvatar,
+          validations: [],
+          totalValidations: 0,
+          totalQualityScore: 0,
+          totalEthosScore: 0,
+          ethosScoreCount: 0
+        });
+      }
+      
+      const author = authorMap.get(handle);
+      author.validations.push(validation);
+      author.totalValidations++;
+      
+      // Calculate quality score (weighted: 60% reputable + 40% ethos active)
+      const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + 
+                          (validation.engagementStats.ethos_active_percentage * 0.4);
+      author.totalQualityScore += qualityScore;
+      
+      // Add average ethos score if available
+      if (validation.averageScore && validation.averageScore > 0) {
+        author.totalEthosScore += validation.averageScore;
+        author.ethosScoreCount++;
+      }
+    }
+    
+    // Convert to leaderboard format and calculate averages
+    const leaderboardData = Array.from(authorMap.values()).map(author => ({
+      handle: author.handle,
+      displayName: author.displayName,
+      profileImageUrl: author.profileImageUrl,
+      totalValidations: author.totalValidations,
+      averageQualityScore: author.totalQualityScore / author.totalValidations,
+      averageEthosScore: author.ethosScoreCount > 0 
+        ? Math.round(author.totalEthosScore / author.ethosScoreCount)
+        : null
+    }));
+    
+    // Sort by average quality score (descending) and take top 25
+    leaderboardData.sort((a, b) => b.averageQualityScore - a.averageQualityScore);
+    const top25 = leaderboardData.slice(0, 25);
+    
+    ctx.response.headers.set("Content-Type", "application/json");
+    ctx.response.body = {
+      success: true,
+      data: top25,
+      total: leaderboardData.length,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error("❌ Leaderboard API error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { 
+      success: false,
+      error: "Leaderboard API temporarily unavailable",
+      message: error.message 
+    };
   }
 });
 
