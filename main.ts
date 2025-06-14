@@ -296,6 +296,9 @@ router.get("/leaderboard", async (ctx) => {
                     <p class="text-lg" style="color: #EFEEE099;">
                         Top 25 and bottom 25 targets of Twitter validations, ranked by average quality score
                     </p>
+                    <p class="text-sm mt-2" style="color: #EFEEE099;">
+                        (Minimum 3 validations required)
+                    </p>
                 </div>
 
                 <!-- Loading State -->
@@ -398,10 +401,9 @@ router.get("/leaderboard", async (ctx) => {
                 top25Container.appendChild(card);
             });
             
-            // Render bottom 25 (start rank counting from total - 24)
+            // Render bottom 25 (rank 1 = worst, 25 = 2nd worst)
             data.bottom25.forEach((item, index) => {
-                const totalRanks = data.top25.length + data.bottom25.length;
-                const rank = totalRanks - data.bottom25.length + index + 1;
+                const rank = index + 1; // 1 = worst, 2 = 2nd worst, etc.
                 const card = createLeaderboardCard(item, rank, 'bottom');
                 bottom25Container.appendChild(card);
             });
@@ -2157,16 +2159,19 @@ router.get("/api/leaderboard", async (ctx) => {
     }
     
     // Convert to leaderboard format and calculate averages
-    const leaderboardData = Array.from(authorMap.values()).map(author => ({
-      handle: author.handle,
-      displayName: author.displayName,
-      profileImageUrl: author.profileImageUrl,
-      totalValidations: author.totalValidations,
-      averageQualityScore: author.totalQualityScore / author.totalValidations,
-      averageEthosScore: author.ethosScoreCount > 0 
-        ? Math.round(author.totalEthosScore / author.ethosScoreCount)
-        : null
-    }));
+    // Only include accounts with at least 3 validations
+    const leaderboardData = Array.from(authorMap.values())
+      .filter(author => author.totalValidations >= 3)
+      .map(author => ({
+        handle: author.handle,
+        displayName: author.displayName,
+        profileImageUrl: author.profileImageUrl,
+        totalValidations: author.totalValidations,
+        averageQualityScore: author.totalQualityScore / author.totalValidations,
+        averageEthosScore: author.ethosScoreCount > 0 
+          ? Math.round(author.totalEthosScore / author.ethosScoreCount)
+          : null
+      }));
     
     // Sort by average quality score (descending)
     leaderboardData.sort((a, b) => b.averageQualityScore - a.averageQualityScore);
