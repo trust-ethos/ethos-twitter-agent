@@ -961,7 +961,7 @@ Link to tweet: ${originalTweetLink}`;
         }
 
         // Vertical listing response format with relative comparison
-        let response = `Ethos Tweet validation: ${relativeEmoji} ${weightedQualityDisplayScore}% ${comparisonText}\n\n`;
+        let response = `Ethos Tweet validation stats\n${relativeEmoji} ${weightedQualityDisplayScore}% ${comparisonText}\n\n`;
         
         response += "Engagement from Reputable+ Ethos accounts (population: 750)\n";
         
