@@ -294,7 +294,7 @@ router.get("/leaderboard", async (ctx) => {
                         🏆 Validation Leaderboard
                     </h1>
                     <p class="text-lg" style="color: #EFEEE099;">
-                        Top 25 targets of Twitter validations, ranked by average quality score
+                        Top 25 and bottom 25 targets of Twitter validations, ranked by average quality score
                     </p>
                 </div>
 
@@ -308,8 +308,26 @@ router.get("/leaderboard", async (ctx) => {
 
                 <!-- Leaderboard -->
                 <div id="leaderboard" class="hidden">
-                    <div class="grid gap-4" id="leaderboard-items">
-                        <!-- Dynamic content will be inserted here -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Top 25 -->
+                        <div>
+                            <h2 class="text-2xl font-bold mb-6 text-center" style="color: #127f31;">
+                                🏆 Top 25 - Highest Quality
+                            </h2>
+                            <div class="grid gap-4" id="top-25-items">
+                                <!-- Dynamic content will be inserted here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Bottom 25 -->
+                        <div>
+                            <h2 class="text-2xl font-bold mb-6 text-center" style="color: #b72b38;">
+                                📉 Bottom 25 - Lowest Quality
+                            </h2>
+                            <div class="grid gap-4" id="bottom-25-items">
+                                <!-- Dynamic content will be inserted here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -350,7 +368,7 @@ router.get("/leaderboard", async (ctx) => {
                 const result = await response.json();
                 console.log('📊 Leaderboard data:', result);
                 
-                if (result.success && result.data.length > 0) {
+                if (result.success && result.data && (result.data.top25.length > 0 || result.data.bottom25.length > 0)) {
                     renderLeaderboard(result.data);
                     loadingState.classList.add('hidden');
                     leaderboard.classList.remove('hidden');
@@ -367,38 +385,62 @@ router.get("/leaderboard", async (ctx) => {
 
         // Render the leaderboard
         function renderLeaderboard(data) {
-            const container = document.getElementById('leaderboard-items');
-            container.innerHTML = '';
+            const top25Container = document.getElementById('top-25-items');
+            const bottom25Container = document.getElementById('bottom-25-items');
             
-            data.forEach((item, index) => {
+            top25Container.innerHTML = '';
+            bottom25Container.innerHTML = '';
+            
+            // Render top 25
+            data.top25.forEach((item, index) => {
                 const rank = index + 1;
-                const card = createLeaderboardCard(item, rank);
-                container.appendChild(card);
+                const card = createLeaderboardCard(item, rank, 'top');
+                top25Container.appendChild(card);
+            });
+            
+            // Render bottom 25 (start rank counting from total - 24)
+            data.bottom25.forEach((item, index) => {
+                const totalRanks = data.top25.length + data.bottom25.length;
+                const rank = totalRanks - data.bottom25.length + index + 1;
+                const card = createLeaderboardCard(item, rank, 'bottom');
+                bottom25Container.appendChild(card);
             });
         }
 
         // Create a leaderboard card for each user
-        function createLeaderboardCard(item, rank) {
+        function createLeaderboardCard(item, rank, listType) {
             const card = document.createElement('div');
             card.className = 'card p-6';
             
-            // Get rank styling
-            let rankIcon, rankClass;
-            if (rank === 1) {
-                rankIcon = '🥇';
-                rankClass = 'trophy-gold';
-            } else if (rank === 2) {
-                rankIcon = '🥈';
-                rankClass = 'trophy-silver';
-            } else if (rank === 3) {
-                rankIcon = '🥉';
-                rankClass = 'trophy-bronze';
-            } else if (rank <= 10) {
-                rankIcon = rank.toString();
-                rankClass = 'rank-4-10';
+            // Get rank styling based on list type and position
+            let rankIcon, rankClass, bgColor;
+            if (listType === 'top') {
+                if (rank === 1) {
+                    rankIcon = '🥇';
+                    rankClass = 'trophy-gold';
+                    bgColor = 'rgba(255, 215, 0, 0.1)';
+                } else if (rank === 2) {
+                    rankIcon = '🥈';
+                    rankClass = 'trophy-silver';
+                    bgColor = 'rgba(192, 192, 192, 0.1)';
+                } else if (rank === 3) {
+                    rankIcon = '🥉';
+                    rankClass = 'trophy-bronze';
+                    bgColor = 'rgba(205, 127, 50, 0.1)';
+                } else if (rank <= 10) {
+                    rankIcon = rank.toString();
+                    rankClass = 'rank-4-10';
+                    bgColor = 'rgba(46, 123, 195, 0.1)';
+                } else {
+                    rankIcon = rank.toString();
+                    rankClass = 'rank-11-25';
+                    bgColor = 'rgba(46, 123, 195, 0.05)';
+                }
             } else {
+                // Bottom list - use different styling
                 rankIcon = rank.toString();
-                rankClass = 'rank-11-25';
+                rankClass = 'text-red-400';
+                bgColor = 'rgba(183, 43, 56, 0.05)';
             }
 
             const qualityScore = Math.round(item.averageQualityScore);
@@ -407,38 +449,34 @@ router.get("/leaderboard", async (ctx) => {
             card.innerHTML = \`
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-4">
-                        <div class="flex items-center justify-center w-12 h-12 rounded-full \${rankClass}" style="background-color: rgba(46, 123, 195, 0.1); font-size: 1.5rem; font-weight: bold;">
+                        <div class="flex items-center justify-center w-12 h-12 rounded-full \${rankClass}" style="background-color: \${bgColor}; font-size: 1.2rem; font-weight: bold;">
                             \${rankIcon}
                         </div>
                         <div class="flex items-center space-x-3">
                             <img 
                                 src="\${getOptimizedImageUrl(item.profileImageUrl, 'bigger')}" 
                                 alt="\${item.displayName}" 
-                                class="h-12 w-12 rounded-full object-cover"
+                                class="h-10 w-10 rounded-full object-cover"
                                 onerror="this.src='https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png'"
                             >
                             <div>
-                                <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">\${item.displayName}</h3>
-                                <p class="text-sm" style="color: #EFEEE099;">@\${item.handle}</p>
+                                <h3 class="text-base font-semibold" style="color: #EFEEE0D9;">\${item.displayName}</h3>
+                                <p class="text-xs" style="color: #EFEEE099;">@\${item.handle}</p>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-4">
                         <div class="text-center">
-                            <div class="text-2xl font-bold" style="color: \${scoreColor};">\${qualityScore}%</div>
-                            <div class="text-xs" style="color: #EFEEE099;">Quality Score</div>
+                            <div class="text-lg font-bold" style="color: \${scoreColor};">\${qualityScore}%</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Quality</div>
                         </div>
                         <div class="text-center">
-                            <div class="text-xl font-semibold" style="color: #2E7BC3;">\${item.totalValidations}</div>
+                            <div class="text-sm font-semibold" style="color: #2E7BC3;">\${item.totalValidations}</div>
                             <div class="text-xs" style="color: #EFEEE099;">Validations</div>
                         </div>
-                        <div class="text-center">
-                            <div class="text-xl font-semibold" style="color: #EFEEE0D9;">\${item.averageEthosScore || 'N/A'}</div>
-                            <div class="text-xs" style="color: #EFEEE099;">Avg Ethos Score</div>
-                        </div>
                         <div>
-                            <a href="/author/\${item.handle}" class="btn btn-primary text-sm">View Profile</a>
+                            <a href="/author/\${item.handle}" class="btn btn-primary text-xs px-2 py-1">View</a>
                         </div>
                     </div>
                 </div>
@@ -2130,14 +2168,20 @@ router.get("/api/leaderboard", async (ctx) => {
         : null
     }));
     
-    // Sort by average quality score (descending) and take top 25
+    // Sort by average quality score (descending)
     leaderboardData.sort((a, b) => b.averageQualityScore - a.averageQualityScore);
+    
+    // Get top 25 and bottom 25
     const top25 = leaderboardData.slice(0, 25);
+    const bottom25 = leaderboardData.slice(-25).reverse(); // Reverse so worst is first
     
     ctx.response.headers.set("Content-Type", "application/json");
     ctx.response.body = {
       success: true,
-      data: top25,
+      data: {
+        top25,
+        bottom25
+      },
       total: leaderboardData.length,
       timestamp: new Date().toISOString()
     };
