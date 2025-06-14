@@ -900,9 +900,7 @@ Link to tweet: ${originalTweetLink}`;
 
         // Helper function to get emoji based on percentage
         const getEmojiForPercentage = (percentage: number): string => {
-          if (percentage < 30) return "🔴";
-          if (percentage < 60) return "🟡";
-          return "🟢";
+          return "→";
         };
 
         // Helper function to get emoji based on average score
@@ -965,45 +963,45 @@ Link to tweet: ${originalTweetLink}`;
         // Vertical listing response format with relative comparison
         let response = `Ethos Tweet validation: ${relativeEmoji} ${weightedQualityDisplayScore}% ${comparisonText}\n\n`;
         
-        response += "Reputable profile scoring\n";
+        response += "Engagement from Reputable+ Ethos accounts (population: 750)\n";
         
         if (engagementStats.total_retweeters > 0) {
           const retweetEmoji = getEmojiForPercentage(retweetReputablePercentage);
           const rateLimitText = engagementStats.retweeters_rate_limited ? " (Rate limited)" : "";
-          response += `${retweetEmoji} ${retweetReputablePercentage}% reputable retweets (${engagementStats.reputable_retweeters} of ${engagementStats.total_retweeters})${rateLimitText}\n`;
+          response += `${retweetEmoji} ${retweetReputablePercentage}% RTs (${engagementStats.reputable_retweeters} of ${engagementStats.total_retweeters})${rateLimitText}\n`;
         }
         
         if (engagementStats.total_quote_tweeters > 0) {
           const quoteEmoji = getEmojiForPercentage(quoteReputablePercentage);
           const rateLimitText = engagementStats.quote_tweeters_rate_limited ? " (Rate limited)" : "";
-          response += `${quoteEmoji} ${quoteReputablePercentage}% reputable quote tweets (${engagementStats.reputable_quote_tweeters} of ${engagementStats.total_quote_tweeters})${rateLimitText}\n`;
+          response += `${quoteEmoji} ${quoteReputablePercentage}% QTs (${engagementStats.reputable_quote_tweeters} of ${engagementStats.total_quote_tweeters})${rateLimitText}\n`;
         }
         
         if (engagementStats.total_repliers > 0) {
           const replyEmoji = getEmojiForPercentage(replyReputablePercentage);
           const rateLimitText = engagementStats.repliers_rate_limited ? " (Rate limited)" : "";
-          response += `${replyEmoji} ${replyReputablePercentage}% reputable comments (${engagementStats.reputable_repliers} of ${engagementStats.total_repliers})${rateLimitText}\n`;
+          response += `${replyEmoji} ${replyReputablePercentage}% comments (${engagementStats.reputable_repliers} of ${engagementStats.total_repliers})${rateLimitText}\n`;
         }
 
         // Add Ethos activity section
-        response += "\nEthos activity (engagement from profiles with some Ethos review or vouch)\n";
+        response += "\n⚪️ Engagement from accounts with ANY Ethos review/vouch (population: 23k)\n";
         
         if (engagementStats.total_retweeters > 0) {
           const retweetEmoji = getEmojiForPercentage(retweetEthosActivePercentage);
           const rateLimitText = engagementStats.retweeters_rate_limited ? " (Rate limited)" : "";
-          response += `${retweetEmoji} ${retweetEthosActivePercentage}% retweets from accounts with Ethos activity (${engagementStats.ethos_active_retweeters} of ${engagementStats.total_retweeters})${rateLimitText}\n`;
+          response += `${retweetEmoji} ${retweetEthosActivePercentage}% RTs (${engagementStats.ethos_active_retweeters} of ${engagementStats.total_retweeters})${rateLimitText}\n`;
         }
         
         if (engagementStats.total_quote_tweeters > 0) {
           const quoteEmoji = getEmojiForPercentage(quoteEthosActivePercentage);
           const rateLimitText = engagementStats.quote_tweeters_rate_limited ? " (Rate limited)" : "";
-          response += `${quoteEmoji} ${quoteEthosActivePercentage}% quote tweets from accounts with Ethos activity (${engagementStats.ethos_active_quote_tweeters} of ${engagementStats.total_quote_tweeters})${rateLimitText}\n`;
+          response += `${quoteEmoji} ${quoteEthosActivePercentage}% QTs (${engagementStats.ethos_active_quote_tweeters} of ${engagementStats.total_quote_tweeters})${rateLimitText}\n`;
         }
         
         if (engagementStats.total_repliers > 0) {
           const replyEmoji = getEmojiForPercentage(replyEthosActivePercentage);
           const rateLimitText = engagementStats.repliers_rate_limited ? " (Rate limited)" : "";
-          response += `${replyEmoji} ${replyEthosActivePercentage}% comments from accounts with Ethos activity (${engagementStats.ethos_active_repliers} of ${engagementStats.total_repliers})${rateLimitText}\n`;
+          response += `${replyEmoji} ${replyEthosActivePercentage}% comments (${engagementStats.ethos_active_repliers} of ${engagementStats.total_repliers})${rateLimitText}\n`;
         }
 
         // Add average score if available

@@ -120,27 +120,40 @@ Analyze the engagement quality of a tweet by checking the Ethos reputation score
 **Examples:**
 ```
 User replies to a viral tweet with: "@ethosAgent validate"
-Bot responds: "🔴 14% of retweets from reputable accounts (7 unique accounts engaged)
-🔴 2% of comments from reputable accounts (53 unique accounts engaged)
+Bot responds: "🔴 8% (below avg of 45%)
 
-2 reputable Ethos users engaged overall.
-Highest reputable engagement: https://app.ethos.network/profile/x/vitalik"
+Reputable profile scoring
+→ 14% reputable retweets (7 of 50)
+→ 2% reputable comments (1 of 53)
+
+Ethos activity (engagement from profiles with some Ethos review or vouch)
+→ 22% retweets from accounts with Ethos activity (11 of 50)
+→ 8% comments from accounts with Ethos activity (4 of 53)
+
+🔴 1250 avg score of all engagers"
 
 User replies to a high-quality tweet with: "@ethosAgent validate"  
-Bot responds: "🟢 80% of retweets from reputable accounts (15 unique accounts engaged)
-🟢 65% of comments from reputable accounts (23 unique accounts engaged)
+Bot responds: "🟢 82% (above avg of 45%)
 
-18 reputable Ethos users engaged overall.
-Highest reputable engagement: https://app.ethos.network/profile/x/elonmusk"
+Reputable profile scoring
+→ 80% reputable retweets (12 of 15)
+→ 65% reputable comments (15 of 23)
+
+Ethos activity (engagement from profiles with some Ethos review or vouch)
+→ 87% retweets from accounts with Ethos activity (13 of 15)
+→ 74% comments from accounts with Ethos activity (17 of 23)
+
+🟢 1950 avg score of all engagers"
 
 User replies to a tweet with no engagement: "@ethosAgent validate"
 Bot responds: "📊 No engagement found for this tweet."
 ```
 
 **Response Format:**
-- **🔴 Red**: Less than 30% reputable engagement (potential bot activity)
-- **🟡 Yellow**: 30-60% reputable engagement (mixed quality)  
-- **🟢 Green**: Over 60% reputable engagement (high quality)
+- **Main validation line**: Uses colored emojis (🔴🟡🔵🟢⚪) based on performance vs. average
+- **Reputable profile scoring**: Uses arrows (→) for all percentage indicators
+- **Ethos activity**: Uses arrows (→) for all percentage indicators  
+- **Average score**: Uses colored emojis (🔴🟡⚪🔵🟢) based on score ranges
 - **Unique accounts**: Shows total unique users who engaged (not reputable/total ratio)
 - **Highest scorer**: Links to the highest-scoring reputable user's Ethos profile
 
