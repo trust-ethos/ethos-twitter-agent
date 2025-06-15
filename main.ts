@@ -1010,7 +1010,7 @@ router.get("/dashboard", async (ctx) => {
                     </div>
 
                     <!-- Mobile Cards (visible only on mobile) -->
-                    <div class="md:hidden space-y-4" id="mobile-cards" style="background-color: #2d2d2A; padding: 1rem;">
+                    <div class="md:hidden space-y-3" id="mobile-cards" style="background-color: #2d2d2A; padding: 0.5rem;">
                         <!-- Dynamic mobile cards will be inserted here -->
                     </div>
                     
@@ -2202,6 +2202,7 @@ router.get("/author/:handle", async (ctx) => {
 router.get("/api/leaderboard", async (ctx) => {
   try {
     const storageService = commandProcessor['storageService'];
+    const blocklistService = BlocklistService.getInstance();
     
     // Get all validations
     const allValidations = await storageService.getRecentValidations(1000);
@@ -2216,10 +2217,25 @@ router.get("/api/leaderboard", async (ctx) => {
       return;
     }
     
+    // Filter out validations from or to blocklisted users
+    const filteredValidations = [];
+    for (const validation of allValidations) {
+      // Check if tweet author is blocklisted
+      const authorBlocked = await blocklistService.isBlocked(validation.tweetAuthorHandle);
+      // Check if validator is blocklisted  
+      const validatorBlocked = await blocklistService.isBlocked(validation.requestedByHandle);
+      
+      if (!authorBlocked && !validatorBlocked) {
+        filteredValidations.push(validation);
+      }
+    }
+    
+    console.log(`🚫 Filtered out ${allValidations.length - filteredValidations.length} validations from blocklisted users`);
+    
     // Group validations by tweet author handle
     const authorMap = new Map();
     
-    for (const validation of allValidations) {
+    for (const validation of filteredValidations) {
       const handle = validation.tweetAuthorHandle.toLowerCase();
       
       if (!authorMap.has(handle)) {
@@ -3939,6 +3955,7 @@ router.get("/validators", async (ctx) => {
 router.get("/api/validators", async (ctx) => {
   try {
     const storageService = commandProcessor['storageService'];
+    const blocklistService = BlocklistService.getInstance();
     
     // Get all validations
     const allValidations = await storageService.getRecentValidations(1000);
@@ -3953,10 +3970,25 @@ router.get("/api/validators", async (ctx) => {
       return;
     }
     
+    // Filter out validations from or to blocklisted users
+    const filteredValidations = [];
+    for (const validation of allValidations) {
+      // Check if tweet author is blocklisted
+      const authorBlocked = await blocklistService.isBlocked(validation.tweetAuthorHandle);
+      // Check if validator is blocklisted  
+      const validatorBlocked = await blocklistService.isBlocked(validation.requestedByHandle);
+      
+      if (!authorBlocked && !validatorBlocked) {
+        filteredValidations.push(validation);
+      }
+    }
+    
+    console.log(`🚫 Validator leaderboard filtered out ${allValidations.length - filteredValidations.length} validations from blocklisted users`);
+    
     // Group validations by validator handle
     const validatorMap = new Map();
     
-    for (const validation of allValidations) {
+    for (const validation of filteredValidations) {
       const handle = validation.requestedByHandle.toLowerCase();
       
       if (!validatorMap.has(handle)) {
