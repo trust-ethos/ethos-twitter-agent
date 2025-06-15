@@ -557,6 +557,7 @@ router.get("/dashboard", async (ctx) => {
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232E7BC3'><path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -932,6 +933,46 @@ router.get("/dashboard", async (ctx) => {
                     </div>
                 </div>
 
+                <!-- Average Score Trend Chart -->
+                <div class="rounded-lg shadow-lg mb-8" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">📈 Average Score Trend</h3>
+                                <p class="text-sm" style="color: #EFEEE099;">Quality score trending over the last 30 days</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold" id="trend-change" style="color: #EFEEE0D9;">...</div>
+                                <div class="text-sm" style="color: #EFEEE099;">vs. yesterday</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Chart Loading State -->
+                        <div id="chart-loading" class="text-center py-8">
+                            <div class="inline-flex items-center justify-center space-x-2">
+                                <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                                <span class="text-muted-foreground">Loading trend data...</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Chart Container -->
+                        <div id="chart-container" class="hidden">
+                            <canvas id="trendChart" width="800" height="300"></canvas>
+                        </div>
+                        
+                        <!-- Chart Empty State -->
+                        <div id="chart-empty" class="hidden text-center py-8">
+                            <div class="mx-auto h-12 w-12 text-muted-foreground mb-4">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-lg" style="color: #EFEEE099;">Not enough data for trend analysis</p>
+                            <p class="text-sm mt-2" style="color: #EFEEE099;">We need at least 7 days of validations to show the trend</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Data Table Card -->
                 <div class="rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
                     <!-- Table Header -->
@@ -1073,6 +1114,7 @@ router.get("/dashboard", async (ctx) => {
             // Simple API test first
             testAPI();
             loadValidations();
+            loadTrendChart();
         });
         
         // Simple test function to verify API connectivity
@@ -1086,6 +1128,137 @@ router.get("/dashboard", async (ctx) => {
             } catch (error) {
                 console.error('❌ API test failed:', error);
             }
+        }
+
+        // Load trend chart data
+        async function loadTrendChart() {
+            try {
+                console.log('📈 Loading trend chart data...');
+                const response = await fetch('/api/trend');
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.length >= 7) {
+                    renderTrendChart(data.data, data.stats);
+                } else {
+                    showChartEmptyState();
+                }
+            } catch (error) {
+                console.error('❌ Trend chart loading failed:', error);
+                showChartEmptyState();
+            }
+        }
+
+        // Render the trend chart
+        function renderTrendChart(trendData, stats) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            // Show trend change
+            if (stats && stats.change !== undefined) {
+                const changeElement = document.getElementById('trend-change');
+                const changeValue = stats.change > 0 ? `+${stats.change.toFixed(1)}%` : `${stats.change.toFixed(1)}%`;
+                changeElement.textContent = changeValue;
+                changeElement.style.color = stats.change > 0 ? '#127f31' : stats.change < 0 ? '#b72b38' : '#EFEEE0D9';
+            }
+            
+            // Prepare chart data
+            const labels = trendData.map(point => {
+                const date = new Date(point.date);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            });
+            
+            const qualityScores = trendData.map(point => point.averageQualityScore);
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(46, 123, 195, 0.8)');
+            gradient.addColorStop(1, 'rgba(46, 123, 195, 0.1)');
+            
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Average Quality Score',
+                        data: qualityScores,
+                        borderColor: '#2E7BC3',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#2E7BC3',
+                        pointBorderColor: '#EFEEE0D9',
+                        pointBorderWidth: 2,
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#2d2d2A',
+                            titleColor: '#EFEEE0D9',
+                            bodyColor: '#EFEEE0D9',
+                            borderColor: '#2E7BC3',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Quality Score: ${context.parsed.y.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(239, 238, 224, 0.1)',
+                                borderColor: 'rgba(239, 238, 224, 0.2)'
+                            },
+                            ticks: {
+                                color: '#EFEEE099',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(239, 238, 224, 0.1)',
+                                borderColor: 'rgba(239, 238, 224, 0.2)'
+                            },
+                            ticks: {
+                                color: '#EFEEE099',
+                                font: {
+                                    size: 12
+                                },
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+            
+            // Hide loading, show chart
+            document.getElementById('chart-loading').classList.add('hidden');
+            document.getElementById('chart-container').classList.remove('hidden');
+        }
+
+        // Show empty state for chart
+        function showChartEmptyState() {
+            document.getElementById('chart-loading').classList.add('hidden');
+            document.getElementById('chart-empty').classList.remove('hidden');
         }
 
         // Setup event listeners
@@ -2306,6 +2479,105 @@ router.get("/api/leaderboard", async (ctx) => {
     ctx.response.body = { 
       success: false,
       error: "Leaderboard API temporarily unavailable",
+      message: error.message 
+    };
+  }
+});
+
+// Trend API endpoint - calculates daily average scores for the last 30 days
+router.get("/api/trend", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    const blocklistService = BlocklistService.getInstance();
+    
+    // Get all validations
+    const allValidations = await storageService.getRecentValidations(1000);
+    
+    if (allValidations.length === 0) {
+      ctx.response.headers.set("Content-Type", "application/json");
+      ctx.response.body = {
+        success: true,
+        data: [],
+        message: "No validation data available"
+      };
+      return;
+    }
+    
+    // Filter out validations from or to blocklisted users
+    const filteredValidations = [];
+    for (const validation of allValidations) {
+      // Check if tweet author is blocklisted
+      const authorBlocked = await blocklistService.isBlocked(validation.tweetAuthorHandle);
+      // Check if validator is blocklisted  
+      const validatorBlocked = await blocklistService.isBlocked(validation.requestedByHandle);
+      
+      if (!authorBlocked && !validatorBlocked) {
+        filteredValidations.push(validation);
+      }
+    }
+    
+    console.log(`📈 Trend analysis using ${filteredValidations.length} validations (filtered ${allValidations.length - filteredValidations.length} from blocklist)`);
+    
+    // Group by day and calculate daily averages
+    const dailyData = new Map();
+    
+    filteredValidations.forEach(validation => {
+      // Get date in YYYY-MM-DD format
+      const date = new Date(validation.timestamp).toISOString().split('T')[0];
+      
+      if (!dailyData.has(date)) {
+        dailyData.set(date, {
+          date,
+          validations: [],
+          totalQualityScore: 0,
+          count: 0
+        });
+      }
+      
+      const dayData = dailyData.get(date);
+      const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + 
+                          (validation.engagementStats.ethos_active_percentage * 0.4);
+      
+      dayData.validations.push(validation);
+      dayData.totalQualityScore += qualityScore;
+      dayData.count++;
+    });
+    
+    // Convert to array and calculate averages
+    const trendData = Array.from(dailyData.values())
+      .map(dayData => ({
+        date: dayData.date,
+        averageQualityScore: dayData.totalQualityScore / dayData.count,
+        validationCount: dayData.count
+      }))
+      .sort((a, b) => a.date.localeCompare(b.date)) // Sort by date ascending
+      .slice(-30); // Get last 30 days
+    
+    // Calculate trend statistics
+    let stats = {};
+    if (trendData.length >= 2) {
+      const today = trendData[trendData.length - 1];
+      const yesterday = trendData[trendData.length - 2];
+      stats.change = today.averageQualityScore - yesterday.averageQualityScore;
+      stats.currentScore = today.averageQualityScore;
+      stats.validationCount = today.validationCount;
+    }
+    
+    ctx.response.headers.set("Content-Type", "application/json");
+    ctx.response.body = {
+      success: true,
+      data: trendData,
+      stats: stats,
+      totalValidations: filteredValidations.length,
+      timestamp: new Date().toISOString()
+    };
+    
+  } catch (error) {
+    console.error("❌ Trend API error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { 
+      success: false,
+      error: "Trend API temporarily unavailable",
       message: error.message 
     };
   }
