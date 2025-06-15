@@ -874,64 +874,7 @@ router.get("/dashboard", async (ctx) => {
         <!-- Main Content -->
         <main class="flex-1">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
-                        <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: rgba(46, 123, 195, 0.1); color: #2E7BC3;">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium" style="color: #EFEEE099;">Total Validations</p>
-                                <p class="text-2xl font-bold" id="total-validations" style="color: #EFEEE0D9;">...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
-                        <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium" style="color: #EFEEE099;">Unique Validators</p>
-                                <p class="text-2xl font-bold" id="unique-validators" style="color: #EFEEE0D9;">...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
-                        <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: #127f31; color: #EFEEE0D9;">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium" style="color: #EFEEE099;">7-Day Avg Quality Score</p>
-                                <p class="text-2xl font-bold" id="avg-quality" style="color: #EFEEE0D9;">...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="p-6 rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
-                        <div class="flex items-center space-x-2">
-                            <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background-color: #127f31; color: #EFEEE0D9;">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium" style="color: #EFEEE099;">System Status</p>
-                                <p class="text-2xl font-bold" style="color: #127f31;">Healthy</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- Average Score Trend Chart -->
                 <div class="rounded-lg shadow-lg mb-8" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
@@ -957,7 +900,7 @@ router.get("/dashboard", async (ctx) => {
                         
                         <!-- Chart Container -->
                         <div id="chart-container" class="hidden">
-                            <canvas id="trendChart" width="800" height="300"></canvas>
+                            <canvas id="trendChart" width="800" height="200"></canvas>
                         </div>
                         
                         <!-- Chart Empty State -->
@@ -1358,7 +1301,6 @@ router.get("/dashboard", async (ctx) => {
                 
                 if (result.success) {
                     console.log('✅ Data loaded successfully, ' + result.data.length + ' validations');
-                    updateStats(result);
                     renderTable(result.data);
                     renderPagination(result.pagination);
                     
@@ -1376,42 +1318,14 @@ router.get("/dashboard", async (ctx) => {
                 console.error('❌ Error loading validations:', error);
                 tableBody.innerHTML = '<tr><td colspan="8" class="p-12 text-center text-muted-foreground">Error loading data: ' + error.message + '</td></tr>';
                 
-                // Also show error in stats
-                document.getElementById('total-validations').textContent = 'Error';
-                document.getElementById('unique-validators').textContent = 'Error';
-                document.getElementById('avg-quality').textContent = 'Error';
+                // Stats cards removed - no longer updating stats
             } finally {
                 loadingState.classList.add('hidden');
                 isLoading = false;
             }
         }
 
-        // Update stats cards
-        function updateStats(result) {
-            console.log('📊 Updating stats with result:', result);
-            
-            // Safely update total validations
-            const totalValidations = result.pagination ? result.pagination.total : (result.data ? result.data.length : 0);
-            document.getElementById('total-validations').textContent = totalValidations.toLocaleString();
-            
-            // Calculate unique validators safely
-            if (result.data && result.data.length > 0) {
-                const uniqueValidators = new Set(result.data.map(v => v.requestedByHandle)).size;
-                document.getElementById('unique-validators').textContent = uniqueValidators;
-                
-                // Calculate average quality score
-                const avgQuality = result.data.reduce((sum, v) => {
-                    const reputablePct = v.engagementStats ? v.engagementStats.reputable_percentage || 0 : 0;
-                    const ethosActivePct = v.engagementStats ? v.engagementStats.ethos_active_percentage || 0 : 0;
-                    const quality = (reputablePct * 0.6) + (ethosActivePct * 0.4);
-                    return sum + quality;
-                }, 0) / result.data.length;
-                document.getElementById('avg-quality').textContent = Math.round(avgQuality) + '%';
-            } else {
-                document.getElementById('unique-validators').textContent = '0';
-                document.getElementById('avg-quality').textContent = '0%';
-            }
-        }
+        // Stats cards removed - updateStats function no longer needed
 
         // Create sample data if no data exists (for testing)
         async function createSampleDataIfNeeded() {
