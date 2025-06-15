@@ -1155,7 +1155,7 @@ router.get("/dashboard", async (ctx) => {
             // Show trend change
             if (stats && stats.change !== undefined) {
                 const changeElement = document.getElementById('trend-change');
-                const changeValue = stats.change > 0 ? `+${stats.change.toFixed(1)}%` : `${stats.change.toFixed(1)}%`;
+                const changeValue = stats.change > 0 ? '+' + stats.change.toFixed(1) + '%' : stats.change.toFixed(1) + '%';
                 changeElement.textContent = changeValue;
                 changeElement.style.color = stats.change > 0 ? '#127f31' : stats.change < 0 ? '#b72b38' : '#EFEEE0D9';
             }
@@ -1207,7 +1207,7 @@ router.get("/dashboard", async (ctx) => {
                             borderWidth: 1,
                             callbacks: {
                                 label: function(context) {
-                                    return `Quality Score: ${context.parsed.y.toFixed(1)}%`;
+                                    return 'Quality Score: ' + context.parsed.y.toFixed(1) + '%';
                                 }
                             }
                         }
