@@ -891,10 +891,10 @@ router.get("/dashboard", async (ctx) => {
                     <div class="p-6">
                         <div class="text-left">
                             <h1 class="text-3xl lg:text-4xl font-bold mb-4" style="color: #2E7BC3;">
-                                Ethos Agent
+                                Ethos Agent Validations
                             </h1>
                             <h2 class="text-xl lg:text-2xl font-semibold mb-4" style="color: #EFEEE0D9;">
-                                Fighting Twitter Manipulation with Reputation Intelligence
+                                Fighting Twitter manipulation with reputation intelligence
                             </h2>
                             <div class="space-y-3 text-sm lg:text-base" style="color: #EFEEE099;">
                                 <p>
@@ -1424,14 +1424,8 @@ router.get("/dashboard", async (ctx) => {
                         '</div>' +
                         // Quality score badge in top right (inline layout)
                         '<div class="flex items-center space-x-3 ml-4">' +
-                            '<div class="text-center">' +
-                                '<div>' + qualityBadge + '</div>' +
-                                '<div class="text-xs mt-1" style="color: #EFEEE099;">Quality</div>' +
-                            '</div>' +
-                            '<div class="text-center">' +
-                                '<div>' + scoreBadge + '</div>' +
-                                '<div class="text-xs mt-1" style="color: #EFEEE099;">Ethos Avg</div>' +
-                            '</div>' +
+                            '<div>' + qualityBadge + '</div>' +
+                            '<div>' + scoreBadge + '</div>' +
                         '</div>' +
                     '</div>' +
                     
@@ -1513,7 +1507,7 @@ router.get("/dashboard", async (ctx) => {
                 textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '%</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '% Quality</span>';
         }
 
         // Get percentage color class for engagement stats
@@ -1543,23 +1537,28 @@ router.get("/dashboard", async (ctx) => {
         // Get score badge with compact styling for inline layout
         function getScoreBadge(score) {
             if (!score) {
-                return '<span style="color: #EFEEE099;">—</span>';
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: #323232; color: #EFEEE099;">— Ethos Avg</span>';
             }
             
-            let textColor;
+            let backgroundColor, textColor;
             if (score < 800) {
-                textColor = '#ef4444'; // red
+                backgroundColor = '#ef4444'; // red
+                textColor = '#ffffff';
             } else if (score < 1200) {
-                textColor = '#eab308'; // yellow
+                backgroundColor = '#eab308'; // yellow
+                textColor = '#000000';
             } else if (score < 1600) {
-                textColor = '#EFEEE099'; // neutral
+                backgroundColor = '#6b7280'; // neutral gray
+                textColor = '#ffffff';
             } else if (score < 2000) {
-                textColor = '#2E7BC3'; // blue
+                backgroundColor = '#2E7BC3'; // blue
+                textColor = '#ffffff';
             } else {
-                textColor = '#22c55e'; // green
+                backgroundColor = '#22c55e'; // green
+                textColor = '#ffffff';
             }
             
-            return '<span class="font-medium" style="color: ' + textColor + ';">' + score + '</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos Avg</span>';
         }
 
         // Render pagination with ShadCN styling
