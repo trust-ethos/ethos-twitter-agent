@@ -2333,7 +2333,8 @@ router.get("/author/:handle", async (ctx) => {
                 const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4);
                 return {
                     date: new Date(validation.timestamp),
-                    score: qualityScore
+                    score: qualityScore,
+                    tweetUrl: validation.tweetUrl
                 };
             });
             
@@ -2358,40 +2359,108 @@ router.get("/author/:handle", async (ctx) => {
             document.getElementById('author-chart-loading').classList.add('hidden');
             document.getElementById('author-chart-container').classList.remove('hidden');
             
-            // Create simple line chart (basic implementation)
+            // Create chart using Chart.js-like approach but with native canvas
             const canvas = document.getElementById('authorTrendChart');
             const ctx = canvas.getContext('2d');
             
+            // Set canvas size properly for high DPI displays
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = rect.height + 'px';
+            
             // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, rect.width, rect.height);
             
             // Chart dimensions
-            const padding = 40;
-            const chartWidth = canvas.width - 2 * padding;
-            const chartHeight = canvas.height - 2 * padding;
+            const padding = 50;
+            const chartWidth = rect.width - 2 * padding;
+            const chartHeight = rect.height - 2 * padding;
             
-            // Find min/max scores for scaling
+            // Find min/max scores for scaling with some padding
             const scores = chartData.map(d => d.score);
-            const minScore = Math.min(...scores);
-            const maxScore = Math.max(...scores);
-            const scoreRange = maxScore - minScore || 1; // Avoid division by zero
+            const minScore = Math.max(0, Math.min(...scores) - 5); // Don't go below 0
+            const maxScore = Math.min(100, Math.max(...scores) + 5); // Don't go above 100
+            const scoreRange = maxScore - minScore || 1;
             
-            // Draw grid lines
+            // Draw background
+            ctx.fillStyle = 'rgba(45, 45, 42, 0.5)';
+            ctx.fillRect(padding, padding, chartWidth, chartHeight);
+            
+            // Draw grid lines and labels
             ctx.strokeStyle = 'rgba(239, 238, 224, 0.1)';
+            ctx.fillStyle = 'rgba(239, 238, 224, 0.6)';
+            ctx.font = '10px Inter, sans-serif';
             ctx.lineWidth = 1;
             
-            // Horizontal grid lines
+            // Horizontal grid lines with labels
             for (let i = 0; i <= 4; i++) {
                 const y = padding + (i * chartHeight / 4);
+                const scoreValue = maxScore - (i * scoreRange / 4);
+                
                 ctx.beginPath();
                 ctx.moveTo(padding, y);
                 ctx.lineTo(padding + chartWidth, y);
                 ctx.stroke();
+                
+                // Y-axis labels
+                ctx.textAlign = 'right';
+                ctx.fillText(scoreValue.toFixed(0) + '%', padding - 10, y + 3);
             }
             
-            // Draw line
+            // Vertical grid lines with date labels
+            const numVerticalLines = Math.min(chartData.length, 5);
+            for (let i = 0; i < numVerticalLines; i++) {
+                const x = padding + (i * chartWidth / (numVerticalLines - 1));
+                const dataIndex = Math.floor(i * (chartData.length - 1) / (numVerticalLines - 1));
+                
+                ctx.beginPath();
+                ctx.moveTo(x, padding);
+                ctx.lineTo(x, padding + chartHeight);
+                ctx.stroke();
+                
+                // X-axis labels
+                if (chartData[dataIndex]) {
+                    const dateStr = chartData[dataIndex].date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                    ctx.textAlign = 'center';
+                    ctx.fillText(dateStr, x, padding + chartHeight + 20);
+                }
+            }
+            
+            // Draw line with gradient
+            const gradient = ctx.createLinearGradient(0, padding, 0, padding + chartHeight);
+            gradient.addColorStop(0, 'rgba(46, 123, 195, 0.3)');
+            gradient.addColorStop(1, 'rgba(46, 123, 195, 0.1)');
+            
+            // Fill area under line
+            ctx.beginPath();
+            chartData.forEach((point, index) => {
+                const x = padding + (index * chartWidth / (chartData.length - 1));
+                const y = padding + chartHeight - ((point.score - minScore) / scoreRange * chartHeight);
+                
+                if (index === 0) {
+                    ctx.moveTo(x, padding + chartHeight);
+                    ctx.lineTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.lineTo(padding + chartWidth, padding + chartHeight);
+            ctx.closePath();
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Draw main line
             ctx.strokeStyle = '#2E7BC3';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
             ctx.beginPath();
             
             chartData.forEach((point, index) => {
@@ -2407,15 +2476,92 @@ router.get("/author/:handle", async (ctx) => {
             
             ctx.stroke();
             
-            // Draw points
-            ctx.fillStyle = '#2E7BC3';
+            // Draw points with hover capability
+            const points = [];
             chartData.forEach((point, index) => {
                 const x = padding + (index * chartWidth / (chartData.length - 1));
                 const y = padding + chartHeight - ((point.score - minScore) / scoreRange * chartHeight);
                 
+                // Store point data for hover detection
+                points.push({
+                    x: x,
+                    y: y,
+                    score: point.score,
+                    date: point.date,
+                    tweetUrl: point.tweetUrl
+                });
+                
+                // Draw point
                 ctx.beginPath();
-                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.fillStyle = '#2E7BC3';
                 ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+            
+            // Add hover functionality
+            let tooltip = document.getElementById('chart-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'chart-tooltip';
+                tooltip.style.cssText = 'position: absolute; background: rgba(45, 45, 42, 0.95); color: #EFEEE0D9; padding: 8px 12px; border-radius: 6px; font-size: 12px; pointer-events: none; z-index: 1000; display: none; border: 1px solid rgba(46, 123, 195, 0.3); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);';
+                document.body.appendChild(tooltip);
+            }
+            
+            canvas.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                let hoveredPoint = null;
+                for (const point of points) {
+                    const distance = Math.sqrt(Math.pow(mouseX - point.x, 2) + Math.pow(mouseY - point.y, 2));
+                    if (distance <= 10) {
+                        hoveredPoint = point;
+                        break;
+                    }
+                }
+                
+                if (hoveredPoint) {
+                    canvas.style.cursor = 'pointer';
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (e.clientX + 10) + 'px';
+                    tooltip.style.top = (e.clientY - 10) + 'px';
+                    tooltip.innerHTML = '<div><strong>' + hoveredPoint.score.toFixed(1) + '%</strong></div>' +
+                        '<div style="color: #EFEEE099; font-size: 11px;">' +
+                            hoveredPoint.date.toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit'
+                            }) +
+                        '</div>' +
+                        '<div style="color: #2E7BC3; font-size: 10px; margin-top: 4px;">Click to view tweet</div>';
+                } else {
+                    canvas.style.cursor = 'default';
+                    tooltip.style.display = 'none';
+                }
+            });
+            
+            canvas.addEventListener('mouseleave', () => {
+                tooltip.style.display = 'none';
+                canvas.style.cursor = 'default';
+            });
+            
+            canvas.addEventListener('click', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                for (const point of points) {
+                    const distance = Math.sqrt(Math.pow(mouseX - point.x, 2) + Math.pow(mouseY - point.y, 2));
+                    if (distance <= 10) {
+                        window.open(point.tweetUrl, '_blank');
+                        break;
+                    }
+                }
             });
         }
         
