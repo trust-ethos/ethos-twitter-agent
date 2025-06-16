@@ -899,12 +899,12 @@ router.get("/dashboard", async (ctx) => {
                             <div class="space-y-3 text-sm lg:text-base" style="color: #EFEEE099;">
                                 <p>
                                     <strong style="color: #EFEEE0D9;">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
-                                    Using the <strong style="color: #2E7BC3;">Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
+                                    Using the <strong>Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
                                 </p>
                                 <p>
-                                    <strong style="color: #127f31;">How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
-                                    to show what percentage come from <strong style="color: #2E7BC3;">reputable accounts</strong> (Ethos score 1600+) versus 
-                                    <strong style="color: #C29010;">potentially manipulated engagement</strong>.
+                                    <strong>How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
+                                    to show what percentage come from <strong>reputable accounts</strong> (Ethos score 1600+) versus 
+                                    <strong>potentially manipulated engagement</strong>.
                                 </p>
                                 <p>
                                     <strong style="color: #EFEEE0D9;">The result:</strong> A quality score that reveals whether viral content is driven by 
@@ -1332,7 +1332,9 @@ router.get("/dashboard", async (ctx) => {
                 
                 if (result.success) {
                     console.log('✅ Data loaded successfully, ' + result.data.length + ' validations');
-                    renderTable(result.data);
+                    const averageQualityScore = result.stats?.averageQualityScore || 50;
+                    console.log('📊 Using average quality score:', averageQualityScore);
+                    renderTable(result.data, averageQualityScore);
                     renderPagination(result.pagination);
                     
                     if (result.data.length === 0) {
@@ -1378,13 +1380,13 @@ router.get("/dashboard", async (ctx) => {
         }
 
         // Render tweet-like cards
-        function renderTable(validations) {
+        function renderTable(validations, averageQualityScore = 50) {
             const tweetCards = document.getElementById('tweet-cards');
             
             // Render tweet-like cards for all screen sizes
             tweetCards.innerHTML = validations.map(validation => {
                 const qualityScore = Math.round((validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4));
-                const qualityBadge = getQualityBadge(qualityScore);
+                const qualityBadge = getQualityBadge(qualityScore, averageQualityScore);
                 const scoreBadge = getScoreBadge(validation.averageScore);
                 const date = new Date(validation.timestamp).toLocaleDateString();
                 const timeAgo = formatRelativeTime(validation.timestamp);
@@ -1493,17 +1495,31 @@ router.get("/dashboard", async (ctx) => {
             }).join('');
         }
 
-        // Get quality badge with proper styling
-        function getQualityBadge(score) {
+        // Get quality badge with dynamic color coding based on moving average
+        function getQualityBadge(score, averageQualityScore = 50) {
             let backgroundColor, textColor;
-            if (score >= 60) {
-                backgroundColor = '#22c55e'; // green
+            
+            // Calculate thresholds based on moving average
+            const redThreshold = averageQualityScore - 25; // More than 25% below average
+            const yellowThreshold = averageQualityScore - 10; // 10-25% below average
+            const whiteThreshold = averageQualityScore + 10; // Plus or minus 10% of average
+            const blueThreshold = averageQualityScore + 25; // 10-25% above average
+            // Green is more than 25% above average
+            
+            if (score > blueThreshold) {
+                backgroundColor = '#22c55e'; // green - more than 25% above average
                 textColor = '#ffffff';
-            } else if (score >= 30) {
-                backgroundColor = '#eab308'; // yellow
+            } else if (score > whiteThreshold) {
+                backgroundColor = '#2E7BC3'; // blue - 10-25% above average
+                textColor = '#ffffff';
+            } else if (score >= yellowThreshold) {
+                backgroundColor = '#6b7280'; // neutral gray - plus or minus 10% of average
+                textColor = '#ffffff';
+            } else if (score >= redThreshold) {
+                backgroundColor = '#eab308'; // yellow - 10-25% below average
                 textColor = '#000000';
             } else {
-                backgroundColor = '#ef4444'; // red
+                backgroundColor = '#ef4444'; // red - more than 25% below average
                 textColor = '#ffffff';
             }
             
@@ -2507,6 +2523,9 @@ router.get("/api/validations", async (ctx) => {
 
     const storageService = commandProcessor['storageService'];
     
+    // Get validation stats including average quality score
+    const validationStats = await storageService.getValidationStats();
+    
     // Get all validations first (we'll implement server-side pagination later if needed)
     let allValidations = await storageService.getRecentValidations(1000);
     
@@ -2644,6 +2663,10 @@ router.get("/api/validations", async (ctx) => {
         validatorFilter,
         uniqueAuthors,
         uniqueValidators
+      },
+      stats: {
+        averageQualityScore: validationStats.averageQualityScore,
+        totalValidations: validationStats.totalValidations
       },
       timestamp: new Date().toISOString()
     };
