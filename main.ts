@@ -876,57 +876,55 @@ router.get("/dashboard", async (ctx) => {
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                 <!-- Hero Section -->
-                <div class="rounded-lg shadow-lg mb-8" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                <div class="rounded-lg shadow-lg mb-8 overflow-hidden" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                    <!-- Hero Cover Image -->
+                    <div class="relative">
+                        <img 
+                            src="/images/ethos-agent-hero.png" 
+                            alt="Ethos Agent - Fighting Twitter manipulation" 
+                            class="w-full h-48 md:h-56 lg:h-64 object-cover"
+                            onerror="this.style.display='none'"
+                        >
+                    </div>
+                    
+                    <!-- Hero Content -->
                     <div class="p-6">
-                        <div class="flex flex-col lg:flex-row items-center gap-6">
-                            <!-- Hero Image -->
-                            <div class="flex-shrink-0">
-                                <img 
-                                    src="/images/ethos-agent-hero.png" 
-                                    alt="Ethos Agent - Fighting Twitter manipulation" 
-                                    class="w-64 h-48 object-cover rounded-lg shadow-md"
-                                    onerror="this.style.display='none'"
-                                >
+                        <div class="text-left">
+                            <h1 class="text-3xl lg:text-4xl font-bold mb-4" style="color: #2E7BC3;">
+                                Ethos Agent
+                            </h1>
+                            <h2 class="text-xl lg:text-2xl font-semibold mb-4" style="color: #EFEEE0D9;">
+                                Fighting Twitter Manipulation with Reputation Intelligence
+                            </h2>
+                            <div class="space-y-3 text-sm lg:text-base" style="color: #EFEEE099;">
+                                <p>
+                                    <strong style="color: #EFEEE0D9;">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
+                                    Using the <strong style="color: #2E7BC3;">Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
+                                </p>
+                                <p>
+                                    <strong style="color: #127f31;">How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
+                                    to show what percentage come from <strong style="color: #2E7BC3;">reputable accounts</strong> (Ethos score 1600+) versus 
+                                    <strong style="color: #C29010;">potentially manipulated engagement</strong>.
+                                </p>
+                                <p>
+                                    <strong style="color: #EFEEE0D9;">The result:</strong> A quality score that reveals whether viral content is driven by 
+                                    authentic community engagement or artificial amplification.
+                                </p>
                             </div>
                             
-                            <!-- Hero Content -->
-                            <div class="flex-1 text-center lg:text-left">
-                                <h1 class="text-3xl lg:text-4xl font-bold mb-4" style="color: #2E7BC3;">
-                                    Ethos Agent
-                                </h1>
-                                <h2 class="text-xl lg:text-2xl font-semibold mb-4" style="color: #EFEEE0D9;">
-                                    Fighting Twitter Manipulation with Reputation Intelligence
-                                </h2>
-                                <div class="space-y-3 text-sm lg:text-base" style="color: #EFEEE099;">
-                                    <p>
-                                        <strong style="color: #EFEEE0D9;">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
-                                        Using the <strong style="color: #2E7BC3;">Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
-                                    </p>
-                                    <p>
-                                        <strong style="color: #127f31;">How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
-                                        to show what percentage come from <strong style="color: #2E7BC3;">reputable accounts</strong> (Ethos score 1600+) versus 
-                                        <strong style="color: #C29010;">potentially manipulated engagement</strong>.
-                                    </p>
-                                    <p>
-                                        <strong style="color: #EFEEE0D9;">The result:</strong> A quality score that reveals whether viral content is driven by 
-                                        authentic community engagement or artificial amplification.
-                                    </p>
+                            <!-- Quick Stats -->
+                            <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div class="text-center p-4 rounded-lg" style="background-color: rgba(46, 123, 195, 0.1);">
+                                    <div class="text-xl font-bold" style="color: #2E7BC3;" id="hero-total-validations">-</div>
+                                    <div class="text-sm" style="color: #EFEEE099;">Total validations</div>
                                 </div>
-                                
-                                <!-- Quick Stats -->
-                                <div class="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div class="text-center p-3 rounded-lg" style="background-color: rgba(46, 123, 195, 0.1);">
-                                        <div class="text-lg font-bold" style="color: #2E7BC3;" id="hero-total-validations">-</div>
-                                        <div class="text-xs" style="color: #EFEEE099;">Total validations</div>
-                                    </div>
-                                    <div class="text-center p-3 rounded-lg" style="background-color: rgba(18, 127, 49, 0.1);">
-                                        <div class="text-lg font-bold" style="color: #127f31;" id="hero-avg-quality">-</div>
-                                        <div class="text-xs" style="color: #EFEEE099;">Avg quality score</div>
-                                    </div>
-                                    <div class="text-center p-3 rounded-lg col-span-2 lg:col-span-1" style="background-color: rgba(194, 144, 16, 0.1);">
-                                        <div class="text-lg font-bold" style="color: #C29010;" id="hero-reputable-users">750</div>
-                                        <div class="text-xs" style="color: #EFEEE099;">Reputable users</div>
-                                    </div>
+                                <div class="text-center p-4 rounded-lg" style="background-color: rgba(18, 127, 49, 0.1);">
+                                    <div class="text-xl font-bold" style="color: #127f31;" id="hero-avg-quality">-</div>
+                                    <div class="text-sm" style="color: #EFEEE099;">Avg quality score</div>
+                                </div>
+                                <div class="text-center p-4 rounded-lg" style="background-color: rgba(194, 144, 16, 0.1);">
+                                    <div class="text-xl font-bold" style="color: #C29010;" id="hero-reputable-users">750</div>
+                                    <div class="text-sm" style="color: #EFEEE099;">Reputable users</div>
                                 </div>
                             </div>
                         </div>
