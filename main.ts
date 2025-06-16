@@ -2621,62 +2621,83 @@ router.get("/author/:handle", async (ctx) => {
             }
         }
         
-        function getQualityBadge(score, averageScore) {
-            const diff = score - averageScore;
-            let colorClass, label;
+        // Get quality badge with dynamic color coding based on moving average
+        function getQualityBadge(score, averageQualityScore = 50) {
+            let backgroundColor, textColor;
             
-            if (diff > 25) {
-                colorClass = 'bg-green-600 text-white';
-                label = 'Excellent';
-            } else if (diff > 10) {
-                colorClass = 'bg-blue-600 text-white';
-                label = 'Above Avg';
-            } else if (diff >= -10) {
-                colorClass = 'bg-gray-600 text-white';
-                label = 'Average';
-            } else if (diff >= -25) {
-                colorClass = 'bg-yellow-600 text-white';
-                label = 'Below Avg';
+            // Calculate thresholds based on moving average
+            const redThreshold = averageQualityScore - 25; // More than 25% below average
+            const yellowThreshold = averageQualityScore - 10; // 10-25% below average
+            const whiteThreshold = averageQualityScore + 10; // Plus or minus 10% of average
+            const blueThreshold = averageQualityScore + 25; // 10-25% above average
+            // Green is more than 25% above average
+            
+            if (score > blueThreshold) {
+                backgroundColor = '#22c55e'; // green - more than 25% above average
+                textColor = '#ffffff';
+            } else if (score > whiteThreshold) {
+                backgroundColor = '#2E7BC3'; // blue - 10-25% above average
+                textColor = '#ffffff';
+            } else if (score >= yellowThreshold) {
+                backgroundColor = '#6b7280'; // neutral gray - plus or minus 10% of average
+                textColor = '#ffffff';
+            } else if (score >= redThreshold) {
+                backgroundColor = '#eab308'; // yellow - 10-25% below average
+                textColor = '#000000';
             } else {
-                colorClass = 'bg-red-600 text-white';
-                label = 'Poor';
+                backgroundColor = '#ef4444'; // red - more than 25% below average
+                textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + colorClass + '">' +
-                   '<span class="mr-1">🎯</span>' + score.toFixed(1) + '% ' + label +
-                   '</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '% quality score</span>';
         }
-        
+
+        // Get score badge with compact styling for inline layout
         function getScoreBadge(score) {
-            if (!score) return '';
-            
-            let colorClass;
-            if (score >= 70) {
-                colorClass = 'bg-green-600 text-white';
-            } else if (score >= 40) {
-                colorClass = 'bg-yellow-600 text-white';
-            } else {
-                colorClass = 'bg-red-600 text-white';
+            if (!score) {
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: #323232; color: #EFEEE099;">— avg ethos</span>';
             }
             
-            return '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + colorClass + '">' +
-                   '<span class="mr-1">⭐</span>' + score.toFixed(1) +
-                   '</span>';
+            let backgroundColor, textColor;
+            if (score < 800) {
+                backgroundColor = '#ef4444'; // red
+                textColor = '#ffffff';
+            } else if (score < 1200) {
+                backgroundColor = '#eab308'; // yellow
+                textColor = '#000000';
+            } else if (score < 1600) {
+                backgroundColor = '#6b7280'; // neutral gray
+                textColor = '#ffffff';
+            } else if (score < 2000) {
+                backgroundColor = '#2E7BC3'; // blue
+                textColor = '#ffffff';
+            } else {
+                backgroundColor = '#22c55e'; // green
+                textColor = '#ffffff';
+            }
+            
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos Avg</span>';
         }
         
-        function getPercentageColorClass(percentage, average) {
-            const diff = percentage - average;
+        // Get percentage color class for engagement stats with dynamic coloring based on average
+        function getPercentageColorClass(percentage, averagePercentage = 30) {
+            // Calculate thresholds based on moving average (same logic as quality badge)
+            const redThreshold = averagePercentage - 25; // More than 25% below average
+            const yellowThreshold = averagePercentage - 10; // 10-25% below average
+            const whiteThreshold = averagePercentage + 10; // Plus or minus 10% of average
+            const blueThreshold = averagePercentage + 25; // 10-25% above average
+            // Green is more than 25% above average
             
-            if (diff > 25) {
-                return 'text-green-400';
-            } else if (diff > 10) {
-                return 'text-blue-400';
-            } else if (diff >= -10) {
-                return 'text-gray-400';
-            } else if (diff >= -25) {
-                return 'text-yellow-400';
+            if (percentage > blueThreshold) {
+                return '" style="color: #22c55e;'; // green - more than 25% above average
+            } else if (percentage > whiteThreshold) {
+                return '" style="color: #2E7BC3;'; // blue - 10-25% above average
+            } else if (percentage >= yellowThreshold) {
+                return '" style="color: #6b7280;'; // neutral gray - plus or minus 10% of average
+            } else if (percentage >= redThreshold) {
+                return '" style="color: #eab308;'; // yellow - 10-25% below average
             } else {
-                return 'text-red-400';
+                return '" style="color: #ef4444;'; // red - more than 25% below average
             }
         }
         
