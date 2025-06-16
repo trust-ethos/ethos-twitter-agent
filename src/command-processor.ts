@@ -848,6 +848,20 @@ Link to tweet: ${originalTweetLink}`;
         overallQuality
       };
 
+      // Check if there's any engagement before storing
+      if (engagementStats.total_retweeters === 0 && engagementStats.total_quote_tweeters === 0 && engagementStats.total_repliers === 0) {
+        console.log(`📊 No engagement found for tweet ${originalTweetId}, skipping storage`);
+        
+        // 📝 RATE LIMITING: Still record command usage even for no-engagement tweets
+        await this.storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "validate");
+        
+        return {
+          success: true,
+          message: "No engagement found - validation not stored",
+          replyText: "📊 No engagement found for this tweet."
+        };
+      }
+
       // Store the validation (await to ensure it's saved)
       try {
         await this.storageService.storeValidation(validationRecord);
@@ -871,12 +885,9 @@ Link to tweet: ${originalTweetLink}`;
       // Format the response
       let replyText: string;
       
-      if (engagementStats.total_retweeters === 0 && engagementStats.total_quote_tweeters === 0 && engagementStats.total_repliers === 0) {
-        replyText = "📊 No engagement found for this tweet.";
-      } else {
-        const retweetReputablePercentage = engagementStats.total_retweeters > 0 
-          ? Math.round((engagementStats.reputable_retweeters / engagementStats.total_retweeters) * 100)
-          : 0;
+      const retweetReputablePercentage = engagementStats.total_retweeters > 0 
+        ? Math.round((engagementStats.reputable_retweeters / engagementStats.total_retweeters) * 100)
+        : 0;
         
         const quoteReputablePercentage = engagementStats.total_quote_tweeters > 0 
           ? Math.round((engagementStats.reputable_quote_tweeters / engagementStats.total_quote_tweeters) * 100)
@@ -1020,7 +1031,6 @@ Link to tweet: ${originalTweetLink}`;
         response += `\n\nView all validations: https://validate.ethos.network`;
 
         replyText = response;
-      }
 
       // 📝 RATE LIMITING: Record successful command usage
       await this.storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "validate");
