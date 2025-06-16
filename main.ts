@@ -865,7 +865,7 @@ router.get("/dashboard", async (ctx) => {
 
         <!-- Main Content -->
         <main class="flex-1">
-            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8" style="max-width: 1000px;">
 
                 <!-- Hero Section -->
                 <div class="rounded-lg shadow-lg mb-8 overflow-hidden" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
