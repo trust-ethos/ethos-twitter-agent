@@ -2097,8 +2097,8 @@ router.get("/author/:handle", async (ctx) => {
                     </div>
                     
                     <!-- Chart Container -->
-                    <div id="author-chart-container" class="hidden" style="height: 200px;">
-                        <canvas id="authorTrendChart" width="800" height="120"></canvas>
+                    <div id="author-chart-container" class="hidden" style="height: 400px;">
+                        <canvas id="authorTrendChart" width="800" height="400"></canvas>
                     </div>
                     
                     <!-- Chart Empty State -->
@@ -2376,7 +2376,7 @@ router.get("/author/:handle", async (ctx) => {
             ctx.clearRect(0, 0, rect.width, rect.height);
             
             // Chart dimensions
-            const padding = 50;
+            const padding = 80;
             const chartWidth = rect.width - 2 * padding;
             const chartHeight = rect.height - 2 * padding;
             
@@ -2393,7 +2393,7 @@ router.get("/author/:handle", async (ctx) => {
             // Draw grid lines and labels
             ctx.strokeStyle = 'rgba(239, 238, 224, 0.1)';
             ctx.fillStyle = 'rgba(239, 238, 224, 0.6)';
-            ctx.font = '10px Inter, sans-serif';
+            ctx.font = '14px Inter, sans-serif';
             ctx.lineWidth = 1;
             
             // Horizontal grid lines with labels
@@ -2408,7 +2408,7 @@ router.get("/author/:handle", async (ctx) => {
                 
                 // Y-axis labels
                 ctx.textAlign = 'right';
-                ctx.fillText(scoreValue.toFixed(0) + '%', padding - 10, y + 3);
+                ctx.fillText(scoreValue.toFixed(0) + '%', padding - 15, y + 5);
             }
             
             // Vertical grid lines with date labels
@@ -2429,7 +2429,7 @@ router.get("/author/:handle", async (ctx) => {
                         day: 'numeric' 
                     });
                     ctx.textAlign = 'center';
-                    ctx.fillText(dateStr, x, padding + chartHeight + 20);
+                    ctx.fillText(dateStr, x, padding + chartHeight + 30);
                 }
             }
             
@@ -2458,7 +2458,7 @@ router.get("/author/:handle", async (ctx) => {
             
             // Draw main line
             ctx.strokeStyle = '#2E7BC3';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.beginPath();
@@ -2493,11 +2493,11 @@ router.get("/author/:handle", async (ctx) => {
                 
                 // Draw point
                 ctx.beginPath();
-                ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                ctx.arc(x, y, 7, 0, 2 * Math.PI);
                 ctx.fillStyle = '#2E7BC3';
                 ctx.fill();
                 ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 3;
                 ctx.stroke();
             });
             
@@ -2518,7 +2518,7 @@ router.get("/author/:handle", async (ctx) => {
                 let hoveredPoint = null;
                 for (const point of points) {
                     const distance = Math.sqrt(Math.pow(mouseX - point.x, 2) + Math.pow(mouseY - point.y, 2));
-                    if (distance <= 10) {
+                    if (distance <= 15) {
                         hoveredPoint = point;
                         break;
                     }
@@ -2557,7 +2557,7 @@ router.get("/author/:handle", async (ctx) => {
                 
                 for (const point of points) {
                     const distance = Math.sqrt(Math.pow(mouseX - point.x, 2) + Math.pow(mouseY - point.y, 2));
-                    if (distance <= 10) {
+                    if (distance <= 15) {
                         window.open(point.tweetUrl, '_blank');
                         break;
                     }
