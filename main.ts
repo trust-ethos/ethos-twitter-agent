@@ -1516,7 +1516,7 @@ router.get("/dashboard", async (ctx) => {
                 textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '% quality score</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '% quality score</span>';
         }
 
         // Get percentage color class for engagement stats with dynamic coloring based on average
@@ -1553,7 +1553,7 @@ router.get("/dashboard", async (ctx) => {
         // Get score badge with compact styling for inline layout
         function getScoreBadge(score) {
             if (!score) {
-                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: #323232; color: #EFEEE099;">— avg ethos</span>';
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium" style="background-color: #323232; color: #EFEEE099;">— avg ethos</span>';
             }
             
             let backgroundColor, textColor;
@@ -1574,7 +1574,7 @@ router.get("/dashboard", async (ctx) => {
                 textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos avg</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos avg</span>';
         }
 
         // Render pagination with ShadCN styling
@@ -2637,13 +2637,13 @@ router.get("/author/:handle", async (ctx) => {
                 textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '% quality score</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '% quality score</span>';
         }
 
         // Get score badge with compact styling for inline layout
         function getScoreBadge(score) {
             if (!score) {
-                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: #323232; color: #EFEEE099;">— avg ethos</span>';
+                return '<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium" style="background-color: #323232; color: #EFEEE099;">— avg ethos</span>';
             }
             
             let backgroundColor, textColor;
@@ -2664,7 +2664,7 @@ router.get("/author/:handle", async (ctx) => {
                 textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos avg</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos avg</span>';
         }
         
         // Get percentage color class for engagement stats with dynamic coloring based on average
