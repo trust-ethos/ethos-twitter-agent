@@ -2097,8 +2097,8 @@ router.get("/author/:handle", async (ctx) => {
                     </div>
                     
                     <!-- Chart Container -->
-                    <div id="author-chart-container" class="hidden" style="height: 400px;">
-                        <canvas id="authorTrendChart" width="800" height="400"></canvas>
+                    <div id="author-chart-container" class="hidden" style="height: 400px; width: 100%;">
+                        <canvas id="authorTrendChart" style="width: 100%; height: 100%;"></canvas>
                     </div>
                     
                     <!-- Chart Empty State -->
@@ -2375,8 +2375,8 @@ router.get("/author/:handle", async (ctx) => {
             // Clear canvas
             ctx.clearRect(0, 0, rect.width, rect.height);
             
-            // Chart dimensions
-            const padding = 80;
+            // Chart dimensions - responsive padding based on width
+            const padding = Math.max(60, Math.min(80, rect.width * 0.08));
             const chartWidth = rect.width - 2 * padding;
             const chartHeight = rect.height - 2 * padding;
             
@@ -2411,8 +2411,9 @@ router.get("/author/:handle", async (ctx) => {
                 ctx.fillText(scoreValue.toFixed(0) + '%', padding - 15, y + 5);
             }
             
-            // Vertical grid lines with date labels
-            const numVerticalLines = Math.min(chartData.length, 5);
+            // Vertical grid lines with date labels - more lines for wider charts
+            const maxVerticalLines = Math.min(chartData.length, Math.max(5, Math.floor(rect.width / 120)));
+            const numVerticalLines = Math.min(chartData.length, maxVerticalLines);
             for (let i = 0; i < numVerticalLines; i++) {
                 const x = padding + (i * chartWidth / (numVerticalLines - 1));
                 const dataIndex = Math.floor(i * (chartData.length - 1) / (numVerticalLines - 1));
