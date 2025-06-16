@@ -1422,12 +1422,16 @@ router.get("/dashboard", async (ctx) => {
                                 '</div>' +
                             '</div>' +
                         '</div>' +
-                        // Quality score badge in top right
-                        '<div class="flex flex-col items-end space-y-1 ml-4">' +
-                            '<div class="text-center">' + qualityBadge + '</div>' +
-                            '<div class="text-xs" style="color: #EFEEE099;">Quality</div>' +
-                            '<div class="text-center">' + scoreBadge + '</div>' +
-                            '<div class="text-xs" style="color: #EFEEE099;">Ethos</div>' +
+                        // Quality score badge in top right (inline layout)
+                        '<div class="flex items-center space-x-3 ml-4">' +
+                            '<div class="text-center">' +
+                                '<div>' + qualityBadge + '</div>' +
+                                '<div class="text-xs mt-1" style="color: #EFEEE099;">Quality</div>' +
+                            '</div>' +
+                            '<div class="text-center">' +
+                                '<div>' + scoreBadge + '</div>' +
+                                '<div class="text-xs mt-1" style="color: #EFEEE099;">Ethos Avg</div>' +
+                            '</div>' +
                         '</div>' +
                     '</div>' +
                     
