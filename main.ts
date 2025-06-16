@@ -1409,16 +1409,25 @@ router.get("/dashboard", async (ctx) => {
                 const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar, true);
                 
                 return '<div class="tweet-card" style="background-color: #232320; border: 1px solid rgba(239, 238, 224, 0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; transition: all 0.2s ease; cursor: pointer;" onmouseover="this.style.backgroundColor=&quot;#2a2a27&quot;; this.style.borderColor=&quot;rgba(46, 123, 195, 0.3)&quot;" onmouseout="this.style.backgroundColor=&quot;#232320&quot;; this.style.borderColor=&quot;rgba(239, 238, 224, 0.1)&quot;">' +
-                    // Tweet header (author info)
-                    '<div class="flex items-start space-x-3 mb-3">' +
-                        '<img class="h-12 w-12 rounded-full object-cover flex-shrink-0" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
-                        '<div class="flex-1 min-w-0">' +
-                            '<div class="flex items-center space-x-2">' +
-                                '<a href="/author/' + validation.tweetAuthorHandle + '" class="font-semibold hover:underline transition-colors duration-200" style="color: #EFEEE0D9; text-decoration: none;" onmouseover="this.style.color=&quot;#2E7BC3&quot;" onmouseout="this.style.color=&quot;#EFEEE0D9&quot;">' + validation.tweetAuthor + '</a>' +
-                                '<span class="text-sm" style="color: #EFEEE099;">@' + validation.tweetAuthorHandle + '</span>' +
-                                '<span class="text-sm" style="color: #EFEEE099;">·</span>' +
-                                '<span class="text-sm" style="color: #EFEEE099;">' + timeAgo + '</span>' +
+                    // Tweet header (author info) with quality score badge
+                    '<div class="flex items-start justify-between mb-3">' +
+                        '<div class="flex items-start space-x-3 flex-1">' +
+                            '<img class="h-12 w-12 rounded-full object-cover flex-shrink-0" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
+                            '<div class="flex-1 min-w-0">' +
+                                '<div class="flex items-center space-x-2">' +
+                                    '<a href="/author/' + validation.tweetAuthorHandle + '" class="font-semibold hover:underline transition-colors duration-200" style="color: #EFEEE0D9; text-decoration: none;" onmouseover="this.style.color=&quot;#2E7BC3&quot;" onmouseout="this.style.color=&quot;#EFEEE0D9&quot;">' + validation.tweetAuthor + '</a>' +
+                                    '<span class="text-sm" style="color: #EFEEE099;">@' + validation.tweetAuthorHandle + '</span>' +
+                                    '<span class="text-sm" style="color: #EFEEE099;">·</span>' +
+                                    '<span class="text-sm" style="color: #EFEEE099;">' + timeAgo + '</span>' +
+                                '</div>' +
                             '</div>' +
+                        '</div>' +
+                        // Quality score badge in top right
+                        '<div class="flex flex-col items-end space-y-1 ml-4">' +
+                            '<div class="text-center">' + qualityBadge + '</div>' +
+                            '<div class="text-xs" style="color: #EFEEE099;">Quality</div>' +
+                            '<div class="text-center">' + scoreBadge + '</div>' +
+                            '<div class="text-xs" style="color: #EFEEE099;">Ethos</div>' +
                         '</div>' +
                     '</div>' +
                     
@@ -1433,29 +1442,17 @@ router.get("/dashboard", async (ctx) => {
                     
                     // Validation metrics section
                     '<div class="border-t border-gray-700 pt-4 mt-4">' +
-                        '<div class="flex items-center space-x-2 mb-3">' +
+                        '<div class="flex items-center space-x-2 mb-4">' +
                             '<img class="h-6 w-6 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
                             '<span class="text-sm" style="color: #EFEEE099;">Validated by</span>' +
                             '<span class="text-sm font-medium" style="color: #2E7BC3;">@' + validation.requestedByHandle + '</span>' +
                         '</div>' +
                         
-                        // Quality scores row
-                        '<div class="grid grid-cols-2 gap-4 mb-4">' +
-                            '<div class="text-center p-3 rounded-lg" style="background-color: rgba(46, 123, 195, 0.1);">' +
-                                '<div class="text-sm" style="color: #EFEEE099;">Quality Score</div>' +
-                                '<div class="mt-1">' + qualityBadge + '</div>' +
-                            '</div>' +
-                            '<div class="text-center p-3 rounded-lg" style="background-color: rgba(46, 123, 195, 0.1);">' +
-                                '<div class="text-sm" style="color: #EFEEE099;">Avg Ethos Score</div>' +
-                                '<div class="mt-1">' + scoreBadge + '</div>' +
-                            '</div>' +
-                        '</div>' +
-                        
-                        // Engagement breakdown
-                        '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
-                            '<div class="p-3 rounded-lg" style="background-color: rgba(18, 127, 49, 0.1);">' +
-                                '<div class="text-sm font-medium mb-2" style="color: #127f31;">Reputable Engagement</div>' +
-                                '<div class="text-xs space-y-1">' +
+                        // Engagement breakdown (simplified without colored backgrounds)
+                        '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">' +
+                            '<div>' +
+                                '<div class="text-sm font-medium mb-2" style="color: #EFEEE0D9;">Reputable Engagement</div>' +
+                                '<div class="text-xs space-y-1" style="color: #EFEEE099;">' +
                                     '<div class="flex justify-between">' +
                                         '<span>Retweets:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_retweeters + '/' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
@@ -1467,9 +1464,9 @@ router.get("/dashboard", async (ctx) => {
                                         '<span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_quote_tweeters + '/' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
                                 '</div>' +
                             '</div>' +
-                            '<div class="p-3 rounded-lg" style="background-color: rgba(194, 144, 16, 0.1);">' +
-                                '<div class="text-sm font-medium mb-2" style="color: #C29010;">Ethos Active Engagement</div>' +
-                                '<div class="text-xs space-y-1">' +
+                            '<div>' +
+                                '<div class="text-sm font-medium mb-2" style="color: #EFEEE0D9;">Ethos Active Engagement</div>' +
+                                '<div class="text-xs space-y-1" style="color: #EFEEE099;">' +
                                     '<div class="flex justify-between">' +
                                         '<span>Retweets:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_retweeters + '/' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
