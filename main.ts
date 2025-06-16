@@ -1418,6 +1418,14 @@ router.get("/dashboard", async (ctx) => {
                                     '<span class="text-sm" style="color: #EFEEE099;">·</span>' +
                                     '<span class="text-sm" style="color: #EFEEE099;">' + timeAgo + '</span>' +
                                 '</div>' +
+                                '<div class="mt-1">' +
+                                    '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-xs hover:opacity-80 transition-opacity duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' +
+                                        '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                        '</svg>' +
+                                        'View on Twitter' +
+                                    '</a>' +
+                                '</div>' +
                             '</div>' +
                         '</div>' +
                         // Quality score badge in top right (inline layout)
@@ -1471,21 +1479,12 @@ router.get("/dashboard", async (ctx) => {
                             '</div>' +
                         '</div>' +
                         
-                        // Action buttons
-                        '<div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-700">' +
-                            '<div></div>' + // Empty left side
-                            '<div class="flex items-center space-x-4 text-xs" style="color: #EFEEE099;">' +
-                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center hover:opacity-80 transition-opacity duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' +
-                                    '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
-                                    '</svg>' +
-                                    'View on Twitter' +
-                                '</a>' +
-                                '<div class="flex items-center space-x-2">' +
-                                    '<img class="h-4 w-4 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
-                                    '<span>Validated by</span>' +
-                                    '<span class="font-medium" style="color: #2E7BC3;">@' + validation.requestedByHandle + '</span>' +
-                                '</div>' +
+                        // Validated by section
+                        '<div class="flex items-center justify-end mt-4 pt-3 border-t border-gray-700">' +
+                            '<div class="flex items-center space-x-2 text-xs" style="color: #EFEEE099;">' +
+                                '<img class="h-4 w-4 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
+                                '<span>Validated by</span>' +
+                                '<span class="font-medium" style="color: #2E7BC3;">@' + validation.requestedByHandle + '</span>' +
                             '</div>' +
                         '</div>' +
                     '</div>' +
