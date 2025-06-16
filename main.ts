@@ -1486,7 +1486,6 @@ router.get("/dashboard", async (ctx) => {
                                     '<span>Validated by</span>' +
                                     '<span class="font-medium" style="color: #2E7BC3;">@' + validation.requestedByHandle + '</span>' +
                                 '</div>' +
-                                '<div>' + date + '</div>' +
                             '</div>' +
                         '</div>' +
                     '</div>' +
