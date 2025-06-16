@@ -373,10 +373,18 @@ export class StorageService {
   /**
    * Get validation stats including average quality score
    */
-  async getValidationStats(): Promise<{ totalValidations: number; lastUpdated: string; averageQualityScore: number }> {
+  async getValidationStats(): Promise<{ 
+    totalValidations: number; 
+    lastUpdated: string; 
+    averageQualityScore: number;
+    averageReputablePercentage: number;
+    averageEthosActivePercentage: number;
+  }> {
     try {
       let totalValidations = 0;
       let qualityScoreSum = 0;
+      let reputablePercentageSum = 0;
+      let ethosActivePercentageSum = 0;
       let validationsWithScores = 0;
       
       // First try to get from PostgreSQL database
@@ -395,17 +403,26 @@ export class StorageService {
           `;
           
           for (const row of qualityData) {
-            const weightedScore = (parseFloat(row.reputable_percentage.toString()) * 0.6) + (parseFloat(row.ethos_active_percentage.toString()) * 0.4);
+            const reputablePercentage = parseFloat(row.reputable_percentage.toString());
+            const ethosActivePercentage = parseFloat(row.ethos_active_percentage.toString());
+            const weightedScore = (reputablePercentage * 0.6) + (ethosActivePercentage * 0.4);
+            
             qualityScoreSum += weightedScore;
+            reputablePercentageSum += reputablePercentage;
+            ethosActivePercentageSum += ethosActivePercentage;
             validationsWithScores++;
           }
           
           const averageQualityScore = validationsWithScores > 0 ? qualityScoreSum / validationsWithScores : 50;
+          const averageReputablePercentage = validationsWithScores > 0 ? reputablePercentageSum / validationsWithScores : 30;
+          const averageEthosActivePercentage = validationsWithScores > 0 ? ethosActivePercentageSum / validationsWithScores : 40;
           
           console.log(`📊 Retrieved validation stats from PostgreSQL database (7-day window): ${totalValidations} validations, avg quality: ${averageQualityScore.toFixed(1)}%`);
           return {
             totalValidations,
             averageQualityScore,
+            averageReputablePercentage,
+            averageEthosActivePercentage,
             lastUpdated: new Date().toISOString()
           };
         } catch (dbError) {
@@ -423,8 +440,13 @@ export class StorageService {
           if (entry.value.timestamp >= sevenDaysAgo) {
             totalValidations++;
             if (entry.value.engagementStats) {
-              const weightedScore = (entry.value.engagementStats.reputable_percentage * 0.6) + (entry.value.engagementStats.ethos_active_percentage * 0.4);
+              const reputablePercentage = entry.value.engagementStats.reputable_percentage;
+              const ethosActivePercentage = entry.value.engagementStats.ethos_active_percentage;
+              const weightedScore = (reputablePercentage * 0.6) + (ethosActivePercentage * 0.4);
+              
               qualityScoreSum += weightedScore;
+              reputablePercentageSum += reputablePercentage;
+              ethosActivePercentageSum += ethosActivePercentage;
               validationsWithScores++;
             }
           }
@@ -439,8 +461,13 @@ export class StorageService {
           if (validation.timestamp >= sevenDaysAgo) {
             localValidationsCount++;
             if (validation.engagementStats) {
-              const weightedScore = (validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4);
+              const reputablePercentage = validation.engagementStats.reputable_percentage;
+              const ethosActivePercentage = validation.engagementStats.ethos_active_percentage;
+              const weightedScore = (reputablePercentage * 0.6) + (ethosActivePercentage * 0.4);
+              
               qualityScoreSum += weightedScore;
+              reputablePercentageSum += reputablePercentage;
+              ethosActivePercentageSum += ethosActivePercentage;
               validationsWithScores++;
             }
           }
@@ -450,15 +477,25 @@ export class StorageService {
       }
 
       const averageQualityScore = validationsWithScores > 0 ? qualityScoreSum / validationsWithScores : 50;
+      const averageReputablePercentage = validationsWithScores > 0 ? reputablePercentageSum / validationsWithScores : 30;
+      const averageEthosActivePercentage = validationsWithScores > 0 ? ethosActivePercentageSum / validationsWithScores : 40;
       
       return {
         totalValidations,
         averageQualityScore,
+        averageReputablePercentage,
+        averageEthosActivePercentage,
         lastUpdated: new Date().toISOString()
       };
     } catch (error) {
       console.error("❌ Error getting validation stats:", error);
-      return { totalValidations: 0, averageQualityScore: 50, lastUpdated: new Date().toISOString() };
+      return { 
+        totalValidations: 0, 
+        averageQualityScore: 50, 
+        averageReputablePercentage: 30,
+        averageEthosActivePercentage: 40,
+        lastUpdated: new Date().toISOString() 
+      };
     }
   }
 
