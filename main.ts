@@ -1452,13 +1452,13 @@ router.get("/dashboard", async (ctx) => {
                             '<div>' +
                                 '<div class="text-sm font-medium mb-2" style="color: #EFEEE0D9;">Reputable Engagement</div>' +
                                 '<div class="text-xs space-y-1" style="color: #EFEEE099;">' +
-                                    '<div class="flex justify-between">' +
+                                    '<div class="flex items-center space-x-2">' +
                                         '<span>Retweets:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_retweeters + '/' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
-                                    '<div class="flex justify-between">' +
+                                    '<div class="flex items-center space-x-2">' +
                                         '<span>Replies:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_repliers + '/' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
-                                    '<div class="flex justify-between">' +
+                                    '<div class="flex items-center space-x-2">' +
                                         '<span>Quotes:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_quote_tweeters + '/' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
                                 '</div>' +
@@ -1466,13 +1466,13 @@ router.get("/dashboard", async (ctx) => {
                             '<div>' +
                                 '<div class="text-sm font-medium mb-2" style="color: #EFEEE0D9;">Ethos Active Engagement</div>' +
                                 '<div class="text-xs space-y-1" style="color: #EFEEE099;">' +
-                                    '<div class="flex justify-between">' +
+                                    '<div class="flex items-center space-x-2">' +
                                         '<span>Retweets:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_retweeters + '/' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
-                                    '<div class="flex justify-between">' +
+                                    '<div class="flex items-center space-x-2">' +
                                         '<span>Replies:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_repliers + '/' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
-                                    '<div class="flex justify-between">' +
+                                    '<div class="flex items-center space-x-2">' +
                                         '<span>Quotes:</span>' +
                                         '<span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_quote_tweeters + '/' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
                                 '</div>' +
