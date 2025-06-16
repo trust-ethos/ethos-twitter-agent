@@ -2007,7 +2007,7 @@ router.get("/author/:handle", async (ctx) => {
     </style>
 </head>
 <body style="background-color: #232320; color: #EFEEE0D9; font-family: 'Inter', sans-serif;" class="min-h-screen">
-    <div class="container mx-auto p-6 max-w-7xl">
+    <div class="container mx-auto p-6" style="max-width: 1000px;">
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
             <div class="flex items-center space-x-4">
@@ -2074,35 +2074,64 @@ router.get("/author/:handle", async (ctx) => {
                 </div>
             </div>
             
-            <!-- Validations Table -->
-            <div class="table-container">
-                <div style="padding: 1.5rem; background: #2d2d2A;">
-                    <h3 class="text-xl font-semibold mb-4" style="color: #EFEEE0D9;">Validated Tweets</h3>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Tweet Content</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Validator</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Quality score</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Reputable engagement</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Ethos active engagement</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="validations-table">
-                                <!-- Dynamic content will be inserted here -->
-                            </tbody>
-                        </table>
+            <!-- Author Score Trend Chart -->
+            <div class="rounded-lg shadow-lg mb-6" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                <div class="p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">📈 Quality score trend</h3>
+                            <p class="text-sm" style="color: #EFEEE099;">Quality score trending over time for this author</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold" id="author-trend-change" style="color: #EFEEE0D9;">...</div>
+                            <div class="text-sm" style="color: #EFEEE099;">latest vs. first</div>
+                        </div>
                     </div>
                     
-                    <!-- Empty State -->
-                    <div id="empty-state" class="hidden text-center py-12">
-                        <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        <p class="text-lg" style="color: #EFEEE099;">No validations found for this author</p>
+                    <!-- Chart Loading State -->
+                    <div id="author-chart-loading" class="text-center py-4">
+                        <div class="inline-flex items-center justify-center space-x-2">
+                            <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                            <span class="text-muted-foreground">Loading trend data...</span>
+                        </div>
                     </div>
+                    
+                    <!-- Chart Container -->
+                    <div id="author-chart-container" class="hidden" style="height: 200px;">
+                        <canvas id="authorTrendChart" width="800" height="120"></canvas>
+                    </div>
+                    
+                    <!-- Chart Empty State -->
+                    <div id="author-chart-empty" class="hidden text-center py-4">
+                        <div class="mx-auto h-8 w-8 text-muted-foreground mb-2">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-sm" style="color: #EFEEE099;">Not enough data for trend analysis</p>
+                        <p class="text-xs mt-1" style="color: #EFEEE099;">We need at least 2 validations to show the trend</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Validated Tweets -->
+            <div class="rounded-lg shadow-lg" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">Validated Tweets</h3>
+                    <p class="text-sm mb-4" style="color: #EFEEE099;">Quality analysis of Twitter engagement for this author</p>
+                </div>
+                
+                <!-- Tweet-like Cards -->
+                <div class="space-y-4" id="tweet-cards" style="background-color: #2d2d2A; padding: 1rem;">
+                    <!-- Dynamic tweet-like cards will be inserted here -->
+                </div>
+                
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden text-center py-12">
+                    <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <p class="text-lg" style="color: #EFEEE099;">No validations found for this author</p>
                 </div>
             </div>
         </div>
@@ -2150,12 +2179,15 @@ router.get("/author/:handle", async (ctx) => {
                     scoreElement.style.color = '#b72b38';
                 }
                 
-                // Populate validations table
+                // Populate validations and chart
                 const validations = data.validations;
                 if (validations.length === 0) {
                     document.getElementById('empty-state').classList.remove('hidden');
+                    document.getElementById('author-chart-empty').classList.remove('hidden');
+                    document.getElementById('author-chart-loading').classList.add('hidden');
                 } else {
-                    renderValidationsTable(validations);
+                    renderTweetCards(validations);
+                    renderAuthorChart(validations);
                 }
                 
             } catch (error) {
@@ -2166,85 +2198,224 @@ router.get("/author/:handle", async (ctx) => {
             }
         }
         
-        function renderValidationsTable(validations) {
-            const tbody = document.getElementById('validations-table');
-            tbody.innerHTML = '';
+        function renderTweetCards(validations) {
+            const tweetCards = document.getElementById('tweet-cards');
             
-            validations.forEach(validation => {
-                const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + 
-                                   (validation.engagementStats.ethos_active_percentage * 0.4);
-                const totalEngagement = validation.engagementStats.total_unique_users;
+            // Use default averages for now (could be enhanced to fetch from API)
+            const averageQualityScore = 50;
+            const averageReputablePercentage = 30;
+            const averageEthosActivePercentage = 40;
+            
+            // Render tweet-like cards using the same format as home page
+            tweetCards.innerHTML = validations.map(validation => {
+                const qualityScore = Math.round((validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4));
+                const qualityBadge = getQualityBadge(qualityScore, averageQualityScore);
+                const scoreBadge = getScoreBadge(validation.averageScore);
+                const timeAgo = formatRelativeTime(validation.timestamp);
                 
-                // Helper function to get percentage color class
-                function getPercentageColorClass(percentage) {
-                    if (percentage >= 60) {
-                        return 'text-green-600 dark:text-green-400';
-                    } else if (percentage >= 30) {
-                        return 'text-yellow-600 dark:text-yellow-400';
-                    } else {
-                        return 'text-red-600 dark:text-red-400';
+                // Twitter profile image handling
+                const getTwitterProfileImage = (handle, avatar, isValidator = false) => {
+                    if (avatar && avatar.includes('twimg.com') && !avatar.includes('default_profile')) {
+                        if (isValidator && avatar.includes('_bigger.')) {
+                            return avatar.replace('_bigger.', '_normal.');
+                        }
+                        if (!isValidator && avatar.includes('_normal.')) {
+                            return avatar.replace('_normal.', '_bigger.');
+                        }
+                        return avatar;
                     }
-                }
+                    return isValidator 
+                        ? 'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png'
+                        : 'https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png';
+                };
                 
-                const row = document.createElement('tr');
-                row.innerHTML = 
-                    '<td style="padding: 1rem; vertical-align: middle; max-width: 300px;">' +
-                        (validation.tweetContent && validation.tweetContent !== 'Tweet content not available' && !validation.tweetContent.includes('Tweet being validated') ? 
-                            '<div class="space-y-2">' +
-                                '<div class="text-sm" style="color: #EFEEE0D9; line-height: 1.4;">' +
-                                    (validation.tweetContent.length > 120 ? 
-                                        validation.tweetContent.substring(0, 120) + '...' : 
-                                        validation.tweetContent
-                                    ) +
+                const authorAvatar = getTwitterProfileImage(validation.tweetAuthorHandle, validation.tweetAuthorAvatar, false);
+                const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar, true);
+                
+                return '<div class="tweet-card" style="background-color: #232320; border: 1px solid rgba(239, 238, 224, 0.1); border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; transition: all 0.2s ease; cursor: pointer;" onmouseover="this.style.backgroundColor=&quot;#2a2a27&quot;; this.style.borderColor=&quot;rgba(46, 123, 195, 0.3)&quot;" onmouseout="this.style.backgroundColor=&quot;#232320&quot;; this.style.borderColor=&quot;rgba(239, 238, 224, 0.1)&quot;">' +
+                    // Tweet header (author info) with quality score badge
+                    '<div class="flex items-start justify-between mb-3">' +
+                        '<div class="flex items-start space-x-3 flex-1">' +
+                            '<img class="h-12 w-12 rounded-full object-cover flex-shrink-0" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
+                            '<div class="flex-1 min-w-0">' +
+                                '<div class="flex items-center space-x-2">' +
+                                    '<span class="font-semibold" style="color: #EFEEE0D9;">' + validation.tweetAuthor + '</span>' +
+                                    '<span class="text-sm" style="color: #EFEEE099;">@' + validation.tweetAuthorHandle + '</span>' +
+                                    '<span class="text-sm" style="color: #EFEEE099;">·</span>' +
+                                    '<span class="text-sm" style="color: #EFEEE099;">' + timeAgo + '</span>' +
                                 '</div>' +
-                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
-                                    'View Tweet' +
-                                    '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
-                                    '</svg>' +
-                                '</a>' +
-                            '</div>' :
-                            '<div>' +
-                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
-                                    'View Tweet' +
-                                    '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
-                                    '</svg>' +
-                                '</a>' +
-                            '</div>'
-                        ) +
-                    '</td>' +
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<div class="flex items-center space-x-3">' +
-                            '<img class="h-8 w-8 rounded-full object-cover" src="' + getOptimizedImageUrl(validation.requestedByAvatar, 'normal') + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=\\'https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png\\'">' +
-                            '<div>' +
-                                '<div class="font-medium text-sm" style="color: #EFEEE0D9;">' + validation.requestedBy + '</div>' +
-                                '<div class="text-xs" style="color: #EFEEE099;">@' + validation.requestedByHandle + '</div>' +
+                                '<div class="mt-1">' +
+                                    '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center text-xs hover:opacity-80 transition-opacity duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' +
+                                        '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                            '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                        '</svg>' +
+                                        'View on Twitter' +
+                                    '</a>' +
+                                '</div>' +
                             '</div>' +
                         '</div>' +
-                    '</td>' +
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<span class="score-badge ' + getScoreClass(qualityScore) + '">' + qualityScore.toFixed(1) + '%</span>' +
-                    '</td>' +
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<div class="text-sm space-y-1">' +
-                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
-                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
-                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                        // Quality score badge in top right (inline layout)
+                        '<div class="flex items-center space-x-3 ml-4">' +
+                            '<div>' + qualityBadge + '</div>' +
+                            '<div>' + scoreBadge + '</div>' +
                         '</div>' +
-                    '</td>' +
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<div class="text-sm space-y-1">' +
-                            '<div>RT: <span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_retweeters + ' of ' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
-                            '<div>Reply: <span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_repliers + ' of ' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
-                            '<div>QT: <span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100)) + '">' + Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_quote_tweeters + ' of ' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0%</span> <span style="color: #EFEEE099;">(0 of 0)</span>') + '</div>' +
+                    '</div>' +
+                    
+                    // Tweet content
+                    (validation.tweetContent && validation.tweetContent !== 'Tweet content not available' && !validation.tweetContent.includes('Tweet being validated') ? 
+                        '<div class="mb-4">' +
+                            '<div class="text-base leading-relaxed" style="color: #EFEEE0D9; line-height: 1.5;">' +
+                                validation.tweetContent +
+                            '</div>' +
+                        '</div>' : ''
+                    ) +
+                    
+                    // Validation metrics section
+                    '<div class="border-t border-gray-700 pt-4 mt-4">' +
+                        
+                        // Engagement breakdown (simplified without colored backgrounds)
+                        '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">' +
+                            '<div>' +
+                                '<div class="text-sm font-medium mb-2" style="color: #EFEEE0D9;">Reputable Engagement</div>' +
+                                '<div class="text-xs space-y-1" style="color: #EFEEE099;">' +
+                                    '<div class="flex items-center space-x-2">' +
+                                        '<span>Retweets:</span>' +
+                                        '<span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100), averageReputablePercentage) + '">' + Math.round((validation.engagementStats.reputable_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_retweeters + '/' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
+                                    '<div class="flex items-center space-x-2">' +
+                                        '<span>Replies:</span>' +
+                                        '<span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100), averageReputablePercentage) + '">' + Math.round((validation.engagementStats.reputable_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_repliers + '/' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
+                                    '<div class="flex items-center space-x-2">' +
+                                        '<span>Quotes:</span>' +
+                                        '<span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100), averageReputablePercentage) + '">' + Math.round((validation.engagementStats.reputable_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.reputable_quote_tweeters + '/' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div>' +
+                                '<div class="text-sm font-medium mb-2" style="color: #EFEEE0D9;">Ethos Active Engagement</div>' +
+                                '<div class="text-xs space-y-1" style="color: #EFEEE099;">' +
+                                    '<div class="flex items-center space-x-2">' +
+                                        '<span>Retweets:</span>' +
+                                        '<span class="font-medium ' + (validation.engagementStats.total_retweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100), averageEthosActivePercentage) + '">' + Math.round((validation.engagementStats.ethos_active_retweeters / validation.engagementStats.total_retweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_retweeters + '/' + validation.engagementStats.total_retweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
+                                    '<div class="flex items-center space-x-2">' +
+                                        '<span>Replies:</span>' +
+                                        '<span class="font-medium ' + (validation.engagementStats.total_repliers > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100), averageEthosActivePercentage) + '">' + Math.round((validation.engagementStats.ethos_active_repliers / validation.engagementStats.total_repliers) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_repliers + '/' + validation.engagementStats.total_repliers + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
+                                    '<div class="flex items-center space-x-2">' +
+                                        '<span>Quotes:</span>' +
+                                        '<span class="font-medium ' + (validation.engagementStats.total_quote_tweeters > 0 ? getPercentageColorClass(Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100), averageEthosActivePercentage) + '">' + Math.round((validation.engagementStats.ethos_active_quote_tweeters / validation.engagementStats.total_quote_tweeters) * 100) + '%</span> <span style="color: #EFEEE099;">(' + validation.engagementStats.ethos_active_quote_tweeters + '/' + validation.engagementStats.total_quote_tweeters + ')</span>' : '" style="color: #EFEEE099;">0% (0/0)</span>') + '</div>' +
+                                '</div>' +
+                            '</div>' +
                         '</div>' +
-                    '</td>' +
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<div class="text-sm" style="color: #EFEEE0D9;">' + formatDate(validation.timestamp) + '</div>' +
-                    '</td>';
+                        
+                        // Validated by section
+                        '<div class="flex items-center justify-end mt-4 pt-3 border-t border-gray-700">' +
+                            '<div class="flex items-center space-x-2 text-xs" style="color: #EFEEE099;">' +
+                                '<img class="h-4 w-4 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
+                                '<span>Validated by</span>' +
+                                '<span class="font-medium" style="color: #2E7BC3;">@' + validation.requestedByHandle + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        }
+        
+        function renderAuthorChart(validations) {
+            if (validations.length < 2) {
+                document.getElementById('author-chart-empty').classList.remove('hidden');
+                document.getElementById('author-chart-loading').classList.add('hidden');
+                return;
+            }
+            
+            // Sort validations by timestamp
+            const sortedValidations = validations.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+            
+            // Calculate quality scores and prepare chart data
+            const chartData = sortedValidations.map(validation => {
+                const qualityScore = (validation.engagementStats.reputable_percentage * 0.6) + (validation.engagementStats.ethos_active_percentage * 0.4);
+                return {
+                    date: new Date(validation.timestamp),
+                    score: qualityScore
+                };
+            });
+            
+            // Calculate trend change
+            const firstScore = chartData[0].score;
+            const lastScore = chartData[chartData.length - 1].score;
+            const trendChange = lastScore - firstScore;
+            const trendElement = document.getElementById('author-trend-change');
+            
+            if (trendChange > 0) {
+                trendElement.textContent = '+' + trendChange.toFixed(1) + '%';
+                trendElement.style.color = '#22c55e';
+            } else if (trendChange < 0) {
+                trendElement.textContent = trendChange.toFixed(1) + '%';
+                trendElement.style.color = '#ef4444';
+            } else {
+                trendElement.textContent = '0%';
+                trendElement.style.color = '#6b7280';
+            }
+            
+            // Show chart container
+            document.getElementById('author-chart-loading').classList.add('hidden');
+            document.getElementById('author-chart-container').classList.remove('hidden');
+            
+            // Create simple line chart (basic implementation)
+            const canvas = document.getElementById('authorTrendChart');
+            const ctx = canvas.getContext('2d');
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Chart dimensions
+            const padding = 40;
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            
+            // Find min/max scores for scaling
+            const scores = chartData.map(d => d.score);
+            const minScore = Math.min(...scores);
+            const maxScore = Math.max(...scores);
+            const scoreRange = maxScore - minScore || 1; // Avoid division by zero
+            
+            // Draw grid lines
+            ctx.strokeStyle = 'rgba(239, 238, 224, 0.1)';
+            ctx.lineWidth = 1;
+            
+            // Horizontal grid lines
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (i * chartHeight / 4);
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + chartWidth, y);
+                ctx.stroke();
+            }
+            
+            // Draw line
+            ctx.strokeStyle = '#2E7BC3';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            chartData.forEach((point, index) => {
+                const x = padding + (index * chartWidth / (chartData.length - 1));
+                const y = padding + chartHeight - ((point.score - minScore) / scoreRange * chartHeight);
                 
-                tbody.appendChild(row);
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            
+            ctx.stroke();
+            
+            // Draw points
+            ctx.fillStyle = '#2E7BC3';
+            chartData.forEach((point, index) => {
+                const x = padding + (index * chartWidth / (chartData.length - 1));
+                const y = padding + chartHeight - ((point.score - minScore) / scoreRange * chartHeight);
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                ctx.fill();
             });
         }
         
@@ -2285,6 +2456,81 @@ router.get("/author/:handle", async (ctx) => {
                 hour: 'numeric',
                 minute: '2-digit'
             });
+        }
+        
+        function formatRelativeTime(timestamp) {
+            const now = new Date();
+            const date = new Date(timestamp);
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) {
+                return diffInSeconds + 's';
+            } else if (diffInSeconds < 3600) {
+                return Math.floor(diffInSeconds / 60) + 'm';
+            } else if (diffInSeconds < 86400) {
+                return Math.floor(diffInSeconds / 3600) + 'h';
+            } else {
+                return Math.floor(diffInSeconds / 86400) + 'd';
+            }
+        }
+        
+        function getQualityBadge(score, averageScore) {
+            const diff = score - averageScore;
+            let colorClass, label;
+            
+            if (diff > 25) {
+                colorClass = 'bg-green-600 text-white';
+                label = 'Excellent';
+            } else if (diff > 10) {
+                colorClass = 'bg-blue-600 text-white';
+                label = 'Above Avg';
+            } else if (diff >= -10) {
+                colorClass = 'bg-gray-600 text-white';
+                label = 'Average';
+            } else if (diff >= -25) {
+                colorClass = 'bg-yellow-600 text-white';
+                label = 'Below Avg';
+            } else {
+                colorClass = 'bg-red-600 text-white';
+                label = 'Poor';
+            }
+            
+            return '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + colorClass + '">' +
+                   '<span class="mr-1">🎯</span>' + score.toFixed(1) + '% ' + label +
+                   '</span>';
+        }
+        
+        function getScoreBadge(score) {
+            if (!score) return '';
+            
+            let colorClass;
+            if (score >= 70) {
+                colorClass = 'bg-green-600 text-white';
+            } else if (score >= 40) {
+                colorClass = 'bg-yellow-600 text-white';
+            } else {
+                colorClass = 'bg-red-600 text-white';
+            }
+            
+            return '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + colorClass + '">' +
+                   '<span class="mr-1">⭐</span>' + score.toFixed(1) +
+                   '</span>';
+        }
+        
+        function getPercentageColorClass(percentage, average) {
+            const diff = percentage - average;
+            
+            if (diff > 25) {
+                return 'text-green-400';
+            } else if (diff > 10) {
+                return 'text-blue-400';
+            } else if (diff >= -10) {
+                return 'text-gray-400';
+            } else if (diff >= -25) {
+                return 'text-yellow-400';
+            } else {
+                return 'text-red-400';
+            }
         }
         
         // Load the profile on page load
