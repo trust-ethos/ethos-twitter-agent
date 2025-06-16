@@ -877,8 +877,8 @@ router.get("/dashboard", async (ctx) => {
 
 
                 <!-- Average Score Trend Chart -->
-                <div class="rounded-lg shadow-lg mb-8" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
-                    <div class="p-6">
+                <div class="rounded-lg shadow-lg mb-6" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                    <div class="p-4">
                         <div class="flex items-center justify-between mb-4">
                             <div>
                                 <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">📈 Average Score Trend</h3>
@@ -891,7 +891,7 @@ router.get("/dashboard", async (ctx) => {
                         </div>
                         
                         <!-- Chart Loading State -->
-                        <div id="chart-loading" class="text-center py-8">
+                        <div id="chart-loading" class="text-center py-4">
                             <div class="inline-flex items-center justify-center space-x-2">
                                 <div class="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
                                 <span class="text-muted-foreground">Loading trend data...</span>
@@ -899,19 +899,19 @@ router.get("/dashboard", async (ctx) => {
                         </div>
                         
                         <!-- Chart Container -->
-                        <div id="chart-container" class="hidden">
-                            <canvas id="trendChart" width="800" height="200"></canvas>
+                        <div id="chart-container" class="hidden" style="height: 200px;">
+                            <canvas id="trendChart" width="800" height="120"></canvas>
                         </div>
                         
                         <!-- Chart Empty State -->
-                        <div id="chart-empty" class="hidden text-center py-8">
-                            <div class="mx-auto h-12 w-12 text-muted-foreground mb-4">
+                        <div id="chart-empty" class="hidden text-center py-4">
+                            <div class="mx-auto h-8 w-8 text-muted-foreground mb-2">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 00-2-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                                 </svg>
                             </div>
-                            <p class="text-lg" style="color: #EFEEE099;">Not enough data for trend analysis</p>
-                            <p class="text-sm mt-2" style="color: #EFEEE099;">We need at least 7 days of validations to show the trend</p>
+                            <p class="text-sm" style="color: #EFEEE099;">Not enough data for trend analysis</p>
+                            <p class="text-xs mt-1" style="color: #EFEEE099;">We need at least 7 days of validations to show the trend</p>
                         </div>
                     </div>
                 </div>
