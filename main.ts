@@ -1499,18 +1499,21 @@ router.get("/dashboard", async (ctx) => {
             }).join('');
         }
 
-        // Get quality badge with ShadCN styling
+        // Get quality badge with proper styling
         function getQualityBadge(score) {
-            let badgeClass;
+            let backgroundColor, textColor;
             if (score >= 60) {
-                badgeClass = 'badge badge-success';
+                backgroundColor = '#22c55e'; // green
+                textColor = '#ffffff';
             } else if (score >= 30) {
-                badgeClass = 'badge badge-warning';
+                backgroundColor = '#eab308'; // yellow
+                textColor = '#000000';
             } else {
-                badgeClass = 'badge badge-destructive';
+                backgroundColor = '#ef4444'; // red
+                textColor = '#ffffff';
             }
             
-            return '<span class="' + badgeClass + '">' + score + '%</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + '%</span>';
         }
 
         // Get percentage color class for engagement stats
@@ -1537,45 +1540,26 @@ router.get("/dashboard", async (ctx) => {
             return Math.floor(diffInSeconds / 2592000) + 'mo';
         }
 
-        // Get score badge with ShadCN styling
+        // Get score badge with compact styling for inline layout
         function getScoreBadge(score) {
             if (!score) {
-                return '<span class="text-muted-foreground">—</span>';
+                return '<span style="color: #EFEEE099;">—</span>';
             }
             
-            let emoji = '⚪';
-            let label = 'Neutral';
-            let textColor = 'text-muted-foreground';
-            
+            let textColor;
             if (score < 800) {
-                emoji = '🔴';
-                label = 'Untrusted';
-                textColor = 'text-red-600 dark:text-red-400'; // Standard red
+                textColor = '#ef4444'; // red
             } else if (score < 1200) {
-                emoji = '🟡';
-                label = 'Questionable';
-                textColor = 'text-yellow-600 dark:text-yellow-400'; // Standard yellow
+                textColor = '#eab308'; // yellow
             } else if (score < 1600) {
-                emoji = '⚪';
-                label = 'Neutral';
-                textColor = 'text-muted-foreground';
+                textColor = '#EFEEE099'; // neutral
             } else if (score < 2000) {
-                emoji = '🔵';
-                label = 'Reputable';
-                textColor = 'text-blue-600 dark:text-blue-400'; // Standard blue
+                textColor = '#2E7BC3'; // blue
             } else {
-                emoji = '🟢';
-                label = 'Exemplary';
-                textColor = 'text-green-600 dark:text-green-400'; // Standard green
+                textColor = '#22c55e'; // green
             }
             
-            return '<div class="flex items-center space-x-2">' +
-                '<span class="text-lg">' + emoji + '</span>' +
-                '<div>' +
-                    '<div class="font-medium">' + score + '</div>' +
-                    '<div class="text-sm ' + textColor + '">' + label + '</div>' +
-                '</div>' +
-            '</div>';
+            return '<span class="font-medium" style="color: ' + textColor + ';">' + score + '</span>';
         }
 
         // Render pagination with ShadCN styling
