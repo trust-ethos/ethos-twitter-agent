@@ -875,6 +875,63 @@ router.get("/dashboard", async (ctx) => {
         <main class="flex-1">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+                <!-- Hero Section -->
+                <div class="rounded-lg shadow-lg mb-8" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                    <div class="p-6">
+                        <div class="flex flex-col lg:flex-row items-center gap-6">
+                            <!-- Hero Image -->
+                            <div class="flex-shrink-0">
+                                <img 
+                                    src="/images/ethos-agent-hero.png" 
+                                    alt="Ethos Agent - Fighting Twitter manipulation" 
+                                    class="w-64 h-48 object-cover rounded-lg shadow-md"
+                                    onerror="this.style.display='none'"
+                                >
+                            </div>
+                            
+                            <!-- Hero Content -->
+                            <div class="flex-1 text-center lg:text-left">
+                                <h1 class="text-3xl lg:text-4xl font-bold mb-4" style="color: #2E7BC3;">
+                                    🛡️ Ethos Agent
+                                </h1>
+                                <h2 class="text-xl lg:text-2xl font-semibold mb-4" style="color: #EFEEE0D9;">
+                                    Fighting Twitter Manipulation with Reputation Intelligence
+                                </h2>
+                                <div class="space-y-3 text-sm lg:text-base" style="color: #EFEEE099;">
+                                    <p>
+                                        <strong style="color: #EFEEE0D9;">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
+                                        Using the <strong style="color: #2E7BC3;">Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
+                                    </p>
+                                    <p>
+                                        <strong style="color: #127f31;">🎯 How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
+                                        to show what percentage come from <strong style="color: #2E7BC3;">reputable accounts</strong> (Ethos score 1600+) versus 
+                                        <strong style="color: #C29010;">potentially manipulated engagement</strong>.
+                                    </p>
+                                    <p>
+                                        <strong style="color: #EFEEE0D9;">💡 The result:</strong> A quality score that reveals whether viral content is driven by 
+                                        authentic community engagement or artificial amplification.
+                                    </p>
+                                </div>
+                                
+                                <!-- Quick Stats -->
+                                <div class="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div class="text-center p-3 rounded-lg" style="background-color: rgba(46, 123, 195, 0.1);">
+                                        <div class="text-lg font-bold" style="color: #2E7BC3;" id="hero-total-validations">-</div>
+                                        <div class="text-xs" style="color: #EFEEE099;">Total Validations</div>
+                                    </div>
+                                    <div class="text-center p-3 rounded-lg" style="background-color: rgba(18, 127, 49, 0.1);">
+                                        <div class="text-lg font-bold" style="color: #127f31;" id="hero-avg-quality">-</div>
+                                        <div class="text-xs" style="color: #EFEEE099;">Avg Quality Score</div>
+                                    </div>
+                                    <div class="text-center p-3 rounded-lg col-span-2 lg:col-span-1" style="background-color: rgba(194, 144, 16, 0.1);">
+                                        <div class="text-lg font-bold" style="color: #C29010;" id="hero-reputable-users">750</div>
+                                        <div class="text-xs" style="color: #EFEEE099;">Reputable Users</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Average Score Trend Chart -->
                 <div class="rounded-lg shadow-lg mb-6" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
@@ -1056,10 +1113,34 @@ router.get("/dashboard", async (ctx) => {
             
             // Simple API test first
             testAPI();
+            loadHeroStats();
             loadValidations();
             loadTrendChart();
         });
         
+        // Load hero section stats
+        async function loadHeroStats() {
+            try {
+                console.log('🏆 Loading hero stats...');
+                const response = await fetch('/api/validations?limit=1');
+                const data = await response.json();
+                
+                if (data.success && data.pagination) {
+                    document.getElementById('hero-total-validations').textContent = data.pagination.total.toLocaleString();
+                }
+                
+                // Load trend data for average quality score
+                const trendResponse = await fetch('/api/trend');
+                const trendData = await trendResponse.json();
+                
+                if (trendData.success && trendData.stats && trendData.stats.currentScore) {
+                    document.getElementById('hero-avg-quality').textContent = trendData.stats.currentScore.toFixed(1) + '%';
+                }
+            } catch (error) {
+                console.error('❌ Hero stats loading failed:', error);
+            }
+        }
+
         // Simple test function to verify API connectivity
         async function testAPI() {
             try {
@@ -2769,6 +2850,33 @@ function formatRelativeTime(timestamp) {
   
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
+
+// Static file serving for images
+router.get("/images/:filename", async (ctx) => {
+  const filename = ctx.params.filename;
+  try {
+    const data = await Deno.readFile(`./images/${filename}`);
+    const ext = filename.split('.').pop()?.toLowerCase();
+    
+    let contentType = 'application/octet-stream';
+    switch (ext) {
+      case 'png': contentType = 'image/png'; break;
+      case 'jpg':
+      case 'jpeg': contentType = 'image/jpeg'; break;
+      case 'gif': contentType = 'image/gif'; break;
+      case 'svg': contentType = 'image/svg+xml'; break;
+      case 'webp': contentType = 'image/webp'; break;
+    }
+    
+    ctx.response.headers.set('Content-Type', contentType);
+    ctx.response.headers.set('Cache-Control', 'public, max-age=86400'); // Cache for 1 day
+    ctx.response.body = data;
+  } catch (error) {
+    console.error(`❌ Error serving image ${filename}:`, error);
+    ctx.response.status = 404;
+    ctx.response.body = 'Image not found';
+  }
+});
 
 // Health check endpoint
 router.get("/", (ctx) => {
