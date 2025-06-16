@@ -1438,11 +1438,6 @@ router.get("/dashboard", async (ctx) => {
                     
                     // Validation metrics section
                     '<div class="border-t border-gray-700 pt-4 mt-4">' +
-                        '<div class="flex items-center space-x-2 mb-4">' +
-                            '<img class="h-6 w-6 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
-                            '<span class="text-sm" style="color: #EFEEE099;">Validated by</span>' +
-                            '<span class="text-sm font-medium" style="color: #2E7BC3;">@' + validation.requestedByHandle + '</span>' +
-                        '</div>' +
                         
                         // Engagement breakdown (simplified without colored backgrounds)
                         '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">' +
@@ -1478,13 +1473,21 @@ router.get("/dashboard", async (ctx) => {
                         
                         // Action buttons
                         '<div class="flex items-center justify-between mt-4 pt-3 border-t border-gray-700">' +
-                            '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
-                                '<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
-                                '</svg>' +
-                                'View on X' +
-                            '</a>' +
-                            '<div class="text-xs" style="color: #EFEEE099;">' + date + '</div>' +
+                            '<div></div>' + // Empty left side
+                            '<div class="flex items-center space-x-4 text-xs" style="color: #EFEEE099;">' +
+                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center hover:opacity-80 transition-opacity duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' +
+                                    '<svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                    '</svg>' +
+                                    'View on Twitter' +
+                                '</a>' +
+                                '<div class="flex items-center space-x-2">' +
+                                    '<img class="h-4 w-4 rounded-full object-cover" src="' + validatorAvatar + '" alt="@' + validation.requestedByHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_normal.png&quot;">' +
+                                    '<span>Validated by</span>' +
+                                    '<span class="font-medium" style="color: #2E7BC3;">@' + validation.requestedByHandle + '</span>' +
+                                '</div>' +
+                                '<div>' + date + '</div>' +
+                            '</div>' +
                         '</div>' +
                     '</div>' +
                 '</div>';
