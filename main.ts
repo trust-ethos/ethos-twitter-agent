@@ -269,11 +269,7 @@ router.get("/leaderboard", async (ctx) => {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                             </div>
-                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;">Ethos Agent</a>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
-                            <span class="text-sm font-medium" style="color: #EFEEE099;">Live</span>
+                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;">Ethos Agent Validations</a>
                         </div>
                     </div>
                     
@@ -855,10 +851,6 @@ router.get("/dashboard", async (ctx) => {
                             </div>
                             <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">Ethos Agent</a>
                         </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
-                            <span class="text-sm font-medium" style="color: #EFEEE099;">Live</span>
-                        </div>
                     </div>
                     
                     <!-- Navigation Links -->
@@ -898,7 +890,7 @@ router.get("/dashboard", async (ctx) => {
                             </h2>
                             <div class="space-y-3 text-sm lg:text-base" style="color: #EFEEE099;">
                                 <p>
-                                    <strong style="color: #EFEEE0D9;">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
+                                    <strong ">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
                                     Using the <strong>Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
                                 </p>
                                 <p>
@@ -906,10 +898,15 @@ router.get("/dashboard", async (ctx) => {
                                     to show what percentage come from <strong>reputable accounts</strong> (Ethos score 1600+) versus 
                                     <strong>potentially manipulated engagement</strong>.
                                 </p>
-                                <p>
-                                    <strong style="color: #EFEEE0D9;">The result:</strong> A quality score that reveals whether viral content is driven by 
-                                    authentic community engagement or artificial amplification.
-                                </p>
+                                                                  <p>
+                                      <strong>Quality score calculation:</strong> We calculate a weighted score using 60% reputable engagement 
+                                      (users with Ethos scores 1600+) and 40% Ethos active engagement. The score is then color-coded relative 
+                                      to the moving average of all validations to show if a tweet performs significantly above or below typical engagement quality.
+                                  </p>
+                                  <p>
+                                      <strong>The result:</strong> A quality score that reveals whether viral content is driven by 
+                                      authentic community engagement or artificial amplification.
+                                  </p>
                             </div>
                             
                             <!-- Quick Stats -->
@@ -3999,10 +3996,6 @@ router.get("/validators", async (ctx) => {
                                 </svg>
                             </div>
                             <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;">Ethos Agent</a>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="h-2 w-2 rounded-full animate-pulse" style="background-color: #127f31;"></div>
-                            <span class="text-sm font-medium" style="color: #EFEEE099;">Live</span>
                         </div>
                     </div>
                     
