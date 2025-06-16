@@ -520,13 +520,13 @@ router.get("/dashboard", async (ctx) => {
     <title>Ethos Agent Dashboard - Twitter Validation Analytics</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, reputable users, and validation statistics.">
+    <meta name="description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, validator statistics, and validation data.">
     <meta name="keywords" content="Ethos, Twitter, validation, engagement, analytics, reputation, quality score">
     <meta name="author" content="Ethos">
     
     <!-- OpenGraph tags -->
     <meta property="og:title" content="Ethos Agent Dashboard - Twitter Validation Analytics">
-    <meta property="og:description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, reputable users, and validation statistics.">
+    <meta property="og:description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, validator statistics, and validation data.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://validate.ethos.network/dashboard">
     <meta property="og:site_name" content="Ethos Network">
@@ -540,7 +540,7 @@ router.get("/dashboard", async (ctx) => {
     <meta name="twitter:site" content="@ethosAgent">
     <meta name="twitter:creator" content="@ethosAgent">
     <meta name="twitter:title" content="Ethos Agent Dashboard - Twitter Validation Analytics">
-    <meta name="twitter:description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, reputable users, and validation statistics.">
+    <meta name="twitter:description" content="Real-time dashboard for Ethos Agent Twitter validation analytics. View engagement quality scores, validator statistics, and validation data.">
     <meta name="twitter:image" content="https://validate.ethos.network/og-image.png">
     <meta name="twitter:image:alt" content="Ethos Agent Dashboard showing Twitter validation analytics">
     
@@ -894,7 +894,7 @@ router.get("/dashboard", async (ctx) => {
                                     Using the <strong>Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
                                 </p>
                                 <p>
-                                    <strong>How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
+                                    <strong>How it works:</strong> When you mention "@ethosAgent validate", we analyze the retweets, replies, and quotes of the OP
                                     to show what percentage come from <strong>reputable accounts</strong> (Ethos score 1600+) versus 
                                     <strong>potentially manipulated engagement</strong>.
                                 </p>
@@ -915,8 +915,8 @@ router.get("/dashboard", async (ctx) => {
                                     <div class="text-sm" style="color: #EFEEE099;">Avg quality score</div>
                                 </div>
                                 <div class="text-center p-4 rounded-lg" style="background-color: rgba(194, 144, 16, 0.1);">
-                                    <div class="text-xl font-bold" style="color: #C29010;" id="hero-reputable-users">750</div>
-                                    <div class="text-sm" style="color: #EFEEE099;">Reputable users</div>
+                                    <div class="text-xl font-bold" style="color: #C29010;" id="hero-validators">-</div>
+                                    <div class="text-sm" style="color: #EFEEE099;">Number of validators</div>
                                 </div>
                             </div>
                         </div>
@@ -1086,6 +1086,10 @@ router.get("/dashboard", async (ctx) => {
                 
                 if (data.success && data.pagination) {
                     document.getElementById('hero-total-validations').textContent = data.pagination.total.toLocaleString();
+                }
+                
+                if (data.success && data.stats && data.stats.uniqueValidators) {
+                    document.getElementById('hero-validators').textContent = data.stats.uniqueValidators.toLocaleString();
                 }
                 
                 // Load trend data for average quality score
@@ -2658,7 +2662,8 @@ router.get("/api/validations", async (ctx) => {
       },
       stats: {
         averageQualityScore: validationStats.averageQualityScore,
-        totalValidations: validationStats.totalValidations
+        totalValidations: validationStats.totalValidations,
+        uniqueValidators: new Set(allValidations.map(v => v.requestedByHandle)).size
       },
       timestamp: new Date().toISOString()
     };
