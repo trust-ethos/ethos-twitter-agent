@@ -278,9 +278,9 @@ router.get("/leaderboard", async (ctx) => {
                     </div>
                     
                     <div class="flex items-center space-x-4">
-                        <a href="/dashboard" class="btn btn-secondary text-sm">All Validations</a>
-                        <a href="/validators" class="btn btn-secondary text-sm">Validator Leaderboard</a>
-                        <span class="text-sm" style="color: #EFEEE099;">Tweet Leaderboard</span>
+                        <a href="/dashboard" class="btn btn-secondary text-sm">All validations</a>
+                        <a href="/validators" class="btn btn-secondary text-sm">Validator leaderboard</a>
+                        <span class="text-sm" style="color: #EFEEE099;">Tweet leaderboard</span>
                     </div>
                 </div>
             </div>
@@ -863,8 +863,8 @@ router.get("/dashboard", async (ctx) => {
                     
                     <!-- Navigation Links -->
                     <div class="flex items-center space-x-4">
-                                                    <a href="/leaderboard" class="btn btn-secondary text-sm">🏆 Tweet Leaderboard</a>
-                            <a href="/validators" class="btn btn-secondary text-sm">🏅 Validator Leaderboard</a>
+                                                    <a href="/leaderboard" class="btn btn-secondary text-sm">🏆 Tweet leaderboard</a>
+                            <a href="/validators" class="btn btn-secondary text-sm">🏅 Validator leaderboard</a>
                         <span class="text-sm" style="color: #EFEEE099;">Ethos Agent Dashboard</span>
                     </div>
                 </div>
@@ -876,59 +876,58 @@ router.get("/dashboard", async (ctx) => {
             <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
                 <!-- Hero Section -->
-                <div class="rounded-lg shadow-lg mb-8 overflow-hidden" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
-                    <!-- Hero Image Banner -->
-                    <div class="relative">
-                        <img 
-                            src="/images/ethos-agent-hero.png" 
-                            alt="Ethos Agent - Fighting Twitter manipulation" 
-                            class="w-full h-64 md:h-80 lg:h-96 object-cover"
-                            onerror="this.style.display='none'"
-                        >
-                        <!-- Optional overlay for better text readability if needed -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                    </div>
-                    
-                    <!-- Hero Content -->
-                    <div class="p-6 lg:p-8">
-                        <div class="text-center">
-                            <h1 class="text-3xl lg:text-5xl font-bold mb-4" style="color: #2E7BC3;">
-                                Ethos Agent
-                            </h1>
-                            <h2 class="text-xl lg:text-3xl font-semibold mb-6" style="color: #EFEEE0D9;">
-                                Fighting Twitter Manipulation with Reputation Intelligence
-                            </h2>
-                        </div>
-                        
-                        <div class="max-w-4xl mx-auto space-y-4 text-base lg:text-lg" style="color: #EFEEE099;">
-                            <p class="text-center">
-                                <strong style="color: #EFEEE0D9;">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
-                                Using the <strong style="color: #2E7BC3;">Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
-                            </p>
-                            <p class="text-center">
-                                <strong style="color: #127f31;">How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
-                                to show what percentage come from <strong style="color: #2E7BC3;">reputable accounts</strong> (Ethos score 1600+) versus 
-                                <strong style="color: #C29010;">potentially manipulated engagement</strong>.
-                            </p>
-                            <p class="text-center">
-                                <strong style="color: #EFEEE0D9;">The result:</strong> A quality score that reveals whether viral content is driven by 
-                                authentic community engagement or artificial amplification.
-                            </p>
-                        </div>
-                        
-                        <!-- Quick Stats -->
-                        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                            <div class="text-center p-4 rounded-lg" style="background-color: rgba(46, 123, 195, 0.1);">
-                                <div class="text-2xl lg:text-3xl font-bold" style="color: #2E7BC3;" id="hero-total-validations">-</div>
-                                <div class="text-sm" style="color: #EFEEE099;">Total Validations</div>
+                <div class="rounded-lg shadow-lg mb-8" style="background-color: #2d2d2A; color: #EFEEE0D9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);">
+                    <div class="p-6">
+                        <div class="flex flex-col lg:flex-row items-center gap-6">
+                            <!-- Hero Image -->
+                            <div class="flex-shrink-0">
+                                <img 
+                                    src="/images/ethos-agent-hero.png" 
+                                    alt="Ethos Agent - Fighting Twitter manipulation" 
+                                    class="w-64 h-48 object-cover rounded-lg shadow-md"
+                                    onerror="this.style.display='none'"
+                                >
                             </div>
-                            <div class="text-center p-4 rounded-lg" style="background-color: rgba(18, 127, 49, 0.1);">
-                                <div class="text-2xl lg:text-3xl font-bold" style="color: #127f31;" id="hero-avg-quality">-</div>
-                                <div class="text-sm" style="color: #EFEEE099;">Avg Quality Score</div>
-                            </div>
-                            <div class="text-center p-4 rounded-lg" style="background-color: rgba(194, 144, 16, 0.1);">
-                                <div class="text-2xl lg:text-3xl font-bold" style="color: #C29010;" id="hero-reputable-users">750</div>
-                                <div class="text-sm" style="color: #EFEEE099;">Reputable Users</div>
+                            
+                            <!-- Hero Content -->
+                            <div class="flex-1 text-center lg:text-left">
+                                <h1 class="text-3xl lg:text-4xl font-bold mb-4" style="color: #2E7BC3;">
+                                    Ethos Agent
+                                </h1>
+                                <h2 class="text-xl lg:text-2xl font-semibold mb-4" style="color: #EFEEE0D9;">
+                                    Fighting Twitter Manipulation with Reputation Intelligence
+                                </h2>
+                                <div class="space-y-3 text-sm lg:text-base" style="color: #EFEEE099;">
+                                    <p>
+                                        <strong style="color: #EFEEE0D9;">Ethos Agent</strong> analyzes Twitter engagement to expose manipulation and highlight authentic voices. 
+                                        Using the <strong style="color: #2E7BC3;">Ethos Network's reputation data</strong>, we validate tweet quality by examining who's engaging.
+                                    </p>
+                                    <p>
+                                        <strong style="color: #127f31;">How it works:</strong> When you mention @ethosAgent with a tweet link, we analyze the retweets, replies, and quotes 
+                                        to show what percentage come from <strong style="color: #2E7BC3;">reputable accounts</strong> (Ethos score 1600+) versus 
+                                        <strong style="color: #C29010;">potentially manipulated engagement</strong>.
+                                    </p>
+                                    <p>
+                                        <strong style="color: #EFEEE0D9;">The result:</strong> A quality score that reveals whether viral content is driven by 
+                                        authentic community engagement or artificial amplification.
+                                    </p>
+                                </div>
+                                
+                                <!-- Quick Stats -->
+                                <div class="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <div class="text-center p-3 rounded-lg" style="background-color: rgba(46, 123, 195, 0.1);">
+                                        <div class="text-lg font-bold" style="color: #2E7BC3;" id="hero-total-validations">-</div>
+                                        <div class="text-xs" style="color: #EFEEE099;">Total validations</div>
+                                    </div>
+                                    <div class="text-center p-3 rounded-lg" style="background-color: rgba(18, 127, 49, 0.1);">
+                                        <div class="text-lg font-bold" style="color: #127f31;" id="hero-avg-quality">-</div>
+                                        <div class="text-xs" style="color: #EFEEE099;">Avg quality score</div>
+                                    </div>
+                                    <div class="text-center p-3 rounded-lg col-span-2 lg:col-span-1" style="background-color: rgba(194, 144, 16, 0.1);">
+                                        <div class="text-lg font-bold" style="color: #C29010;" id="hero-reputable-users">750</div>
+                                        <div class="text-xs" style="color: #EFEEE099;">Reputable users</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -939,8 +938,8 @@ router.get("/dashboard", async (ctx) => {
                     <div class="p-4">
                         <div class="flex items-center justify-between mb-4">
                             <div>
-                                <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">📈 Average Score Trend</h3>
-                                <p class="text-sm" style="color: #EFEEE099;">Quality score trending over the last 30 days</p>
+                                                            <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">📈 Average score trend</h3>
+                            <p class="text-sm" style="color: #EFEEE099;">Quality score trending over the last 30 days</p>
                             </div>
                             <div class="text-right">
                                 <div class="text-2xl font-bold" id="trend-change" style="color: #EFEEE0D9;">...</div>
@@ -979,7 +978,7 @@ router.get("/dashboard", async (ctx) => {
                     <!-- Table Header -->
                     <div class="flex items-center justify-between p-6">
                         <div>
-                            <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">Tweet Validations</h3>
+                            <h3 class="text-lg font-semibold" style="color: #EFEEE0D9;">Tweet validations</h3>
                             <p class="text-sm" style="color: #EFEEE099;">Quality analysis of Twitter engagement</p>
                         </div>
                         <div class="flex items-center space-x-4">
@@ -1015,25 +1014,25 @@ router.get("/dashboard", async (ctx) => {
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Validator</th>
                                     <th class="cursor-pointer select-none" data-sort="qualityScore" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
-                                            <span>Quality Score</span>
+                                            <span>Quality score</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
                                     <th class="cursor-pointer select-none" data-sort="averageScore" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
-                                            <span>Avg Ethos Score</span>
+                                            <span>Avg Ethos score</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
                                     <th class="cursor-pointer select-none" data-sort="reputableEngagement" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
-                                            <span>Reputable Engagement</span>
+                                            <span>Reputable engagement</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
                                     <th class="cursor-pointer select-none" data-sort="ethosActiveEngagement" style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">
                                         <div class="flex items-center space-x-1">
-                                            <span>Ethos Active Engagement</span>
+                                            <span>Ethos active engagement</span>
                                             <span class="sort-icon sort-none"></span>
                                         </div>
                                     </th>
@@ -1203,7 +1202,7 @@ router.get("/dashboard", async (ctx) => {
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Average Quality Score',
+                        label: 'Average quality score',
                         data: qualityScores,
                         borderColor: '#2E7BC3',
                         backgroundColor: gradient,
@@ -1232,7 +1231,7 @@ router.get("/dashboard", async (ctx) => {
                             borderWidth: 1,
                             callbacks: {
                                 label: function(context) {
-                                    return 'Quality Score: ' + context.parsed.y.toFixed(1) + '%';
+                                    return 'Quality score: ' + context.parsed.y.toFixed(1) + '%';
                                 }
                             }
                         }
@@ -1551,7 +1550,7 @@ router.get("/dashboard", async (ctx) => {
                     // Scores and engagement stats
                     '<div class="grid grid-cols-2 gap-4 py-2 border-t border-gray-700">' +
                         '<div class="text-center">' +
-                            '<div class="text-sm" style="color: #EFEEE099;">Quality Score</div>' +
+                            '<div class="text-sm" style="color: #EFEEE099;">Quality score</div>' +
                             '<div class="mt-1">' + qualityBadge + '</div>' +
                         '</div>' +
                         '<div class="text-center">' +
@@ -2122,19 +2121,19 @@ router.get("/author/:handle", async (ctx) => {
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #2E7BC3;" id="total-validations">-</div>
-                    <div class="text-sm" style="color: #EFEEE099;">Total Validations</div>
+                                            <div class="text-sm" style="color: #EFEEE099;">Total validations</div>
                 </div>
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #127f31;" id="avg-quality">-</div>
-                    <div class="text-sm" style="color: #EFEEE099;">7-Day Avg Quality Score</div>
+                                            <div class="text-sm" style="color: #EFEEE099;">7-day avg quality score</div>
                 </div>
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #C29010;" id="avg-engagement">-</div>
-                    <div class="text-sm" style="color: #EFEEE099;">Avg Engagement</div>
+                                            <div class="text-sm" style="color: #EFEEE099;">Avg engagement</div>
                 </div>
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #EFEEE0D9;" id="latest-validation">-</div>
-                    <div class="text-sm" style="color: #EFEEE099;">Latest Validation</div>
+                                            <div class="text-sm" style="color: #EFEEE099;">Latest validation</div>
                 </div>
             </div>
             
@@ -2148,9 +2147,9 @@ router.get("/author/:handle", async (ctx) => {
                                 <tr>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Tweet Content</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Validator</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Quality Score</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Reputable Engagement</th>
-                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Ethos Active Engagement</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Quality score</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Reputable engagement</th>
+                                    <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Ethos active engagement</th>
                                     <th style="height: 3rem; padding: 0 1rem; text-align: left; font-weight: 500; color: #EFEEE099;">Date</th>
                                 </tr>
                             </thead>
@@ -4061,9 +4060,9 @@ router.get("/validators", async (ctx) => {
                     </div>
                     
                     <div class="flex items-center space-x-4">
-                        <a href="/dashboard" class="btn btn-secondary text-sm">All Validations</a>
-                        <a href="/leaderboard" class="btn btn-secondary text-sm">Tweet Leaderboard</a>
-                        <span class="text-sm" style="color: #EFEEE099;">Validator Leaderboard</span>
+                        <a href="/dashboard" class="btn btn-secondary text-sm">All validations</a>
+                        <a href="/leaderboard" class="btn btn-secondary text-sm">Tweet leaderboard</a>
+                        <span class="text-sm" style="color: #EFEEE099;">Validator leaderboard</span>
                     </div>
                 </div>
             </div>
@@ -4075,7 +4074,7 @@ router.get("/validators", async (ctx) => {
                 <!-- Page Header -->
                 <div class="text-center mb-8">
                     <h1 class="text-4xl font-bold mb-4" style="color: #EFEEE0D9;">
-                        🏅 Validator Leaderboard
+                        🏅 Validator leaderboard
                     </h1>
                     <p class="text-lg" style="color: #EFEEE099;">
                         Most active validators who have performed the most Twitter validations
@@ -4172,11 +4171,11 @@ router.get("/validators", async (ctx) => {
                     <div class="mt-4 pt-4 border-t border-gray-700 grid grid-cols-2 gap-4">
                         <div class="text-center">
                             <div class="text-lg font-semibold text-primary">\${validator.averageQualityScore.toFixed(1)}%</div>
-                            <div class="text-xs" style="color: #EFEEE099;">Avg Quality Score</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Avg quality score</div>
                         </div>
                         <div class="text-center">
                             <div class="text-lg font-semibold text-primary">\${validator.averageEthosScore ? validator.averageEthosScore : 'N/A'}</div>
-                            <div class="text-xs" style="color: #EFEEE099;">Avg Ethos Score</div>
+                            <div class="text-xs" style="color: #EFEEE099;">Avg Ethos score</div>
                         </div>
                     </div>
                     
