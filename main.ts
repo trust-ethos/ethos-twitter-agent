@@ -1457,14 +1457,42 @@ router.get("/dashboard", async (ctx) => {
                 const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar, true);
                 
                 return '<tr>' +
-                    '<td style="padding: 1rem; vertical-align: middle;">' +
-                        '<div class="flex items-center space-x-3">' +
-                            '<img class="h-10 w-10 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
-                            '<div>' +
-                                '<div><a href="/author/' + validation.tweetAuthorHandle + '" class="font-medium hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' + validation.tweetAuthor + ' →</a></div>' +
-                                '<div class="text-sm" style="color: #EFEEE099;">@' + validation.tweetAuthorHandle + '</div>' +
-                            '</div>' +
-                        '</div>' +
+                    '<td style="padding: 1rem; vertical-align: middle; max-width: 300px;">' +
+                        (validation.tweetContent && validation.tweetContent !== 'Tweet content not available' && !validation.tweetContent.includes('Tweet being validated') ? 
+                            '<div class="space-y-2">' +
+                                '<div class="text-sm" style="color: #EFEEE0D9; line-height: 1.4;">' +
+                                    (validation.tweetContent.length > 120 ? 
+                                        validation.tweetContent.substring(0, 120) + '...' : 
+                                        validation.tweetContent
+                                    ) +
+                                '</div>' +
+                                '<div class="flex items-center space-x-2">' +
+                                    '<img class="h-6 w-6 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
+                                    '<a href="/author/' + validation.tweetAuthorHandle + '" class="text-xs hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">@' + validation.tweetAuthorHandle + '</a>' +
+                                '</div>' +
+                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
+                                    'View Tweet' +
+                                    '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                    '</svg>' +
+                                '</a>' +
+                            '</div>' :
+                            '<div class="space-y-2">' +
+                                '<div class="flex items-center space-x-3">' +
+                                    '<img class="h-8 w-8 rounded-full object-cover" src="' + authorAvatar + '" alt="@' + validation.tweetAuthorHandle + '" onerror="this.src=&quot;https://abs.twimg.com/sticky/default_profile_images/default_profile_bigger.png&quot;">' +
+                                    '<div>' +
+                                        '<div><a href="/author/' + validation.tweetAuthorHandle + '" class="font-medium hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">' + validation.tweetAuthor + ' →</a></div>' +
+                                        '<div class="text-sm" style="color: #EFEEE099;">@' + validation.tweetAuthorHandle + '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;" onmouseover="this.style.backgroundColor=&quot;#1E5A96&quot;" onmouseout="this.style.backgroundColor=&quot;#2E7BC3&quot;">' +
+                                    'View Tweet' +
+                                    '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                        '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                    '</svg>' +
+                                '</a>' +
+                            '</div>'
+                        ) +
                     '</td>' +
                     '<td style="padding: 1rem; vertical-align: middle;">' +
                         '<div class="flex items-center space-x-3">' +
@@ -1522,6 +1550,23 @@ router.get("/dashboard", async (ctx) => {
                 const validatorAvatar = getTwitterProfileImage(validation.requestedByHandle, validation.requestedByAvatar, true);
                 
                 return '<div class="card p-4 space-y-4" style="background-color: #232320; border: 1px solid rgba(46, 123, 195, 0.1);">' +
+                    // Tweet content section
+                    (validation.tweetContent && validation.tweetContent !== 'Tweet content not available' && !validation.tweetContent.includes('Tweet being validated') ? 
+                        '<div class="space-y-2">' +
+                            '<div class="text-sm" style="color: #EFEEE0D9; line-height: 1.4;">' +
+                                (validation.tweetContent.length > 150 ? 
+                                    validation.tweetContent.substring(0, 150) + '...' : 
+                                    validation.tweetContent
+                                ) +
+                            '</div>' +
+                            '<a href="' + validation.tweetUrl + '" target="_blank" class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md hover:opacity-80 transition-colors duration-200" style="background-color: #2E7BC3; color: white; text-decoration: none;">' +
+                                'View Tweet' +
+                                '<svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>' +
+                                '</svg>' +
+                            '</a>' +
+                        '</div>' : ''
+                    ) +
                     // Header with avatars and names
                     '<div class="flex items-center justify-between">' +
                         '<div class="flex items-center space-x-3">' +
@@ -3433,6 +3478,7 @@ router.post("/test/create-real-validation", async (ctx) => {
       tweetAuthor: "Vitalik Buterin",
       tweetAuthorHandle: "VitalikButerin",
       tweetAuthorAvatar: "https://pbs.twimg.com/profile_images/977496875887558661/L86xyLF4_400x400.jpg",
+      tweetContent: "Excited to share our latest research on Ethereum's scalability improvements. The new consensus mechanism shows promising results in our testnet trials. Looking forward to community feedback! 🚀 #Ethereum #Blockchain",
       requestedBy: "Naval Ravikant",
       requestedByHandle: "naval",
       requestedByAvatar: "https://pbs.twimg.com/profile_images/1296720045988904962/rUgP8ORE_400x400.jpg",
@@ -3537,12 +3583,22 @@ router.post("/test/create-sample", async (ctx) => {
       
       console.log(`📸 Creating validation - Validator: @${validator.username} (${validatorAvatar}), Author: @${author.username} (${authorAvatar})`);
       
+      // Sample tweet contents
+      const sampleTweetContents = [
+        "Just shipped a major update to our DeFi protocol! Gas optimizations reduced transaction costs by 40%. The community feedback has been incredible 🔥",
+        "Fascinating discussion at the blockchain conference today. The intersection of AI and crypto is going to reshape how we think about decentralized systems.",
+        "New research paper published on zero-knowledge proofs! This could be a game-changer for privacy-preserving smart contracts. Link in bio 📚",
+        "Building in public is the way. Here's what we learned from our latest product iteration and how community input shaped our roadmap 🛠️",
+        "The future of Web3 isn't just about technology - it's about creating sustainable economic models that benefit everyone in the ecosystem 🌱"
+      ];
+
       const sampleValidation = {
         id: `db_sample_${Date.now()}_${i}`,
         tweetId: `223456789012345678${i}`,
         tweetAuthor: author.display_name,
         tweetAuthorHandle: author.username,
         tweetAuthorAvatar: authorAvatar,
+        tweetContent: sampleTweetContents[i % sampleTweetContents.length],
         requestedBy: validator.display_name,
         requestedByHandle: validator.username,
         requestedByAvatar: validatorAvatar,

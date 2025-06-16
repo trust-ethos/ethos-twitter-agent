@@ -819,6 +819,7 @@ Link to tweet: ${originalTweetLink}`;
         tweetAuthor: originalAuthor?.name || "Unknown",
         tweetAuthorHandle: originalAuthor?.username || "unknown",
         tweetAuthorAvatar: originalAuthor ? this.getProfileImageUrl(originalAuthor, '_bigger') : this.getTwitterAvatarUrl('unknown', '_bigger'),
+        tweetContent: originalTweet?.text, // Add the actual tweet content
         requestedBy: command.mentionedUser.name,
         requestedByHandle: mentionerUsername,
         requestedByAvatar: this.getProfileImageUrl(command.mentionedUser, '_normal'),
