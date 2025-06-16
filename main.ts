@@ -1496,23 +1496,19 @@ router.get("/dashboard", async (ctx) => {
         function getQualityBadge(score, averageQualityScore = 50) {
             let backgroundColor, textColor;
             
-            // Calculate thresholds based on moving average
-            const redThreshold = averageQualityScore - 25; // More than 25% below average
-            const yellowThreshold = averageQualityScore - 10; // 10-25% below average
-            const whiteThreshold = averageQualityScore + 10; // Plus or minus 10% of average
-            const blueThreshold = averageQualityScore + 25; // 10-25% above average
-            // Green is more than 25% above average
+            // Calculate relative percentage change from average
+            const relativeChange = ((score - averageQualityScore) / averageQualityScore) * 100;
             
-            if (score > blueThreshold) {
+            if (relativeChange > 25) {
                 backgroundColor = '#22c55e'; // green - more than 25% above average
                 textColor = '#ffffff';
-            } else if (score > whiteThreshold) {
+            } else if (relativeChange > 10) {
                 backgroundColor = '#2E7BC3'; // blue - 10-25% above average
                 textColor = '#ffffff';
-            } else if (score >= yellowThreshold) {
-                backgroundColor = '#6b7280'; // neutral gray - plus or minus 10% of average
+            } else if (relativeChange >= -10) {
+                backgroundColor = '#6b7280'; // neutral gray - within 10% of average
                 textColor = '#ffffff';
-            } else if (score >= redThreshold) {
+            } else if (relativeChange >= -25) {
                 backgroundColor = '#eab308'; // yellow - 10-25% below average
                 textColor = '#000000';
             } else {
@@ -1525,20 +1521,16 @@ router.get("/dashboard", async (ctx) => {
 
         // Get percentage color class for engagement stats with dynamic coloring based on average
         function getPercentageColorClass(percentage, averagePercentage = 30) {
-            // Calculate thresholds based on moving average (same logic as quality badge)
-            const redThreshold = averagePercentage - 25; // More than 25% below average
-            const yellowThreshold = averagePercentage - 10; // 10-25% below average
-            const whiteThreshold = averagePercentage + 10; // Plus or minus 10% of average
-            const blueThreshold = averagePercentage + 25; // 10-25% above average
-            // Green is more than 25% above average
+            // Calculate relative percentage change from average (same logic as quality badge)
+            const relativeChange = ((percentage - averagePercentage) / averagePercentage) * 100;
             
-            if (percentage > blueThreshold) {
+            if (relativeChange > 25) {
                 return '" style="color: #22c55e;'; // green - more than 25% above average
-            } else if (percentage > whiteThreshold) {
+            } else if (relativeChange > 10) {
                 return '" style="color: #2E7BC3;'; // blue - 10-25% above average
-            } else if (percentage >= yellowThreshold) {
-                return '" style="color: #6b7280;'; // neutral gray - plus or minus 10% of average
-            } else if (percentage >= redThreshold) {
+            } else if (relativeChange >= -10) {
+                return '" style="color: #6b7280;'; // neutral gray - within 10% of average
+            } else if (relativeChange >= -25) {
                 return '" style="color: #eab308;'; // yellow - 10-25% below average
             } else {
                 return '" style="color: #ef4444;'; // red - more than 25% below average
@@ -1582,7 +1574,7 @@ router.get("/dashboard", async (ctx) => {
                 textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos Avg</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos avg</span>';
         }
 
         // Render pagination with ShadCN styling
@@ -2625,23 +2617,19 @@ router.get("/author/:handle", async (ctx) => {
         function getQualityBadge(score, averageQualityScore = 50) {
             let backgroundColor, textColor;
             
-            // Calculate thresholds based on moving average
-            const redThreshold = averageQualityScore - 25; // More than 25% below average
-            const yellowThreshold = averageQualityScore - 10; // 10-25% below average
-            const whiteThreshold = averageQualityScore + 10; // Plus or minus 10% of average
-            const blueThreshold = averageQualityScore + 25; // 10-25% above average
-            // Green is more than 25% above average
+            // Calculate relative percentage change from average
+            const relativeChange = ((score - averageQualityScore) / averageQualityScore) * 100;
             
-            if (score > blueThreshold) {
+            if (relativeChange > 25) {
                 backgroundColor = '#22c55e'; // green - more than 25% above average
                 textColor = '#ffffff';
-            } else if (score > whiteThreshold) {
+            } else if (relativeChange > 10) {
                 backgroundColor = '#2E7BC3'; // blue - 10-25% above average
                 textColor = '#ffffff';
-            } else if (score >= yellowThreshold) {
-                backgroundColor = '#6b7280'; // neutral gray - plus or minus 10% of average
+            } else if (relativeChange >= -10) {
+                backgroundColor = '#6b7280'; // neutral gray - within 10% of average
                 textColor = '#ffffff';
-            } else if (score >= redThreshold) {
+            } else if (relativeChange >= -25) {
                 backgroundColor = '#eab308'; // yellow - 10-25% below average
                 textColor = '#000000';
             } else {
@@ -2676,25 +2664,21 @@ router.get("/author/:handle", async (ctx) => {
                 textColor = '#ffffff';
             }
             
-            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos Avg</span>';
+            return '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium" style="background-color: ' + backgroundColor + '; color: ' + textColor + ';">' + score + ' Ethos avg</span>';
         }
         
         // Get percentage color class for engagement stats with dynamic coloring based on average
         function getPercentageColorClass(percentage, averagePercentage = 30) {
-            // Calculate thresholds based on moving average (same logic as quality badge)
-            const redThreshold = averagePercentage - 25; // More than 25% below average
-            const yellowThreshold = averagePercentage - 10; // 10-25% below average
-            const whiteThreshold = averagePercentage + 10; // Plus or minus 10% of average
-            const blueThreshold = averagePercentage + 25; // 10-25% above average
-            // Green is more than 25% above average
+            // Calculate relative percentage change from average (same logic as quality badge)
+            const relativeChange = ((percentage - averagePercentage) / averagePercentage) * 100;
             
-            if (percentage > blueThreshold) {
+            if (relativeChange > 25) {
                 return '" style="color: #22c55e;'; // green - more than 25% above average
-            } else if (percentage > whiteThreshold) {
+            } else if (relativeChange > 10) {
                 return '" style="color: #2E7BC3;'; // blue - 10-25% above average
-            } else if (percentage >= yellowThreshold) {
-                return '" style="color: #6b7280;'; // neutral gray - plus or minus 10% of average
-            } else if (percentage >= redThreshold) {
+            } else if (relativeChange >= -10) {
+                return '" style="color: #6b7280;'; // neutral gray - within 10% of average
+            } else if (relativeChange >= -25) {
                 return '" style="color: #eab308;'; // yellow - 10-25% below average
             } else {
                 return '" style="color: #ef4444;'; // red - more than 25% below average
