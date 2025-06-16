@@ -900,12 +900,7 @@ router.get("/dashboard", async (ctx) => {
                                 </p>
                                                                   <p>
                                       <strong>Quality score calculation:</strong> We calculate a weighted score using 60% reputable engagement 
-                                      (users with Ethos scores 1600+) and 40% Ethos active engagement. The score is then color-coded relative 
-                                      to the moving average of all validations to show if a tweet performs significantly above or below typical engagement quality.
-                                  </p>
-                                  <p>
-                                      <strong>The result:</strong> A quality score that reveals whether viral content is driven by 
-                                      authentic community engagement or artificial amplification.
+                                      (users with Ethos scores 1600+) and 40% Ethos active engagement.
                                   </p>
                             </div>
                             
