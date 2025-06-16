@@ -2134,6 +2134,21 @@ router.get("/author/:handle", async (ctx) => {
         
         async function loadAuthorProfile() {
             try {
+                // First, fetch global stats for accurate color coding
+                const statsResponse = await fetch('/api/validations?limit=1');
+                const statsData = await statsResponse.json();
+                let globalStats = { averageQualityScore: 50, averageReputablePercentage: 30, averageEthosActivePercentage: 40 };
+                
+                if (statsData.success && statsData.stats) {
+                    globalStats = {
+                        averageQualityScore: statsData.stats.averageQualityScore || 50,
+                        averageReputablePercentage: statsData.stats.averageReputablePercentage || 30,
+                        averageEthosActivePercentage: statsData.stats.averageEthosActivePercentage || 40
+                    };
+                    console.log('📊 Using global stats for color coding:', globalStats);
+                }
+                
+                // Then fetch author-specific data
                 const response = await fetch('/api/author/' + authorHandle);
                 const data = await response.json();
                 
@@ -2178,7 +2193,7 @@ router.get("/author/:handle", async (ctx) => {
                     document.getElementById('author-chart-empty').classList.remove('hidden');
                     document.getElementById('author-chart-loading').classList.add('hidden');
                 } else {
-                    renderTweetCards(validations);
+                    renderTweetCards(validations, globalStats);
                     renderAuthorChart(validations);
                 }
                 
@@ -2190,13 +2205,13 @@ router.get("/author/:handle", async (ctx) => {
             }
         }
         
-        function renderTweetCards(validations) {
+        function renderTweetCards(validations, globalStats = { averageQualityScore: 50, averageReputablePercentage: 30, averageEthosActivePercentage: 40 }) {
             const tweetCards = document.getElementById('tweet-cards');
             
-            // Use default averages for now (could be enhanced to fetch from API)
-            const averageQualityScore = 50;
-            const averageReputablePercentage = 30;
-            const averageEthosActivePercentage = 40;
+            // Use global stats for accurate color coding
+            const averageQualityScore = globalStats.averageQualityScore;
+            const averageReputablePercentage = globalStats.averageReputablePercentage;
+            const averageEthosActivePercentage = globalStats.averageEthosActivePercentage;
             
             // Render tweet-like cards using the same format as home page
             tweetCards.innerHTML = validations.map(validation => {
@@ -2580,12 +2595,7 @@ router.get("/author/:handle", async (ctx) => {
             
             return url.replace(/^http:/, 'https:');
         }
-        
-        function getScoreClass(score) {
-            if (score >= 70) return 'score-high';
-            if (score >= 40) return 'score-medium';
-            return 'score-low';
-        }
+
         
         function formatDate(timestamp) {
             const date = new Date(timestamp);
