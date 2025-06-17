@@ -2039,15 +2039,11 @@ router.get("/author/:handle", async (ctx) => {
                         <h2 id="author-name" class="text-2xl font-bold" style="color: #EFEEE0D9;"></h2>
                         <p id="author-handle" class="text-lg" style="color: #EFEEE099;"></p>
                     </div>
-                    <div class="text-right">
-                        <div class="text-sm" style="color: #EFEEE099;">Overall Score</div>
-                        <div id="author-score" class="text-2xl font-bold"></div>
-                    </div>
                 </div>
             </div>
             
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #2E7BC3;" id="total-validations">-</div>
                                             <div class="text-sm" style="color: #EFEEE099;">Total validations</div>
@@ -2055,10 +2051,6 @@ router.get("/author/:handle", async (ctx) => {
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #127f31;" id="avg-quality">-</div>
                                             <div class="text-sm" style="color: #EFEEE099;">7-day avg quality score</div>
-                </div>
-                <div class="ethos-card text-center">
-                    <div class="text-2xl font-bold" style="color: #C29010;" id="avg-engagement">-</div>
-                                            <div class="text-sm" style="color: #EFEEE099;">Avg engagement</div>
                 </div>
                 <div class="ethos-card text-center">
                     <div class="text-2xl font-bold" style="color: #EFEEE0D9;" id="latest-validation">-</div>
@@ -2170,21 +2162,7 @@ router.get("/author/:handle", async (ctx) => {
                 const stats = data.stats;
                 document.getElementById('total-validations').textContent = stats.totalValidations;
                 document.getElementById('avg-quality').textContent = stats.avgQualityScore.toFixed(1) + '%';
-                document.getElementById('avg-engagement').textContent = stats.avgEngagement.toLocaleString();
                 document.getElementById('latest-validation').textContent = stats.latestValidation;
-                
-                // Set overall score with color coding
-                const scoreElement = document.getElementById('author-score');
-                const overallScore = stats.overallScore;
-                scoreElement.textContent = overallScore.toFixed(1);
-                
-                if (overallScore >= 70) {
-                    scoreElement.style.color = '#127f31';
-                } else if (overallScore >= 40) {
-                    scoreElement.style.color = '#C29010';
-                } else {
-                    scoreElement.style.color = '#b72b38';
-                }
                 
                 // Populate validations and chart
                 const validations = data.validations;
