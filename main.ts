@@ -265,8 +265,8 @@ router.get("/leaderboard", async (ctx) => {
                     <!-- Navigation Links -->
                     <div class="flex items-center space-x-4 w-full justify-center">
                         <a href="/dashboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Home</a>
-                        <span class="text-sm font-medium" style="color: #EFEEE0D9;">Quality Leaderboard</span>
-                        <a href="/validators" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Validator Leaderboard</a>
+                        <span class="text-sm font-medium" style="color: #EFEEE0D9;">Quality leaderboard</span>
+                        <a href="/validators" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Validator leaderboard</a>
                     </div>
                 </div>
             </div>
@@ -278,7 +278,7 @@ router.get("/leaderboard", async (ctx) => {
                 <!-- Page Header -->
                 <div class="text-center mb-8">
                     <h1 class="text-4xl font-bold mb-4" style="color: #EFEEE0D9;">
-                        🏆 Validation Leaderboard
+                        🏆 Quality leaderboard
                     </h1>
                     <p class="text-lg" style="color: #EFEEE099;">
                         Top 25 and bottom 25 targets of Twitter validations, ranked by average quality score
@@ -835,8 +835,8 @@ router.get("/dashboard", async (ctx) => {
                     <!-- Navigation Links -->
                     <div class="flex items-center space-x-4 w-full justify-center">
                         <span class="text-sm font-medium" style="color: #EFEEE0D9;">Home</span>
-                        <a href="/leaderboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Quality Leaderboard</a>
-                        <a href="/validators" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Validator Leaderboard</a>
+                        <a href="/leaderboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Quality leaderboard</a>
+                        <a href="/validators" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Validator leaderboard</a>
                     </div>
                 </div>
             </div>
@@ -4406,8 +4406,8 @@ router.get("/validators", async (ctx) => {
                     <!-- Navigation Links -->
                     <div class="flex items-center space-x-4 w-full justify-center">
                         <a href="/dashboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Home</a>
-                        <a href="/leaderboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Quality Leaderboard</a>
-                        <span class="text-sm font-medium" style="color: #EFEEE0D9;">Validator Leaderboard</span>
+                        <a href="/leaderboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Quality leaderboard</a>
+                        <span class="text-sm font-medium" style="color: #EFEEE0D9;">Validator leaderboard</span>
                     </div>
                 </div>
             </div>
