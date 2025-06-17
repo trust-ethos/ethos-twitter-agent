@@ -262,21 +262,11 @@ router.get("/leaderboard", async (ctx) => {
         <header class="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60" style="background-color: rgba(35, 35, 32, 0.95); border-color: #9E9C8D00;">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-2">
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;">Ethos Agent Validations</a>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-4">
-                        <a href="/dashboard" class="btn btn-secondary text-sm">All validations</a>
-                        <a href="/validators" class="btn btn-secondary text-sm">Validator leaderboard</a>
-                        <span class="text-sm" style="color: #EFEEE099;">Tweet leaderboard</span>
+                    <!-- Navigation Links -->
+                    <div class="flex items-center space-x-4 w-full justify-center">
+                        <a href="/dashboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Home</a>
+                        <span class="text-sm font-medium" style="color: #EFEEE0D9;">Quality Leaderboard</span>
+                        <a href="/validators" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Validator Leaderboard</a>
                     </div>
                 </div>
             </div>
@@ -842,22 +832,11 @@ router.get("/dashboard", async (ctx) => {
         <header class="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60" style="background-color: rgba(35, 35, 32, 0.95); border-color: #9E9C8D00;">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-2">
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;" onmouseover="this.style.color=&quot;#1E5A96&quot;" onmouseout="this.style.color=&quot;#2E7BC3&quot;">Ethos Agent</a>
-                        </div>
-                    </div>
-                    
                     <!-- Navigation Links -->
-                    <div class="flex items-center space-x-4">
-                                                    <a href="/leaderboard" class="btn btn-secondary text-sm">🏆 Tweet leaderboard</a>
-                            <a href="/validators" class="btn btn-secondary text-sm">🏅 Validator leaderboard</a>
-                        <span class="text-sm" style="color: #EFEEE099;">Ethos Agent Dashboard</span>
+                    <div class="flex items-center space-x-4 w-full justify-center">
+                        <span class="text-sm font-medium" style="color: #EFEEE0D9;">Home</span>
+                        <a href="/leaderboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Quality Leaderboard</a>
+                        <a href="/validators" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Validator Leaderboard</a>
                     </div>
                 </div>
             </div>
@@ -4424,21 +4403,11 @@ router.get("/validators", async (ctx) => {
         <header class="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-background/60" style="background-color: rgba(35, 35, 32, 0.95); border-color: #9E9C8D00;">
             <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex h-16 items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center space-x-2">
-                            <div class="flex h-8 w-8 items-center justify-center rounded-lg" style="background-color: #2E7BC3; color: #EFEEE0D9;">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                            <a href="/dashboard" class="text-xl font-semibold hover:underline transition-colors duration-200" style="color: #2E7BC3; text-decoration: none;">Ethos Agent</a>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center space-x-4">
-                        <a href="/dashboard" class="btn btn-secondary text-sm">All validations</a>
-                        <a href="/leaderboard" class="btn btn-secondary text-sm">Tweet leaderboard</a>
-                        <span class="text-sm" style="color: #EFEEE099;">Validator leaderboard</span>
+                    <!-- Navigation Links -->
+                    <div class="flex items-center space-x-4 w-full justify-center">
+                        <a href="/dashboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Home</a>
+                        <a href="/leaderboard" class="text-sm hover:underline transition-colors duration-200" style="color: #EFEEE099; text-decoration: none;" onmouseover="this.style.color='#2E7BC3'" onmouseout="this.style.color='#EFEEE099'">Quality Leaderboard</a>
+                        <span class="text-sm font-medium" style="color: #EFEEE0D9;">Validator Leaderboard</span>
                     </div>
                 </div>
             </div>
