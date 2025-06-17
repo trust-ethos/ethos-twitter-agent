@@ -1081,13 +1081,26 @@ router.get("/dashboard", async (ctx) => {
         async function loadHeroStats() {
             try {
                 console.log('🏆 Loading hero stats...');
-                const response = await fetch('/api/validations?limit=1');
-                const data = await response.json();
                 
-                if (data.success && data.pagination) {
-                    document.getElementById('hero-total-validations').textContent = data.pagination.total.toLocaleString();
+                // Get actual validation count from dedicated API
+                const countResponse = await fetch('/api/validation-count');
+                const countData = await countResponse.json();
+                
+                if (countData.success && typeof countData.count === 'number') {
+                    document.getElementById('hero-total-validations').textContent = countData.count.toLocaleString();
+                    console.log('📊 Updated total validation count:', countData.count);
+                } else {
+                    // Fallback to pagination count from main API
+                    const response = await fetch('/api/validations?limit=1');
+                    const data = await response.json();
+                    if (data.success && data.pagination) {
+                        document.getElementById('hero-total-validations').textContent = data.pagination.total.toLocaleString();
+                    }
                 }
                 
+                // Get validator count from main API
+                const response = await fetch('/api/validations?limit=1');
+                const data = await response.json();
                 if (data.success && data.stats && data.stats.uniqueValidators) {
                     document.getElementById('hero-validators').textContent = data.stats.uniqueValidators.toLocaleString();
                 }
@@ -3073,6 +3086,29 @@ router.get("/api/validations", async (ctx) => {
     ctx.response.body = { 
       success: false,
       error: "API temporarily unavailable",
+      message: error.message 
+    };
+  }
+});
+
+// Get actual validation count API endpoint
+router.get("/api/validation-count", async (ctx) => {
+  try {
+    const storageService = commandProcessor['storageService'];
+    const count = await storageService.getValidationCount();
+    
+    ctx.response.headers.set("Content-Type", "application/json");
+    ctx.response.body = {
+      success: true,
+      count: count,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Validation count API error:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { 
+      success: false,
+      error: "Validation count API temporarily unavailable",
       message: error.message 
     };
   }

@@ -371,6 +371,47 @@ export class StorageService {
   }
 
   /**
+   * Get the actual count of validations without any limit
+   */
+  async getValidationCount(): Promise<number> {
+    try {
+      // First try to get from PostgreSQL database
+      if (this.database) {
+        try {
+          const result = await this.database.client`
+            SELECT COUNT(*) as count FROM tweet_validations
+          `;
+          const count = parseInt(result[0].count.toString());
+          console.log(`📊 Retrieved total validation count from PostgreSQL: ${count}`);
+          return count;
+        } catch (dbError) {
+          console.error("❌ Failed to get validation count from database:", dbError);
+          // Fall through to KV storage
+        }
+      }
+
+      // Fallback to KV storage
+      if (this.kv) {
+        let count = 0;
+        const iter = this.kv.list<ValidationRecord>({ prefix: ["validation"] });
+        for await (const entry of iter) {
+          count++;
+        }
+        console.log(`📊 Retrieved total validation count from KV storage: ${count}`);
+        return count;
+      } else {
+        // Use local fallback
+        const count = this.validationsMap.size;
+        console.log(`📊 Retrieved total validation count from local storage: ${count}`);
+        return count;
+      }
+    } catch (error) {
+      console.error("❌ Error getting validation count:", error);
+      return 0;
+    }
+  }
+
+  /**
    * Get validation stats including average quality score
    */
   async getValidationStats(): Promise<{ 
