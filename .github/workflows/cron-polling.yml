@@ -1,0 +1,38 @@
+name: External Cron Polling
+
+on:
+  schedule:
+    # Run every minute
+    - cron: '* * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  poll-mentions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    
+    steps:
+      - name: Trigger polling
+        run: |
+          echo "🕐 GitHub Actions cron triggered at $(date)"
+          
+          # Call the HTTP cron endpoint
+          response=$(curl -s -w "%{http_code}" -X POST https://validate.ethos.network/cron/poll-mentions)
+          http_code="${response: -3}"
+          body="${response%???}"
+          
+          echo "📡 HTTP Response Code: $http_code"
+          echo "📝 Response Body: $body"
+          
+          # Check if successful
+          if [ "$http_code" -eq 200 ]; then
+            echo "✅ Polling successful"
+          else
+            echo "❌ Polling failed with code $http_code"
+            exit 1
+          fi
+
+      - name: Log completion
+        if: always()
+        run: |
+          echo "🏁 GitHub Actions cron completed at $(date)" 

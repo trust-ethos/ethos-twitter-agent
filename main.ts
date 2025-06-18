@@ -59,42 +59,11 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
 // Determine mode based on environment variable
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
 
-// Set up Deno.cron() directly for Deno Deploy (alternative to deno.json cron)
-// Poll for mentions every 1 minute for fast response times
-try {
-  console.log("🔄 Attempting to register Deno.cron job...");
-  Deno.cron("ethosAgent-polling-v2", "*/1 * * * *", async () => {
-    console.log("🕐 Deno.cron triggered: Checking for new mentions");
-    console.log("⏰ Current time:", new Date().toISOString());
-    try {
-      // Add timeout protection to prevent hanging - keep it short for cron
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Cron polling timeout after 45 seconds")), 45000);
-      });
-      
-      console.log("🚀 Starting FAST polling cycle (cron mode - skips heavy operations)...");
-      
-      // Set a flag to indicate this is a cron run (for limiting heavy operations)
-      globalThis.IS_CRON_RUN = true;
-      
-      await Promise.race([
-        pollingService.runSinglePoll(),
-        timeoutPromise
-      ]);
-      
-      console.log("✅ Deno.cron polling cycle completed successfully");
-    } catch (error) {
-      console.error("❌ Deno.cron polling failed:", error);
-    } finally {
-      // Clear the cron flag
-      globalThis.IS_CRON_RUN = false;
-    }
-  });
-  console.log("✅ Deno.cron() successfully registered for polling every 1 minute");
-} catch (error) {
-  console.error("❌ Deno.cron() registration failed:", error);
-  console.log("⚠️ This may be running locally or Deno.cron is not available");
-}
+// DISABLED: Deno.cron() is broken on Deno Deploy - using GitHub Actions instead
+// GitHub Actions will call /cron/poll-mentions every minute via HTTP
+console.log("🔄 Deno.cron() disabled - using external GitHub Actions cron instead");
+console.log("🌐 GitHub Actions will call POST /cron/poll-mentions every minute");
+console.log("📡 This provides more reliable cron execution than Deno Deploy's built-in cron");
 
 // Set up rate limit cleanup cron job (runs every hour at minute 0)
 try {
