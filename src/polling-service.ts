@@ -1,18 +1,23 @@
-// Polling service for Twitter mentions
-// Checks for new mentions every 3 minutes, processes up to 3 at a time
+// Checks for new mentions via single cron-triggered requests, processes up to 5 at a time
 
 import { TwitterService } from "./twitter-service.ts";
 import { CommandProcessor } from "./command-processor.ts";
 import { SlackService } from "./slack-service.ts";
 import { DeduplicationService } from "./deduplication-service.ts";
 
-interface PollingState {
+/**
+ * Persistent state for the mention checking service
+ */
+interface MentionState {
   lastTweetId: string | null;
   processedTweetIds: string[];
   botUsername: string;
   lastSaved: string;
 }
 
+/**
+ * Service for checking Twitter mentions via cron-triggered single requests
+ */
 export class PollingService {
   private twitterService: TwitterService;
   private commandProcessor: CommandProcessor;
@@ -20,9 +25,7 @@ export class PollingService {
   private botUsername: string;
   private lastTweetId: string | null = null;
   private deduplicationService: DeduplicationService;
-  private isPolling: boolean = false;
-  private pollInterval: number = 3 * 60 * 1000; // 3 minutes (only used for manual polling via /polling/start)
-  private maxMentions: number = 5; // Process 5 mentions at a time (was 3)
+  private maxMentions: number = 5; // Process 5 mentions at a time
   private kv: Deno.Kv | null = null; // Deno KV for cloud persistence
 
   constructor(
@@ -54,13 +57,13 @@ export class PollingService {
   }
 
   /**
-   * Load polling state from Deno KV (cloud-persistent)
+   * Load mention checking state from Deno KV (cloud-persistent)
    */
   private async loadState() {
     if (!this.kv) return;
     
     try {
-      const result = await this.kv.get<PollingState>(["polling_state", this.botUsername]);
+      const result = await this.kv.get<MentionState>(["mention_state", this.botUsername]);
       
       if (result.value) {
         const state = result.value;
@@ -80,20 +83,20 @@ export class PollingService {
   }
 
   /**
-   * Save polling state to Deno KV (persists across deployments)
+   * Save mention checking state to Deno KV (persists across deployments)
    */
   private async saveState() {
     if (!this.kv) return;
     
     try {
-      const state: PollingState = {
+      const state: MentionState = {
         lastTweetId: this.lastTweetId,
         processedTweetIds: [],
         botUsername: this.botUsername,
         lastSaved: new Date().toISOString()
       };
       
-      await this.kv.set(["polling_state", this.botUsername], state);
+      await this.kv.set(["mention_state", this.botUsername], state);
       console.log(`💾 Saved KV state: ${state.processedTweetIds.length} processed tweets`);
       
     } catch (error) {
@@ -102,59 +105,22 @@ export class PollingService {
   }
 
   /**
-   * Start continuous interval polling (manual use only - normally use Deno cron + runSinglePoll)
-   */
-  startPolling() {
-    if (this.isPolling) {
-      console.log("🔄 Polling is already running");
-      return;
-    }
-
-    this.isPolling = true;
-    console.log(`🚀 Starting manual interval polling for @${this.botUsername} mentions`);
-    console.log(`⏰ Manual polling: checking every ${this.pollInterval / 1000 / 60} minutes for ${this.maxMentions} new mentions`);
-    console.log(`💾 Persistence: ${this.kv ? 'Deno KV (cloud-ready)' : 'In-memory (local only)'}`);
-    console.log(`ℹ️ Note: Production uses Deno cron (every 3 min) + runSinglePoll() instead of this interval`);
-
-    // Run initial poll
-    this.pollForMentions();
-
-    // Set up interval polling
-    const intervalId = setInterval(() => {
-      if (this.isPolling) {
-        this.pollForMentions();
-      } else {
-        clearInterval(intervalId);
-      }
-    }, this.pollInterval);
-  }
-
-  /**
-   * Stop polling
-   */
-  async stopPolling() {
-    this.isPolling = false;
-    await this.saveState(); // Save state when stopping
-    console.log("⏹️ Polling stopped and state saved");
-  }
-
-  /**
-   * Run a single polling cycle (perfect for cron jobs)
+   * Run a single mention check cycle (called by Deno cron)
    */
   async runSinglePoll() {
-    console.log(`\n🕐 Running single poll cycle for @${this.botUsername}`);
-    await this.pollForMentions();
-    console.log(`✅ Single poll cycle completed`);
+    console.log(`\n🕐 Running single mention check for @${this.botUsername}`);
+    await this.checkForMentions();
+    console.log(`✅ Single mention check completed`);
   }
 
   /**
-   * Poll for new mentions
+   * Check for new mentions and process them
    */
-  private async pollForMentions() {
+  private async checkForMentions() {
     try {
-      console.log(`\n🔍 Polling for @${this.botUsername} mentions...`);
+      console.log(`\n🔍 Checking for @${this.botUsername} mentions...`);
       
-      // Twitter API requires min 10 results, but we'll process only maxMentions (3)
+      // Twitter API requires min 10 results, but we'll process only maxMentions (5)
       const apiMaxResults = Math.max(10, this.maxMentions);
       
       const mentionsData = await this.twitterService.searchMentions(
@@ -171,7 +137,7 @@ export class PollingService {
       const allMentions = mentionsData.data;
       const users = mentionsData.includes?.users || [];
 
-      // Only process the first maxMentions (3) mentions per cycle
+      // Only process the first maxMentions (5) mentions per cycle
       const mentionsToProcess = allMentions.slice(0, this.maxMentions);
 
       console.log(`📨 Found ${allMentions.length} mentions, processing ${mentionsToProcess.length}`);
@@ -180,7 +146,7 @@ export class PollingService {
 
       // Process each mention
       for (const mention of mentionsToProcess) {
-                // Skip if we've already processed this tweet
+        // Skip if we've already processed this tweet
         if (await this.deduplicationService.hasProcessed(mention.id)) {
           console.log(`⏭️ Skipping already processed tweet: ${mention.id}`);
           continue;
@@ -199,10 +165,10 @@ export class PollingService {
         await this.saveState();
       }
 
-      console.log(`✅ Polling cycle complete.`);
+      console.log(`✅ Mention check cycle complete.`);
 
     } catch (error) {
-      console.error("❌ Error during polling:", error);
+      console.error("❌ Error during mention checking:", error);
     }
   }
 
@@ -316,15 +282,14 @@ export class PollingService {
   }
 
   /**
-   * Get polling status
+   * Get service status
    */
   getStatus() {
     return {
-      isPolling: this.isPolling,
       botUsername: this.botUsername,
-      pollInterval: this.pollInterval,
       maxMentions: this.maxMentions,
-      lastTweetId: this.lastTweetId
+      lastTweetId: this.lastTweetId,
+      hasKvPersistence: this.kv !== null
     };
   }
 
@@ -332,14 +297,12 @@ export class PollingService {
    * Update configuration
    */
   updateConfig(config: {
-    pollInterval?: number;
     maxMentions?: number;
     botUsername?: string;
   }) {
-    if (config.pollInterval) this.pollInterval = config.pollInterval;
     if (config.maxMentions) this.maxMentions = config.maxMentions;
     if (config.botUsername) this.botUsername = config.botUsername;
     
-    console.log(`⚙️ Polling config updated:`, this.getStatus());
+    console.log(`⚙️ Service config updated:`, this.getStatus());
   }
 } 
