@@ -2,8 +2,8 @@ name: External Cron Polling
 
 on:
   schedule:
-    # Run every minute
-    - cron: '* * * * *'
+    # Run every 2 minutes (more reliable than every minute)
+    - cron: '*/2 * * * *'
   workflow_dispatch: # Allow manual triggering
 
 jobs:
