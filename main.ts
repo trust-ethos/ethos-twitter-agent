@@ -65,16 +65,8 @@ const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITT
 Deno.cron("ethosAgent-mention-check", "*/3 * * * *", async () => {
   console.log("🕐 Deno.cron() triggered for mention check");
   try {
-    const response = await fetch(`http://localhost:${port}/cron/poll-mentions`, {
-      method: 'POST',
-    });
-    
-    if (response.ok) {
-      const result = await response.text();
-      console.log("✅ Cron mention check successful:", result);
-    } else {
-      console.error("❌ Cron mention check failed:", response.status, response.statusText);
-    }
+    await pollingService.runSinglePoll();
+    console.log("✅ Cron mention check completed successfully");
   } catch (error) {
     console.error("❌ Cron mention check error:", error);
   }
@@ -4132,7 +4124,7 @@ router.get("/test/cron", async (ctx) => {
   }
 });
 
-// Deno Deploy Cron endpoint - runs every 3 minutes
+// Manual cron endpoint for testing (actual cron calls pollingService directly)
 router.post("/cron/poll-mentions", async (ctx) => {
   try {
     console.log("🕐 HTTP Cron triggered: Single mention check");
@@ -4792,7 +4784,7 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/test/user/:username - Test user lookup`);
   console.log(`   GET  http://localhost:${port}/test/validate/:tweetId - Test tweet validation`);
   console.log(`   GET  http://localhost:${port}/polling/status - Check service status`);
-  console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every 3 minutes)`);
+  console.log(`   POST http://localhost:${port}/cron/poll-mentions - Manual cron trigger (for testing)`);
   console.log(``);
   console.log(`🔧 Mention checking service initialized for cron-based requests`);
   console.log(`📤 Queue service initialized for async command processing`);
