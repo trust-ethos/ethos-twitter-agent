@@ -553,46 +553,87 @@ export class TwitterService {
       return null;
     }
 
-    try {
-      // Twitter API requires max_results to be between 10 and 100
-      const validMaxResults = Math.max(10, Math.min(100, maxResults));
-      
-      const query = `@${botUsername} -is:retweet`;
-      const params = new URLSearchParams({
-        query,
-        max_results: validMaxResults.toString(),
-        'tweet.fields': 'created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets',
-        // Request profile_image_url to get real URLs, then we can optimize them later
-        'user.fields': 'id,username,name,profile_image_url',
-        expansions: 'author_id,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id'
-      });
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1 second
 
-      if (sinceId) {
-        params.append('since_id', sinceId);
-      }
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Twitter API requires max_results to be between 10 and 100
+        const validMaxResults = Math.max(10, Math.min(100, maxResults));
+        
+        const query = `@${botUsername} -is:retweet`;
+        const params = new URLSearchParams({
+          query,
+          max_results: validMaxResults.toString(),
+          'tweet.fields': 'created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets',
+          // Request profile_image_url to get real URLs, then we can optimize them later
+          'user.fields': 'id,username,name,profile_image_url',
+          expansions: 'author_id,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id'
+        });
 
-      const response = await fetch(`https://api.twitter.com/2/tweets/search/recent?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${this.bearerToken}`,
-          'Content-Type': 'application/json'
+        if (sinceId) {
+          params.append('since_id', sinceId);
         }
-      });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
-        console.error(`❌ Error details: ${errorText}`);
-        return null;
+        if (attempt > 1) {
+          console.log(`🔄 Retry attempt ${attempt}/${maxRetries} for mentions search`);
+        }
+
+        const response = await fetch(`https://api.twitter.com/2/tweets/search/recent?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${this.bearerToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
+          console.error(`❌ Error details: ${errorText}`);
+          
+          // Retry logic for temporary errors
+          if (response.status === 503 && attempt < maxRetries) {
+            const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+            console.log(`⏰ Service unavailable (503), retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue; // Retry the request
+          }
+          
+          // For rate limiting (429), don't retry immediately
+          if (response.status === 429) {
+            console.log(`⏰ Rate limited (429), skipping retries to avoid further rate limiting`);
+            return null;
+          }
+          
+          // For other errors or max retries reached, return null
+          return null;
+        }
+
+        const data = await response.json();
+        
+        if (attempt > 1) {
+          console.log(`✅ Mentions search succeeded on retry attempt ${attempt}`);
+        }
+        
+        console.log(`🔍 Found ${data.data?.length || 0} new mentions`);
+        return data;
+        
+      } catch (error) {
+        console.error(`❌ Error searching for mentions (attempt ${attempt}/${maxRetries}):`, error);
+        
+        // If this is the last attempt or it's not a network error, don't retry
+        if (attempt === maxRetries || !(error instanceof TypeError)) {
+          return null;
+        }
+        
+        // Wait before retrying network errors
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`⏰ Network error, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      const data = await response.json();
-      
-      console.log(`🔍 Found ${data.data?.length || 0} new mentions`);
-      return data;
-    } catch (error) {
-      console.error("❌ Error searching for mentions:", error);
-      return null;
     }
+
+    return null;
   }
 
   /**

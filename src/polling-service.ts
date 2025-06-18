@@ -3,6 +3,7 @@
 import { TwitterService } from "./twitter-service.ts";
 import { QueueService } from "./queue-service.ts";
 import { DeduplicationService } from "./deduplication-service.ts";
+import { SlackService } from "./slack-service.ts";
 
 /**
  * Persistent state for the mention checking service
@@ -20,11 +21,14 @@ interface MentionState {
 export class PollingService {
   private twitterService: TwitterService;
   private queueService: QueueService;
+  private slackService: SlackService;
   private botUsername: string;
   private lastTweetId: string | null = null;
   private deduplicationService: DeduplicationService;
   private maxMentions: number = 5; // Process 5 mentions at a time
   private kv: Deno.Kv | null = null; // Deno KV for cloud persistence
+  private consecutiveApiFailures: number = 0;
+  private lastApiFailureNotification: number = 0;
 
   constructor(
     twitterService: TwitterService,
@@ -33,6 +37,7 @@ export class PollingService {
   ) {
     this.twitterService = twitterService;
     this.queueService = queueService;
+    this.slackService = new SlackService();
     this.botUsername = botUsername;
     this.deduplicationService = DeduplicationService.getInstance();
     
@@ -126,7 +131,36 @@ export class PollingService {
         this.lastTweetId || undefined
       );
 
-      if (!mentionsData || !mentionsData.data) {
+      if (!mentionsData) {
+        this.consecutiveApiFailures++;
+        console.log(`⚠️ Twitter API temporarily unavailable - skipping this check cycle (${this.consecutiveApiFailures} consecutive failures)`);
+        
+        // Send Slack notification for persistent API issues (after 3 consecutive failures, max once per hour)
+        if (this.consecutiveApiFailures >= 3) {
+          const now = Date.now();
+          const oneHour = 60 * 60 * 1000;
+          
+          if (now - this.lastApiFailureNotification > oneHour) {
+            await this.slackService.notifyError(
+              "Twitter API Outage",
+              `Twitter API has been unavailable for ${this.consecutiveApiFailures} consecutive checks (${this.consecutiveApiFailures * 3} minutes)`,
+              "Mention checking service",
+              "Service will continue retrying automatically"
+            );
+            this.lastApiFailureNotification = now;
+          }
+        }
+        
+        return;
+      }
+
+      // Reset failure counter on successful API call
+      if (this.consecutiveApiFailures > 0) {
+        console.log(`✅ Twitter API recovered after ${this.consecutiveApiFailures} consecutive failures`);
+        this.consecutiveApiFailures = 0;
+      }
+
+      if (!mentionsData.data) {
         console.log("📭 No new mentions found");
         return;
       }
@@ -175,6 +209,7 @@ export class PollingService {
 
     } catch (error) {
       console.error("❌ Error during mention checking:", error);
+      this.consecutiveApiFailures++;
     }
   }
 
@@ -186,7 +221,8 @@ export class PollingService {
       botUsername: this.botUsername,
       maxMentions: this.maxMentions,
       lastTweetId: this.lastTweetId,
-      hasKvPersistence: this.kv !== null
+      hasKvPersistence: this.kv !== null,
+      consecutiveApiFailures: this.consecutiveApiFailures
     };
   }
 
