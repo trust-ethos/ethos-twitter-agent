@@ -21,7 +21,7 @@ export class PollingService {
   private lastTweetId: string | null = null;
   private deduplicationService: DeduplicationService;
   private isPolling: boolean = false;
-  private pollInterval: number = 30 * 1000; // 30 seconds (was 3 minutes)
+  private pollInterval: number = 3 * 60 * 1000; // 3 minutes (only used for manual polling via /polling/start)
   private maxMentions: number = 5; // Process 5 mentions at a time (was 3)
   private kv: Deno.Kv | null = null; // Deno KV for cloud persistence
 
@@ -102,7 +102,7 @@ export class PollingService {
   }
 
   /**
-   * Start polling for mentions every 3 minutes
+   * Start continuous interval polling (manual use only - normally use Deno cron + runSinglePoll)
    */
   startPolling() {
     if (this.isPolling) {
@@ -111,9 +111,10 @@ export class PollingService {
     }
 
     this.isPolling = true;
-    console.log(`🚀 Starting polling for @${this.botUsername} mentions`);
-    console.log(`⏰ Checking every ${this.pollInterval / 1000 / 60} minutes for ${this.maxMentions} new mentions`);
+    console.log(`🚀 Starting manual interval polling for @${this.botUsername} mentions`);
+    console.log(`⏰ Manual polling: checking every ${this.pollInterval / 1000 / 60} minutes for ${this.maxMentions} new mentions`);
     console.log(`💾 Persistence: ${this.kv ? 'Deno KV (cloud-ready)' : 'In-memory (local only)'}`);
+    console.log(`ℹ️ Note: Production uses Deno cron (every 3 min) + runSinglePoll() instead of this interval`);
 
     // Run initial poll
     this.pollForMentions();
@@ -198,7 +199,7 @@ export class PollingService {
         await this.saveState();
       }
 
-      console.log(`✅ Polling cycle complete. Next check in ${this.pollInterval / 1000 / 60} minutes.`);
+      console.log(`✅ Polling cycle complete.`);
 
     } catch (error) {
       console.error("❌ Error during polling:", error);
