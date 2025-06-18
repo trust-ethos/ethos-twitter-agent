@@ -76,7 +76,7 @@ try {
   console.log("⚠️ Deno.cron() not available (likely running locally):", error.message);
 }
 
-// Set up rate limit cleanup cron job (runs every hour)
+// Set up rate limit cleanup cron job (runs every hour at minute 0)
 try {
   Deno.cron("ethosAgent-rate-limit-cleanup", "0 * * * *", async () => {
     console.log("🧹 Deno.cron triggered: Cleaning up old rate limit records");
