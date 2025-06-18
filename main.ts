@@ -63,7 +63,7 @@ const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITT
 // Poll for mentions every 1 minute for fast response times
 try {
   console.log("🔄 Attempting to register Deno.cron job...");
-  Deno.cron("ethosAgent-polling", "*/1 * * * *", async () => {
+  Deno.cron("ethosAgent-polling-v2", "*/1 * * * *", async () => {
     console.log("🕐 Deno.cron triggered: Checking for new mentions");
     console.log("⏰ Current time:", new Date().toISOString());
     try {
