@@ -67,12 +67,16 @@ try {
     console.log("🕐 Deno.cron triggered: Checking for new mentions");
     console.log("⏰ Current time:", new Date().toISOString());
     try {
-      // Add timeout protection to prevent hanging
+      // Add timeout protection to prevent hanging - keep it short for cron
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Polling timeout after 2.5 minutes")), 150000);
+        setTimeout(() => reject(new Error("Cron polling timeout after 45 seconds")), 45000);
       });
       
-      console.log("🚀 Starting polling cycle with timeout protection...");
+      console.log("🚀 Starting FAST polling cycle (cron mode - skips heavy operations)...");
+      
+      // Set a flag to indicate this is a cron run (for limiting heavy operations)
+      globalThis.IS_CRON_RUN = true;
+      
       await Promise.race([
         pollingService.runSinglePoll(),
         timeoutPromise
@@ -81,6 +85,9 @@ try {
       console.log("✅ Deno.cron polling cycle completed successfully");
     } catch (error) {
       console.error("❌ Deno.cron polling failed:", error);
+    } finally {
+      // Clear the cron flag
+      globalThis.IS_CRON_RUN = false;
     }
   });
   console.log("✅ Deno.cron() successfully registered for polling every 1 minute");

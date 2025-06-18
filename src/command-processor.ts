@@ -744,6 +744,16 @@ Link to tweet: ${originalTweetLink}`;
       const mentionerUsername = command.mentionedUser.username;
       const mentionerUserId = command.mentionedUser.id;
 
+      // 🚨 CRON PROTECTION: Skip heavy validate commands during cron runs
+      if ((globalThis as any).IS_CRON_RUN) {
+        console.log(`⏭️ Skipping validate command during cron run (too heavy) - @${mentionerUsername}`);
+        return {
+          success: false,
+          message: "Validate command skipped during cron run",
+          replyText: `⏰ Your validate request will be processed shortly. Heavy operations are temporarily queued to maintain bot responsiveness.`
+        };
+      }
+
       // 🚨 RATE LIMITING: Check if user has exceeded validate command limit
       const isRateLimited = await this.storageService.isRateLimited(mentionerUserId, "validate");
       if (isRateLimited) {
