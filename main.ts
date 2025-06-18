@@ -62,27 +62,31 @@ const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITT
 // Set up Deno.cron() directly for Deno Deploy (alternative to deno.json cron)
 // Poll for mentions every 1 minute for fast response times
 try {
+  console.log("🔄 Attempting to register Deno.cron job...");
   Deno.cron("ethosAgent-polling", "*/1 * * * *", async () => {
     console.log("🕐 Deno.cron triggered: Checking for new mentions");
+    console.log("⏰ Current time:", new Date().toISOString());
     try {
       // Add timeout protection to prevent hanging
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Polling timeout after 90 seconds")), 90000);
       });
       
+      console.log("🚀 Starting polling cycle with timeout protection...");
       await Promise.race([
         pollingService.runSinglePoll(),
         timeoutPromise
       ]);
       
-      console.log("✅ Deno.cron polling cycle completed");
+      console.log("✅ Deno.cron polling cycle completed successfully");
     } catch (error) {
       console.error("❌ Deno.cron polling failed:", error);
     }
   });
-  console.log("🕐 Deno.cron() registered for polling every 1 minute");
+  console.log("✅ Deno.cron() successfully registered for polling every 1 minute");
 } catch (error) {
-  console.log("⚠️ Deno.cron() not available (likely running locally):", error.message);
+  console.error("❌ Deno.cron() registration failed:", error);
+  console.log("⚠️ This may be running locally or Deno.cron is not available");
 }
 
 // Set up rate limit cleanup cron job (runs every hour at minute 0)
@@ -4114,10 +4118,46 @@ router.post("/polling/stop", async (ctx) => {
   };
 });
 
-// Deno Deploy Cron endpoint - runs every 2 minutes (fallback for JSON cron)
+// Manual cron test endpoint (no auth required for debugging)
+router.get("/test/cron", async (ctx) => {
+  try {
+    console.log("🧪 Manual cron test triggered");
+    console.log("⏰ Current server time:", new Date().toISOString());
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Test polling timeout after 30 seconds")), 30000);
+    });
+    
+    const startTime = Date.now();
+    await Promise.race([
+      pollingService.runSinglePoll(),
+      timeoutPromise
+    ]);
+    const duration = Date.now() - startTime;
+    
+    ctx.response.body = {
+      status: "success",
+      message: "Manual cron test completed",
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error("❌ Manual cron test failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: "Manual cron test failed",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    };
+  }
+});
+
+// Deno Deploy Cron endpoint - runs every 1 minute (fallback for JSON cron)
 router.post("/cron/poll-mentions", async (ctx) => {
   try {
     console.log("🕐 HTTP Cron triggered: Checking for new mentions");
+    console.log("⏰ Current server time:", new Date().toISOString());
     
     // Add timeout protection to prevent hanging
     const timeoutPromise = new Promise((_, reject) => {
@@ -4736,9 +4776,28 @@ router.get("/api/validators", async (ctx) => {
 app.use(router.routes());
 app.use(router.allowedMethods());
 
-// Error handling
+// Error handling for Oak application
 app.addEventListener("error", (evt) => {
-  console.error("Server error:", evt.error);
+  // Ignore common broken pipe errors that happen when clients disconnect
+  if (evt.error.name === "Http" && evt.error.message.includes("broken pipe")) {
+    // This is normal when clients disconnect, don't log as error
+    console.log("ℹ️ Client disconnected (broken pipe) - this is normal");
+    return;
+  }
+  
+  console.error("🚨 Server error:", evt.error);
+});
+
+// Add uncaught error handler
+globalThis.addEventListener("unhandledrejection", (event) => {
+  // Ignore broken pipe errors
+  if (event.reason?.name === "Http" && event.reason?.message?.includes("broken pipe")) {
+    console.log("ℹ️ Unhandled client disconnect (broken pipe) - preventing crash");
+    event.preventDefault();
+    return;
+  }
+  
+  console.error("🚨 Unhandled promise rejection:", event.reason);
 });
 
 const port = parseInt(Deno.env.get("PORT") || "8000");
