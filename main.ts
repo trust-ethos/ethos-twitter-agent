@@ -59,11 +59,26 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
 // Determine mode based on environment variable
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
 
-// DISABLED: Deno.cron() is broken on Deno Deploy - using GitHub Actions instead
-// GitHub Actions will call /cron/poll-mentions every minute via HTTP
-console.log("🔄 Deno.cron() disabled - using external GitHub Actions cron instead");
-console.log("🌐 GitHub Actions will call POST /cron/poll-mentions every minute");
-console.log("📡 This provides more reliable cron execution than Deno Deploy's built-in cron");
+// Set up main polling cron job - every 3 minutes
+Deno.cron("ethosAgent-polling", "*/3 * * * *", async () => {
+  console.log("🕐 Deno.cron() triggered for polling");
+  try {
+    const response = await fetch(`http://localhost:${port}/cron/poll-mentions`, {
+      method: 'POST',
+    });
+    
+    if (response.ok) {
+      const result = await response.text();
+      console.log("✅ Cron polling successful:", result);
+    } else {
+      console.error("❌ Cron polling failed:", response.status, response.statusText);
+    }
+  } catch (error) {
+    console.error("❌ Cron polling error:", error);
+  }
+});
+
+console.log("✅ Deno.cron() successfully registered for polling every 3 minutes");
 
 // Set up rate limit cleanup cron job (runs every hour at minute 0)
 try {
@@ -4129,13 +4144,13 @@ router.get("/test/cron", async (ctx) => {
   }
 });
 
-// Deno Deploy Cron endpoint - runs every 1 minute (fallback for JSON cron)
+// Deno Deploy Cron endpoint - runs every 3 minutes
 router.post("/cron/poll-mentions", async (ctx) => {
   try {
     console.log("🕐 HTTP Cron triggered: Checking for new mentions");
     console.log("⏰ Current server time:", new Date().toISOString());
     
-    // Add timeout protection to prevent hanging
+    // Add timeout protection to prevent hanging (generous timeout for 3-minute intervals)
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => reject(new Error("HTTP polling timeout after 2.5 minutes")), 150000);
     });
@@ -4782,7 +4797,7 @@ console.log(`🚀 Ethos Twitter Agent starting on port ${port}`);
 
 if (usePolling) {
   console.log("🔄 Running in POLLING mode (good for Basic Twitter API plan)");
-  console.log("🕐 Polling every 1 minute via Deno Deploy Cron");
+  console.log("🕐 Polling every 3 minutes via Deno Deploy Cron");
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter (disabled in polling mode)`);
   console.log(`🧪 Test endpoints:`);
   console.log(`   GET  http://localhost:${port}/test/twitter - Test API credentials`);
@@ -4791,10 +4806,10 @@ if (usePolling) {
   console.log(`   GET  http://localhost:${port}/polling/status - Check polling status`);
   console.log(`   POST http://localhost:${port}/polling/start - Start polling`);
   console.log(`   POST http://localhost:${port}/polling/stop - Stop polling`);
-  console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every 1 minute)`);
+  console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every 3 minutes)`);
   console.log(``);
   console.log(`🔧 Polling service initialized for cron-based polling`);
-  // Deno Deploy cron will call /cron/poll-mentions every 1 minute
+  // Deno Deploy cron will call /cron/poll-mentions every 3 minutes
 } else {
   console.log(`🔗 Running in WEBHOOK mode (requires paid Twitter API plan)`);
   console.log(`🔗 Webhook URL: http://localhost:${port}/webhook/twitter`);
