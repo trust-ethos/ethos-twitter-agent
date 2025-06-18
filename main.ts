@@ -59,9 +59,31 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
 // Determine mode based on environment variable
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
 
-// TEMPORARILY DISABLED: Set up Deno.cron() directly for Deno Deploy
-// Removing cron job to clear stuck state, will re-add in next deployment
-console.log("🚨 Cron job temporarily disabled to clear stuck state");
+// Set up Deno.cron() directly for Deno Deploy (alternative to deno.json cron)
+// Poll for mentions every 1 minute for fast response times
+try {
+  Deno.cron("ethosAgent-polling", "*/1 * * * *", async () => {
+    console.log("🕐 Deno.cron triggered: Checking for new mentions");
+    try {
+      // Add timeout protection to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Polling timeout after 90 seconds")), 90000);
+      });
+      
+      await Promise.race([
+        pollingService.runSinglePoll(),
+        timeoutPromise
+      ]);
+      
+      console.log("✅ Deno.cron polling cycle completed");
+    } catch (error) {
+      console.error("❌ Deno.cron polling failed:", error);
+    }
+  });
+  console.log("🕐 Deno.cron() registered for polling every 1 minute");
+} catch (error) {
+  console.log("⚠️ Deno.cron() not available (likely running locally):", error.message);
+}
 
 // Set up rate limit cleanup cron job (runs every hour at minute 0)
 try {
