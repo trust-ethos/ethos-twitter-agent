@@ -65,7 +65,16 @@ try {
   Deno.cron("ethosAgent-polling", "*/2 * * * *", async () => {
     console.log("🕐 Deno.cron triggered: Checking for new mentions");
     try {
-      await pollingService.runSinglePoll();
+      // Add timeout protection to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Polling timeout after 90 seconds")), 90000);
+      });
+      
+      await Promise.race([
+        pollingService.runSinglePoll(),
+        timeoutPromise
+      ]);
+      
       console.log("✅ Deno.cron polling cycle completed");
     } catch (error) {
       console.error("❌ Deno.cron polling failed:", error);
@@ -4110,8 +4119,15 @@ router.post("/cron/poll-mentions", async (ctx) => {
   try {
     console.log("🕐 HTTP Cron triggered: Checking for new mentions");
     
-    // Run a single polling cycle
-    await pollingService.runSinglePoll();
+    // Add timeout protection to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("HTTP polling timeout after 90 seconds")), 90000);
+    });
+    
+    await Promise.race([
+      pollingService.runSinglePoll(),
+      timeoutPromise
+    ]);
     
     ctx.response.body = {
       status: "success",
