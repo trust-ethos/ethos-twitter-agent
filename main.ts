@@ -69,7 +69,7 @@ try {
     try {
       // Add timeout protection to prevent hanging
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Polling timeout after 90 seconds")), 90000);
+        setTimeout(() => reject(new Error("Polling timeout after 2.5 minutes")), 150000);
       });
       
       console.log("🚀 Starting polling cycle with timeout protection...");
@@ -4125,7 +4125,7 @@ router.get("/test/cron", async (ctx) => {
     console.log("⏰ Current server time:", new Date().toISOString());
     
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Test polling timeout after 30 seconds")), 30000);
+      setTimeout(() => reject(new Error("Test polling timeout after 60 seconds")), 60000);
     });
     
     const startTime = Date.now();
@@ -4161,7 +4161,7 @@ router.post("/cron/poll-mentions", async (ctx) => {
     
     // Add timeout protection to prevent hanging
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("HTTP polling timeout after 90 seconds")), 90000);
+      setTimeout(() => reject(new Error("HTTP polling timeout after 2.5 minutes")), 150000);
     });
     
     await Promise.race([
