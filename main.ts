@@ -3,6 +3,7 @@ import { load } from "dotenv";
 import { TwitterWebhookHandler } from "./src/webhook-handler.ts";
 import { TwitterService } from "./src/twitter-service.ts";
 import { CommandProcessor } from "./src/command-processor.ts";
+import { QueueService } from "./src/queue-service.ts";
 import { PollingService } from "./src/polling-service.ts";
 import { initDatabase } from "./src/database.ts";
 import { BlocklistService } from "./src/blocklist-service.ts";
@@ -38,8 +39,9 @@ const router = new Router();
 // Initialize services
 const twitterService = new TwitterService();
 const commandProcessor = new CommandProcessor(twitterService);
+const queueService = new QueueService(twitterService, commandProcessor);
 const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
-const pollingService = new PollingService(twitterService, commandProcessor);
+const pollingService = new PollingService(twitterService, queueService);
 
 // Validate environment variables
 const twitterBearerToken = Deno.env.get("TWITTER_BEARER_TOKEN");
@@ -4083,11 +4085,13 @@ router.post("/test/create-sample-with-real-images", async (ctx) => {
 });
 
 // Polling control endpoints
-router.get("/polling/status", (ctx) => {
+router.get("/polling/status", async (ctx) => {
+  const queueStatus = await queueService.getQueueStatus();
   ctx.response.body = {
     status: "success",
     ...pollingService.getStatus(),
-    mode: usePolling ? "polling" : "webhook"
+    mode: usePolling ? "cron" : "webhook",
+    queueService: queueStatus
   };
 });
 
@@ -4791,6 +4795,7 @@ if (usePolling) {
   console.log(`   POST http://localhost:${port}/cron/poll-mentions - Cron trigger (auto-called every 3 minutes)`);
   console.log(``);
   console.log(`🔧 Mention checking service initialized for cron-based requests`);
+  console.log(`📤 Queue service initialized for async command processing`);
   // Deno Deploy cron will call /cron/poll-mentions every 3 minutes
 } else {
   console.log(`🔗 Running in WEBHOOK mode (requires paid Twitter API plan)`);

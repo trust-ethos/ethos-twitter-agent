@@ -1,8 +1,7 @@
-// Checks for new mentions via single cron-triggered requests, processes up to 5 at a time
+// Checks for new mentions via single cron-triggered requests, queues them for async processing
 
 import { TwitterService } from "./twitter-service.ts";
-import { CommandProcessor } from "./command-processor.ts";
-import { SlackService } from "./slack-service.ts";
+import { QueueService } from "./queue-service.ts";
 import { DeduplicationService } from "./deduplication-service.ts";
 
 /**
@@ -16,12 +15,11 @@ interface MentionState {
 }
 
 /**
- * Service for checking Twitter mentions via cron-triggered single requests
+ * Service for checking Twitter mentions and queuing them for async processing
  */
 export class PollingService {
   private twitterService: TwitterService;
-  private commandProcessor: CommandProcessor;
-  private slackService: SlackService;
+  private queueService: QueueService;
   private botUsername: string;
   private lastTweetId: string | null = null;
   private deduplicationService: DeduplicationService;
@@ -30,12 +28,11 @@ export class PollingService {
 
   constructor(
     twitterService: TwitterService,
-    commandProcessor: CommandProcessor,
+    queueService: QueueService,
     botUsername: string = "ethosAgent" // Default bot username
   ) {
     this.twitterService = twitterService;
-    this.commandProcessor = commandProcessor;
-    this.slackService = new SlackService();
+    this.queueService = queueService;
     this.botUsername = botUsername;
     this.deduplicationService = DeduplicationService.getInstance();
     
@@ -114,7 +111,7 @@ export class PollingService {
   }
 
   /**
-   * Check for new mentions and process them
+   * Check for new mentions and queue them for async processing
    */
   private async checkForMentions() {
     try {
@@ -140,11 +137,11 @@ export class PollingService {
       // Only process the first maxMentions (5) mentions per cycle
       const mentionsToProcess = allMentions.slice(0, this.maxMentions);
 
-      console.log(`📨 Found ${allMentions.length} mentions, processing ${mentionsToProcess.length}`);
+      console.log(`📨 Found ${allMentions.length} mentions, queuing ${mentionsToProcess.length} for processing`);
 
-      let processedAny = false;
+      let queuedAny = false;
 
-      // Process each mention
+      // Queue each mention for async processing
       for (const mention of mentionsToProcess) {
         // Skip if we've already processed this tweet
         if (await this.deduplicationService.hasProcessed(mention.id)) {
@@ -152,132 +149,32 @@ export class PollingService {
           continue;
         }
 
-        await this.processMention(mention, users);
+        // Find the author user data
+        const author = users.find(user => user.id === mention.author_id);
+        
+        if (!author) {
+          console.log(`⚠️ Could not find author data for mention ${mention.id}`);
+          continue;
+        }
+
+        // Queue the mention for async processing
+        await this.queueService.enqueueMentionProcessing(mention, author, users, this.botUsername);
         
         // Mark as processed and update last processed tweet ID
         await this.deduplicationService.markProcessed(mention.id);
         this.lastTweetId = mention.id;
-        processedAny = true;
+        queuedAny = true;
       }
 
-      // Save state after processing mentions
-      if (processedAny) {
+      // Save state after queuing mentions
+      if (queuedAny) {
         await this.saveState();
       }
 
-      console.log(`✅ Mention check cycle complete.`);
+      console.log(`✅ Mention check cycle complete - mentions queued for async processing.`);
 
     } catch (error) {
       console.error("❌ Error during mention checking:", error);
-    }
-  }
-
-  /**
-   * Process a single mention (mimics webhook processing)
-   */
-  private async processMention(mention: any, users: any[]) {
-    try {
-      // Find the author user data
-      const author = users.find(user => user.id === mention.author_id);
-      
-      if (!author) {
-        console.log(`⚠️ Could not find author data for mention ${mention.id}`);
-        return;
-      }
-
-      console.log(`\n📢 Processing mention from @${author.username}: "${mention.text}"`);
-
-      // Filter: Ignore replies from @airdroppatron
-      if (author.username.toLowerCase() === 'airdroppatron') {
-        console.log(`🚫 Ignoring reply from @airdroppatron`);
-        return;
-      }
-
-      // Parse the command using the command processor
-      const command = this.commandProcessor.parseCommand(mention, author);
-      
-      if (!command) {
-        console.log("ℹ️ No valid command found in tweet");
-        return;
-      }
-
-      console.log(`🎯 Found command: ${command.type}`);
-
-      // Process the command, passing all users for context
-      const result = await this.commandProcessor.processCommand(command, users);
-
-      if (result.replyText) {
-        console.log(`${result.success ? '✅' : '⚠️'} Command processed ${result.success ? 'successfully' : 'with error'}, replying...`);
-        
-        // Reply to the tweet (for both successful and failed commands that have replyText)
-        try {
-          const replyResult = await this.twitterService.replyToTweet(mention.id, result.replyText);
-          
-          if (replyResult.success) {
-            console.log(`📤 Replied successfully to @${author.username}`);
-            
-            // Send Slack notification for successful response (only for successful commands)
-            if (result.success && command.type === 'profile') {
-              // For profile commands, we need to determine who was analyzed
-              const isReply = mention.in_reply_to_user_id;
-              let targetUser = author.username; // default to self-analysis
-              
-              if (isReply) {
-                // Find the original author
-                const originalAuthor = users.find(user => user.id === mention.in_reply_to_user_id);
-                if (originalAuthor) {
-                  targetUser = originalAuthor.username;
-                }
-              }
-              
-              await this.slackService.notifyProfileSuccess(
-                targetUser,
-                author.username,
-                result.replyText || "",
-                replyResult.postedTweetId || undefined,
-                this.botUsername
-              );
-            }
-            // Note: Save command notifications are handled in the command processor
-            
-          } else {
-            console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyResult.error);
-            
-            // Send Slack notification for failed reply
-            await this.slackService.notifyError(
-              `${command.type} command reply`,
-              replyResult.error || "Unknown error",
-              `@${author.username}`,
-              mention.text
-            );
-          }
-        } catch (replyError) {
-          console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyError);
-          
-          // Send Slack notification for reply exception
-          await this.slackService.notifyError(
-            `${command.type} command reply`,
-            replyError instanceof Error ? replyError.message : String(replyError),
-            `@${author.username}`,
-            mention.text
-          );
-        }
-      } else if (!result.success) {
-        console.log(`❌ Command processing failed: ${result.message}`);
-        
-        // Send Slack notification for command processing failure (only when no replyText)
-        await this.slackService.notifyError(
-          `${command.type} command processing`,
-          result.message,
-          `@${author.username}`,
-          mention.text
-        );
-      } else {
-        console.log(`✅ Command processed successfully but no reply needed`);
-      }
-
-    } catch (error) {
-      console.error(`❌ Error processing mention ${mention.id}:`, error);
     }
   }
 
