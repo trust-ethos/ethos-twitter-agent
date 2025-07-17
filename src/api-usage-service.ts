@@ -19,7 +19,13 @@ export class ApiUsageService {
   private static instance: ApiUsageService;
 
   constructor() {
-    this.db = getDatabase();
+    // Try to get database, but don't fail if it's not available
+    try {
+      this.db = getDatabase();
+    } catch (error) {
+      console.log("⚠️ API usage service: Database not available, API usage tracking disabled");
+      this.db = null;
+    }
   }
 
   static getInstance(): ApiUsageService {
@@ -33,6 +39,12 @@ export class ApiUsageService {
    * Log a Twitter API call
    */
   async logApiCall(entry: ApiUsageEntry): Promise<void> {
+    // Skip if no database available
+    if (!this.db) {
+      console.log(`📊 API Usage (no DB): ${entry.actionType} - ${entry.postsConsumed} posts (${entry.endpoint})`);
+      return;
+    }
+
     try {
       await this.db.client`
         INSERT INTO api_usage_log (
@@ -65,6 +77,17 @@ export class ApiUsageService {
     byEndpoint: Record<string, number>;
     recentEntries: any[];
   }> {
+    // Return empty stats if no database
+    if (!this.db) {
+      return {
+        totalPosts: 0,
+        byAction: {},
+        byCommand: {},
+        byEndpoint: {},
+        recentEntries: []
+      };
+    }
+
     try {
       const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
@@ -143,6 +166,11 @@ export class ApiUsageService {
     totalPosts: number;
     byCommand: Record<string, number>;
   }>> {
+    // Return empty if no database
+    if (!this.db) {
+      return [];
+    }
+
     try {
       const result = await this.db.client`
         SELECT 
