@@ -64,33 +64,7 @@ CREATE TABLE tweets (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Tweet validation results
-CREATE TABLE tweet_validations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tweet_id BIGINT NOT NULL REFERENCES tweets(id),
-    validation_key VARCHAR(255) NOT NULL, -- Original KV key format
-    
-    -- Engagement stats
-    total_unique_users INTEGER NOT NULL,
-    reputable_users INTEGER NOT NULL,
-    ethos_active_users INTEGER NOT NULL,
-    reputable_percentage DECIMAL(5,2) NOT NULL,
-    ethos_active_percentage DECIMAL(5,2) NOT NULL,
-    
-    -- Analysis metadata
-    analysis_started_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    analysis_completed_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    rate_limited BOOLEAN DEFAULT FALSE,
-    incomplete_data BOOLEAN DEFAULT FALSE,
-    
-    -- Raw engagement data
-    engagement_data JSONB NOT NULL, -- Store detailed engagement stats
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    
-    UNIQUE(tweet_id, validation_key)
-);
+-- Tweet validation table removed - no longer needed
 
 -- Tweet engagement participants (retweeters, repliers, quoters)
 CREATE TABLE tweet_engagements (
@@ -152,6 +126,36 @@ CREATE TABLE command_history (
 );
 
 -- ============================================================================
+-- API USAGE TRACKING SYSTEM
+-- ============================================================================
+
+-- Track Twitter API usage for cost monitoring
+CREATE TABLE api_usage_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    
+    -- API call details
+    endpoint VARCHAR(255) NOT NULL, -- e.g., 'tweets/search/recent', 'tweets/:id/retweeted_by'
+    method VARCHAR(10) NOT NULL, -- GET, POST, etc.
+    action_type VARCHAR(50) NOT NULL, -- 'mention_check', 'validate_retweeters', 'validate_repliers', etc.
+    
+    -- Context
+    related_tweet_id BIGINT, -- If related to a specific tweet
+    related_command VARCHAR(50), -- 'validate', 'save', 'profile', etc.
+    user_id BIGINT REFERENCES twitter_users(id), -- User who triggered the action
+    
+    -- Usage metrics
+    posts_consumed INTEGER NOT NULL DEFAULT 1, -- Number of posts counted toward quota
+    response_status INTEGER, -- HTTP status code
+    rate_limited BOOLEAN DEFAULT FALSE,
+    
+    -- Metadata
+    request_details JSONB, -- Store request parameters for debugging
+    response_summary JSONB, -- Store response metadata (user count, etc.)
+    
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================================================
 -- INDEXES FOR PERFORMANCE
 -- ============================================================================
 
@@ -171,10 +175,7 @@ CREATE INDEX idx_ethos_users_has_vouches ON ethos_users(has_vouches);
 CREATE INDEX idx_tweets_author_id ON tweets(author_id);
 CREATE INDEX idx_tweets_published_at ON tweets(published_at);
 
--- Tweet validations indexes
-CREATE INDEX idx_tweet_validations_tweet_id ON tweet_validations(tweet_id);
-CREATE INDEX idx_tweet_validations_created_at ON tweet_validations(created_at);
-CREATE INDEX idx_tweet_validations_validation_key ON tweet_validations(validation_key);
+-- Tweet validation indexes removed - no longer needed
 
 -- Tweet engagements indexes
 CREATE INDEX idx_tweet_engagements_tweet_id ON tweet_engagements(tweet_id);
@@ -191,6 +192,14 @@ CREATE INDEX idx_command_history_tweet_id ON command_history(tweet_id);
 CREATE INDEX idx_command_history_requester ON command_history(requester_user_id);
 CREATE INDEX idx_command_history_status ON command_history(status);
 CREATE INDEX idx_command_history_created_at ON command_history(created_at);
+
+-- API usage log indexes
+CREATE INDEX idx_api_usage_log_endpoint ON api_usage_log(endpoint);
+CREATE INDEX idx_api_usage_log_action_type ON api_usage_log(action_type);
+CREATE INDEX idx_api_usage_log_related_command ON api_usage_log(related_command);
+CREATE INDEX idx_api_usage_log_created_at ON api_usage_log(created_at);
+CREATE INDEX idx_api_usage_log_user_id ON api_usage_log(user_id);
+CREATE INDEX idx_api_usage_log_tweet_id ON api_usage_log(related_tweet_id);
 
 -- ============================================================================
 -- FUNCTIONS AND TRIGGERS
@@ -218,8 +227,7 @@ CREATE TRIGGER update_ethos_users_updated_at BEFORE UPDATE ON ethos_users
 CREATE TRIGGER update_tweets_updated_at BEFORE UPDATE ON tweets 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-CREATE TRIGGER update_tweet_validations_updated_at BEFORE UPDATE ON tweet_validations 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Tweet validation trigger removed - no longer needed
 
 CREATE TRIGGER update_saved_tweets_updated_at BEFORE UPDATE ON saved_tweets 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -228,18 +236,7 @@ CREATE TRIGGER update_saved_tweets_updated_at BEFORE UPDATE ON saved_tweets
 -- SAMPLE QUERIES AND VIEWS
 -- ============================================================================
 
--- View for latest validations with tweet info
-CREATE VIEW latest_validations AS
-SELECT 
-    tv.*,
-    t.content as tweet_content,
-    t.author_id,
-    tu.username as author_username,
-    tu.display_name as author_display_name
-FROM tweet_validations tv
-JOIN tweets t ON tv.tweet_id = t.id
-JOIN twitter_users tu ON t.author_id = tu.id
-ORDER BY tv.created_at DESC;
+-- Latest validations view removed - no longer needed
 
 -- View for engagement summary by tweet
 CREATE VIEW tweet_engagement_summary AS

@@ -1,4 +1,5 @@
 import type { TwitterUser, TwitterTweet, EngagingUser, UserWithEthosScore, EngagementStats } from "./types.ts";
+import { ApiUsageService } from './api-usage-service.ts';
 
 // Declare global Deno for TypeScript
 declare const Deno: {
@@ -15,6 +16,7 @@ export class TwitterService {
   private apiSecret: string;
   private accessToken: string;
   private accessTokenSecret: string;
+  private apiUsageService: ApiUsageService;
 
   constructor() {
     this.clientId = Deno.env.get("TWITTER_CLIENT_ID");
@@ -24,6 +26,7 @@ export class TwitterService {
     this.apiSecret = Deno.env.get("TWITTER_API_SECRET") || "";
     this.accessToken = Deno.env.get("TWITTER_ACCESS_TOKEN") || "";
     this.accessTokenSecret = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET") || "";
+    this.apiUsageService = ApiUsageService.getInstance();
 
     console.log("🔧 Twitter Service initialized");
     if (!this.bearerToken) {
@@ -586,6 +589,23 @@ export class TwitterService {
           }
         });
 
+        // Log API usage
+        await this.apiUsageService.logApiCall({
+          endpoint: 'tweets/search/recent',
+          method: 'GET',
+          actionType: 'mention_check',
+          relatedCommand: 'polling',
+          postsConsumed: validMaxResults, // Number of posts requested
+          responseStatus: response.status,
+          rateLimited: response.status === 429,
+          requestDetails: {
+            query,
+            max_results: validMaxResults,
+            since_id: sinceId || null
+          },
+          responseSummary: null // Will be filled after parsing response
+        });
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
@@ -610,6 +630,20 @@ export class TwitterService {
         }
 
         const data = await response.json();
+        
+        // Update the API usage log with response summary
+        await this.apiUsageService.logApiCall({
+          endpoint: 'tweets/search/recent',
+          method: 'GET',
+          actionType: 'mention_check_success',
+          relatedCommand: 'polling',
+          postsConsumed: 0, // This is the response summary, no additional posts consumed
+          responseStatus: response.status,
+          responseSummary: {
+            mentions_found: data.data?.length || 0,
+            has_next_token: !!data.meta?.next_token
+          }
+        });
         
         if (attempt > 1) {
           console.log(`✅ Mentions search succeeded on retry attempt ${attempt}`);
@@ -1064,6 +1098,22 @@ export class TwitterService {
 
       const response = await this.makeEngagementOAuthRequest("GET", url.toString());
       
+      // Log API usage for tweet metrics
+      await this.apiUsageService.logApiCall({
+        endpoint: 'tweets/:id',
+        method: 'GET',
+        actionType: 'get_tweet_metrics',
+        relatedTweetId: tweetId,
+        relatedCommand: 'validate',
+        postsConsumed: 1,
+        responseStatus: response.status,
+        rateLimited: response.status === 429,
+        requestDetails: {
+          tweet_id: tweetId,
+          fields: 'public_metrics'
+        }
+      });
+      
       if (!response.ok) {
         console.error(`❌ Failed to fetch tweet metrics: ${response.status} ${response.statusText}`);
         return null;
@@ -1102,8 +1152,9 @@ export class TwitterService {
     console.log(`📊 Checking tweet engagement volume...`);
     const metrics = await this.getTweetMetrics(tweetId);
     
-    let useSampling = false;
-    let maxPagesPerType = 50; // Default: no limit for small tweets
+    // 🎯 COST OPTIMIZATION: Always use minimal sampling to limit API usage to ~100 posts max
+    let useSampling = true;
+    let maxPagesPerType = 1; // Start with just 1 page per type (~100 users each)
     
     if (metrics) {
       const totalShares = metrics.retweet_count + metrics.quote_count;
@@ -1111,36 +1162,18 @@ export class TwitterService {
       
       console.log(`📊 Tweet metrics: ${metrics.retweet_count} retweets, ${metrics.quote_count} quotes, ${metrics.reply_count} replies, ${metrics.like_count} likes`);
       
-      // Determine sampling strategy based on engagement volume
-      if (totalShares > 2000 || totalComments > 1000) {
-        // Very high engagement: aggressive sampling
-        maxPagesPerType = 3; // ~300 users per type max
-        useSampling = true;
-        console.log(`🎯 Very high engagement detected - using aggressive sampling (max 3 pages per type)`);
-      } else if (totalShares > 500 || totalComments > 300) {
-        // High engagement: moderate sampling  
-        maxPagesPerType = 5; // ~500 users per type max
-        useSampling = true;
-        console.log(`🎯 High engagement detected - using moderate sampling (max 5 pages per type)`);
-      } else {
-        console.log(`✅ Normal engagement volume - no sampling needed`);
-      }
+      // Always use minimal sampling to keep costs low
+      console.log(`💰 Using cost-optimized sampling (max 1 page per type = ~300 total API calls)`);
       
-      // Estimate time and sample size
-      const estimatedPagesTotal = Math.min(
-        Math.ceil(totalShares / 100) + Math.ceil(totalComments / 100),
-        maxPagesPerType * 3 // 3 engagement types
-      );
-      const estimatedMinutes = Math.max(1, Math.ceil(estimatedPagesTotal / 5) * 15);
-      console.log(`⏰ Estimated analysis time: ~${estimatedMinutes} minutes (${estimatedPagesTotal} pages)`);
+      // Estimate API calls (much lower now)
+      const estimatedApiCalls = maxPagesPerType * 3; // 3 engagement types × 1 page each
+      console.log(`⏰ Estimated API calls: ~${estimatedApiCalls} (plus 1 for metrics = ${estimatedApiCalls + 1} total)`);
       
-      if (useSampling) {
-        const sampleSize = maxPagesPerType * 100 * 3; // Rough estimate
-        console.log(`🔬 Will analyze ~${sampleSize} users (sampled from ${totalShares + totalComments} total engagers)`);
-      }
+      const sampleSize = maxPagesPerType * 100 * 3; // 1 × 100 × 3 = ~300 users max
+      console.log(`🔬 Will analyze ~${sampleSize} users maximum (cost-optimized sampling)`);
     } else {
-      console.log(`⚠️ Could not fetch tweet metrics, using default sampling strategy...`);
-      maxPagesPerType = 5; // Default moderate sampling when metrics unavailable
+      console.log(`⚠️ Could not fetch tweet metrics, using cost-optimized sampling (1 page per type)...`);
+      maxPagesPerType = 1; // Always minimal sampling
       useSampling = true;
     }
 
@@ -1162,29 +1195,47 @@ export class TwitterService {
       console.log(`🎯 Sampling was used - results represent a sample of the total engagement`);
     }
 
-    // Apply random sampling if we got too much data
+    // Apply random sampling to ensure we never exceed 100 total users
     let finalRetweeters = retweetersResult.users;
     let finalRepliers = repliersResult.users;
     let finalQuoteTweeters = quoteTweetersResult.users;
     
-    if (useSampling) {
-      // Apply additional random sampling to ensure representative results
-      const maxSampleSize = 300; // Max users per engagement type
+    // 💰 COST OPTIMIZATION: Limit to 100 total users maximum across all engagement types
+    const maxTotalUsers = 100;
+    const totalUsers = finalRetweeters.length + finalRepliers.length + finalQuoteTweeters.length;
+    
+    if (totalUsers > maxTotalUsers) {
+      console.log(`🎲 Total users (${totalUsers}) exceeds limit (${maxTotalUsers}), applying proportional random sampling...`);
       
-      if (finalRetweeters.length > maxSampleSize) {
-        finalRetweeters = this.randomSample(finalRetweeters, maxSampleSize);
-        console.log(`🎲 Randomly sampled ${maxSampleSize} retweeters from ${retweetersResult.users.length}`);
+      // Calculate proportional sampling to maintain representation
+      const retweeterRatio = finalRetweeters.length / totalUsers;
+      const replierRatio = finalRepliers.length / totalUsers;
+      const quoteTweeterRatio = finalQuoteTweeters.length / totalUsers;
+      
+      const maxRetweeters = Math.floor(maxTotalUsers * retweeterRatio);
+      const maxRepliers = Math.floor(maxTotalUsers * replierRatio);
+      const maxQuoteTweeters = Math.floor(maxTotalUsers * quoteTweeterRatio);
+      
+      // Apply random sampling proportionally
+      if (finalRetweeters.length > maxRetweeters) {
+        finalRetweeters = this.randomSample(finalRetweeters, maxRetweeters);
+        console.log(`🎲 Randomly sampled ${maxRetweeters} retweeters from ${retweetersResult.users.length}`);
       }
       
-      if (finalRepliers.length > maxSampleSize) {
-        finalRepliers = this.randomSample(finalRepliers, maxSampleSize);
-        console.log(`🎲 Randomly sampled ${maxSampleSize} repliers from ${repliersResult.users.length}`);
+      if (finalRepliers.length > maxRepliers) {
+        finalRepliers = this.randomSample(finalRepliers, maxRepliers);
+        console.log(`🎲 Randomly sampled ${maxRepliers} repliers from ${repliersResult.users.length}`);
       }
       
-      if (finalQuoteTweeters.length > maxSampleSize) {
-        finalQuoteTweeters = this.randomSample(finalQuoteTweeters, maxSampleSize);
-        console.log(`🎲 Randomly sampled ${maxSampleSize} quote tweeters from ${quoteTweetersResult.users.length}`);
+      if (finalQuoteTweeters.length > maxQuoteTweeters) {
+        finalQuoteTweeters = this.randomSample(finalQuoteTweeters, maxQuoteTweeters);
+        console.log(`🎲 Randomly sampled ${maxQuoteTweeters} quote tweeters from ${quoteTweetersResult.users.length}`);
       }
+      
+      const finalTotal = finalRetweeters.length + finalRepliers.length + finalQuoteTweeters.length;
+      console.log(`💰 Final sample: ${finalTotal} users (${finalRetweeters.length} RT + ${finalRepliers.length} replies + ${finalQuoteTweeters.length} QT)`);
+    } else {
+      console.log(`✅ Total users (${totalUsers}) within limit (${maxTotalUsers}), no additional sampling needed`);
     }
 
     // Combine and deduplicate users
@@ -1378,5 +1429,56 @@ export class TwitterService {
       sampled[size] = x;
     }
     return sampled;
+  }
+
+  /**
+   * Get embedded tweet HTML using Twitter's oEmbed API
+   * This is the officially supported way to display tweets on external websites
+   */
+  async getEmbeddedTweetHtml(tweetUrl: string, options?: {
+    maxwidth?: number;
+    hide_media?: boolean;
+    hide_thread?: boolean;
+    theme?: 'light' | 'dark';
+    align?: 'left' | 'right' | 'center' | 'none';
+    omit_script?: boolean;
+  }): Promise<{ html: string; author_name: string; author_url: string } | null> {
+    try {
+      console.log(`🔗 Fetching embedded tweet HTML for: ${tweetUrl}`);
+      
+      const url = new URL('https://publish.twitter.com/oembed');
+      url.searchParams.set('url', tweetUrl);
+      
+      // Apply options
+      if (options?.maxwidth) url.searchParams.set('maxwidth', options.maxwidth.toString());
+      if (options?.hide_media) url.searchParams.set('hide_media', 'true');
+      if (options?.hide_thread) url.searchParams.set('hide_thread', 'true');
+      if (options?.theme) url.searchParams.set('theme', options.theme);
+      if (options?.align) url.searchParams.set('align', options.align);
+      if (options?.omit_script) url.searchParams.set('omit_script', 'true');
+      
+      const response = await fetch(url.toString());
+      
+      if (!response.ok) {
+        console.error(`❌ oEmbed API error: ${response.status} ${response.statusText}`);
+        return null;
+      }
+      
+      const data = await response.json();
+      
+      if (data.html) {
+        console.log(`✅ Successfully fetched embedded HTML for tweet`);
+        return {
+          html: data.html,
+          author_name: data.author_name || 'Unknown',
+          author_url: data.author_url || ''
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`❌ Error fetching embedded tweet HTML:`, error);
+      return null;
+    }
   }
 }

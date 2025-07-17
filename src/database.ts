@@ -177,74 +177,7 @@ class DatabaseClient {
     return result[0] || null;
   }
 
-  // ============================================================================
-  // TWEET VALIDATIONS OPERATIONS
-  // ============================================================================
-
-  async saveValidation(validation: {
-    tweet_id: number;
-    validation_key: string;
-    total_unique_users: number;
-    reputable_users: number;
-    ethos_active_users: number;
-    reputable_percentage: number;
-    ethos_active_percentage: number;
-    analysis_started_at: Date;
-    analysis_completed_at: Date;
-    rate_limited?: boolean;
-    incomplete_data?: boolean;
-    engagement_data: any;
-  }): Promise<string> {
-    const result = await this.sql`
-      INSERT INTO tweet_validations (
-        tweet_id, validation_key, total_unique_users, reputable_users, 
-        ethos_active_users, reputable_percentage, ethos_active_percentage,
-        analysis_started_at, analysis_completed_at, rate_limited, 
-        incomplete_data, engagement_data
-      ) VALUES (
-        ${validation.tweet_id}, ${validation.validation_key}, 
-        ${validation.total_unique_users}, ${validation.reputable_users}, 
-        ${validation.ethos_active_users}, ${validation.reputable_percentage}, 
-        ${validation.ethos_active_percentage}, ${validation.analysis_started_at.toISOString()}, 
-        ${validation.analysis_completed_at.toISOString()}, ${validation.rate_limited || false}, 
-        ${validation.incomplete_data || false}, ${JSON.stringify(validation.engagement_data)}
-      )
-      ON CONFLICT (tweet_id, validation_key) 
-      DO UPDATE SET 
-        total_unique_users = ${validation.total_unique_users},
-        reputable_users = ${validation.reputable_users},
-        ethos_active_users = ${validation.ethos_active_users},
-        reputable_percentage = ${validation.reputable_percentage},
-        ethos_active_percentage = ${validation.ethos_active_percentage},
-        analysis_completed_at = ${validation.analysis_completed_at.toISOString()},
-        rate_limited = ${validation.rate_limited || false},
-        incomplete_data = ${validation.incomplete_data || false},
-        engagement_data = ${JSON.stringify(validation.engagement_data)},
-        updated_at = NOW()
-      RETURNING id
-    `;
-    return result[0].id;
-  }
-
-  async getValidation(tweet_id: number, validation_key: string): Promise<any> {
-    const result = await this.sql`
-      SELECT * FROM tweet_validations 
-      WHERE tweet_id = ${tweet_id} AND validation_key = ${validation_key}
-    `;
-    return result[0] || null;
-  }
-
-  async getLatestValidations(limit: number = 10): Promise<any[]> {
-    return await this.sql`
-      SELECT tv.*, t.content as tweet_content, t.author_id,
-             tu.username as author_username, tu.display_name as author_display_name
-      FROM tweet_validations tv
-      JOIN tweets t ON tv.tweet_id = t.id
-      JOIN twitter_users tu ON t.author_id = tu.id
-      ORDER BY tv.created_at DESC 
-      LIMIT ${limit}
-    `;
-  }
+  // Tweet validation operations removed - no longer needed
 
   // ============================================================================
   // TWEET ENGAGEMENTS OPERATIONS
@@ -384,14 +317,12 @@ class DatabaseClient {
       twitterUsers,
       ethosUsers,
       tweets,
-      validations,
       savedTweets,
       commands
     ] = await Promise.all([
       this.sql`SELECT COUNT(*) as count FROM twitter_users`,
       this.sql`SELECT COUNT(*) as count FROM ethos_users`,
       this.sql`SELECT COUNT(*) as count FROM tweets`,
-      this.sql`SELECT COUNT(*) as count FROM tweet_validations`,
       this.sql`SELECT COUNT(*) as count FROM saved_tweets`,
       this.sql`SELECT COUNT(*) as count FROM command_history`
     ]);
@@ -400,7 +331,6 @@ class DatabaseClient {
       twitter_users: parseInt(twitterUsers[0].count),
       ethos_users: parseInt(ethosUsers[0].count),
       tweets: parseInt(tweets[0].count),
-      validations: parseInt(validations[0].count),
       saved_tweets: parseInt(savedTweets[0].count),
       commands: parseInt(commands[0].count)
     };
