@@ -1,5 +1,4 @@
 // Storage service for tracking saved tweets and preventing duplicates
-import { getDatabase } from "./database.ts";
 
 interface SavedTweet {
   tweetId: string;
@@ -19,21 +18,9 @@ interface RateLimitRecord {
 export class StorageService {
   private kv: Deno.Kv | null = null;
   private localStorage: Map<string, SavedTweet> = new Map(); // Fallback for local development
-  private database: any = null;
 
   constructor() {
     this.initializeKV();
-    this.initializeDatabase();
-  }
-
-  private async initializeDatabase() {
-    try {
-      this.database = getDatabase();
-      console.log("✅ Database initialized for StorageService");
-    } catch (error) {
-      console.error("❌ Failed to initialize database in StorageService:", error);
-      this.database = null;
-    }
   }
 
   /**
@@ -42,16 +29,12 @@ export class StorageService {
   private async initializeKV() {
     try {
       this.kv = await Deno.openKv();
-      console.log("✅ KV storage opened successfully");
+      console.log("✅ KV storage initialized for StorageService");
     } catch (error) {
-      console.error("❌ Failed to open KV storage:", error);
-      this.kv = null;
+      console.error("❌ Failed to initialize KV storage:", error);
+      console.log("📝 Falling back to in-memory storage");
     }
   }
-
-
-
-  // getRecentValidations method removed - no longer needed
 
   /**
    * Helper method to optimize Twitter profile image URLs for different sizes
@@ -79,27 +62,12 @@ export class StorageService {
     return url.replace(/^http:/, 'https:');
   }
 
-  // getValidationCount method removed - no longer needed
-
-  // getValidationStats method removed - no longer needed
-
-  // createSampleValidation method removed - no longer needed
-
   /**
    * Check if a tweet has already been saved
    */
   async isTweetSaved(tweetId: string): Promise<boolean> {
     try {
-      // First check database
-      if (this.database) {
-        const tweets = await this.database.getSavedTweets(1, 0, parseInt(tweetId));
-        if (tweets.length > 0) {
-          console.log(`✅ Tweet ${tweetId} found in database`);
-          return true;
-        }
-      }
-
-      // Fallback to KV storage
+      // Check KV storage
       if (this.kv) {
         const saved = await this.kv.get(["saved_tweets", tweetId]);
         if (saved.value) {
@@ -125,22 +93,7 @@ export class StorageService {
    */
   async getSavedTweet(tweetId: string): Promise<SavedTweet | null> {
     try {
-      // First check database
-      if (this.database) {
-        const tweets = await this.database.getSavedTweets(1, 0, parseInt(tweetId));
-        if (tweets.length > 0) {
-          const dbTweet = tweets[0];
-          return {
-            tweetId: dbTweet.tweet_id.toString(),
-            targetUsername: dbTweet.author_username || 'unknown',
-            reviewerUsername: dbTweet.saved_by_username,
-            savedAt: dbTweet.created_at,
-            reviewScore: "positive" // Default for database saves
-          };
-        }
-      }
-
-      // Fallback to KV storage
+      // Check KV storage
       if (this.kv) {
         const saved = await this.kv.get(["saved_tweets", tweetId]);
         if (saved.value) {
@@ -174,139 +127,59 @@ export class StorageService {
     };
 
     try {
-      // First try to save to database
-      if (this.database) {
-        // Generate consistent user ID for the reviewer
-        const generateUserId = (username: string): number => {
-          let hash = 0;
-          for (let i = 0; i < username.length; i++) {
-            const char = username.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convert to 32-bit integer
-          }
-          return Math.abs(hash);
-        };
-
-        const reviewerUserId = generateUserId(reviewerUsername);
-        
-        // Ensure the reviewer user exists in twitter_users table
-        await this.database.upsertTwitterUser({
-          id: reviewerUserId,
-          username: reviewerUsername,
-          display_name: reviewerUsername,
-          profile_image_url: null
-        });
-
-        // Generate user ID for target user if provided
-        let targetUserId = null;
-        if (targetUsername && targetUsername !== reviewerUsername) {
-          targetUserId = generateUserId(targetUsername);
-          await this.database.upsertTwitterUser({
-            id: targetUserId,
-            username: targetUsername,
-            display_name: targetUsername,
-            profile_image_url: null
-          });
-        }
-
-        // Now save the tweet with proper user IDs
-        await this.database.saveTweet({
-          tweet_id: parseInt(tweetId),
-          tweet_url: `https://x.com/${targetUsername}/status/${tweetId}`,
-          original_content: `Tweet saved via @ethosAgent by @${reviewerUsername} with ${reviewScore} sentiment`,
-          author_user_id: targetUserId,
-          author_username: targetUsername,
-          saved_by_user_id: reviewerUserId, // Now using proper user ID
-          saved_by_username: reviewerUsername,
-          ethos_source: "command:save",
-          published_at: new Date()
-        });
-        console.log(`✅ Tweet ${tweetId} saved to PostgreSQL database`);
-      }
-      
-      // Also save to KV storage as backup
+      // Save to KV storage
       if (this.kv) {
         await this.kv.set([`saved_tweet:${tweetId}`], savedTweet);
         console.log(`✅ Tweet ${tweetId} marked as saved in KV storage`);
       }
       
-      // Final fallback to in-memory storage
+      // Also save to in-memory storage as backup
       this.localStorage.set(tweetId, savedTweet);
       console.log(`✅ Tweet ${tweetId} marked as saved in memory`);
     } catch (error) {
       console.error("❌ Error marking tweet as saved:", error);
-      // Even if database fails, we can still use KV/memory storage as fallback
-      if (this.kv) {
-        try {
-          await this.kv.set([`saved_tweet:${tweetId}`], savedTweet);
-          console.log(`✅ Tweet ${tweetId} saved to KV storage as fallback`);
-        } catch (kvError) {
-          console.error("❌ KV storage fallback also failed:", kvError);
-        }
-      }
+      // Fallback to in-memory storage
       this.localStorage.set(tweetId, savedTweet);
+      console.log(`✅ Tweet ${tweetId} saved to memory fallback`);
     }
   }
 
   /**
-   * Clear saved tweets older than specified days (optional cleanup)
-   * @param daysOld - Remove tweets saved more than this many days ago
+   * Get saved tweet statistics
    */
-  async cleanupOldSaves(daysOld: number = 30): Promise<void> {
-    try {
-      if (this.database) {
-        // For database, we could implement this as a custom method if needed
-        // For now, we'll skip it since it's just cleanup
-        console.log("🧹 Database cleanup not implemented yet");
-      } else if (this.kv) {
-        // Use KV storage fallback
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-
-        let deletedCount = 0;
-        
-        // Iterate through all saved tweets
-        for await (const entry of this.kv.list<SavedTweet>({ prefix: ["saved_tweets"] })) {
-          const savedTweet = entry.value;
-          const savedDate = new Date(savedTweet.savedAt);
-          
-          if (savedDate < cutoffDate) {
-            await this.kv.delete(entry.key);
-            deletedCount++;
-          }
-        }
-
-        console.log(`🧹 Cleanup complete: removed ${deletedCount} old saved tweets`);
-      } else {
-        console.log("🧹 Cleanup only available with database or KV storage");
-      }
-    } catch (error) {
-      console.error("❌ Error during cleanup:", error);
-    }
-  }
-
-  /**
-   * Get statistics about saved tweets
-   */
-  async getStats(): Promise<{ totalSaved: number; recentSaves: number }> {
+  async getSavedTweetStats(): Promise<{ totalSaved: number; recentSaves: number }> {
     let totalSaved = 0;
     let recentSaves = 0;
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
 
-    if (this.kv) {
-      const iter = this.kv.list({ prefix: ["saved_tweet"] });
-      for await (const entry of iter) {
-        totalSaved++;
-        const savedTweet = entry.value as SavedTweet;
-        const savedTime = new Date(savedTweet.savedAt).getTime();
+    try {
+      // Count from KV storage
+      if (this.kv) {
+        const iter = this.kv.list({ prefix: ["saved_tweet:"] });
+        for await (const entry of iter) {
+          totalSaved++;
+          const tweet = entry.value as SavedTweet;
+          const savedTime = new Date(tweet.savedAt).getTime();
+          if (savedTime > oneDayAgo) {
+            recentSaves++;
+          }
+        }
+      }
+
+      // Add in-memory counts
+      totalSaved += this.localStorage.size;
+      for (const tweet of this.localStorage.values()) {
+        const savedTime = new Date(tweet.savedAt).getTime();
         if (savedTime > oneDayAgo) {
           recentSaves++;
         }
       }
-    } else {
+    } catch (error) {
+      console.error("❌ Error getting saved tweet stats:", error);
+      // Fallback to in-memory only
       totalSaved = this.localStorage.size;
-      for (const savedTweet of this.localStorage.values()) {
-        const savedTime = new Date(savedTweet.savedAt).getTime();
+      for (const tweet of this.localStorage.values()) {
+        const savedTime = new Date(tweet.savedAt).getTime();
         if (savedTime > oneDayAgo) {
           recentSaves++;
         }
@@ -344,14 +217,13 @@ export class StorageService {
       const isLimited = commandCount >= 5;
       
       if (isLimited) {
-        console.log(`🚨 Rate limit exceeded for user ${userId}: ${commandCount} ${commandType} commands in last hour`);
+        console.log(`⚠️ User ${userId} is rate limited for ${commandType} commands (${commandCount}/5)`);
       }
 
       return isLimited;
     } catch (error) {
       console.error("❌ Error checking rate limit:", error);
-      // If we can't check the rate limit, don't block the user
-      return false;
+      return false; // If check fails, allow the command
     }
   }
 
@@ -360,12 +232,12 @@ export class StorageService {
    */
   async recordCommandUsage(userId: string, username: string, commandType: "save"): Promise<void> {
     try {
-      const now = new Date().toISOString();
+      const now = Date.now();
       const record: RateLimitRecord = {
         userId,
         username,
         commandType,
-        timestamp: now
+        timestamp: new Date(now).toISOString()
       };
 
       if (this.kv) {
