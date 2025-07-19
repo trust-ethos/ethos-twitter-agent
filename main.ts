@@ -9,10 +9,53 @@ import { initDatabase } from "./src/database.ts";
 import { BlocklistService } from "./src/blocklist-service.ts";
 import { ApiUsageService } from "./src/api-usage-service.ts";
 
+// ============================================================================
+// CRON JOBS MUST BE DEFINED AT TOP-LEVEL BEFORE ANY AWAIT CALLS
+// ============================================================================
+
+// Set up main mention checking cron job - every 3 minutes
+Deno.cron("ethosAgent-mention-check", "*/3 * * * *", async () => {
+  console.log("🕐 Deno.cron() triggered for mention check");
+  try {
+    // Get the services we need (they will be available in global scope after initialization)
+    const pollingService = (globalThis as any).pollingService;
+    if (pollingService) {
+      await pollingService.runSinglePoll();
+      console.log("✅ Cron mention check completed successfully");
+    } else {
+      console.log("⚠️ PollingService not yet initialized");
+    }
+  } catch (error) {
+    console.error("❌ Cron mention check error:", error);
+  }
+});
+
+// Set up rate limit cleanup cron job (runs every hour at minute 0)
+Deno.cron("ethosAgent-rate-limit-cleanup", "0 * * * *", async () => {
+  console.log("🧹 Deno.cron triggered: Cleaning up old rate limit records");
+  try {
+    const commandProcessor = (globalThis as any).commandProcessor;
+    if (commandProcessor?.storageService) {
+      await commandProcessor.storageService.cleanupOldRateLimits();
+      console.log("✅ Deno.cron rate limit cleanup completed");
+    } else {
+      console.log("⚠️ CommandProcessor not yet initialized");
+    }
+  } catch (error) {
+    console.error("❌ Deno.cron rate limit cleanup failed:", error);
+  }
+});
+
+console.log("✅ Deno.cron jobs registered successfully");
+
+// ============================================================================
+// ASYNC INITIALIZATION
+// ============================================================================
+
 // Load environment variables
 await load({ export: true });
 
-// Initialize database
+// Initialize database (optional - app can run without it using KV storage)
 const databaseUrl = Deno.env.get("DATABASE_URL");
 if (databaseUrl) {
   try {
@@ -24,14 +67,14 @@ if (databaseUrl) {
       const stats = await db.getStats();
       console.log("📊 Database stats:", stats);
     } else {
-      console.error("❌ Database health check failed");
+      console.log("⚠️ Database health check failed - using KV storage fallback");
     }
   } catch (error) {
-    console.error("❌ Database initialization failed:", error);
-    console.log("⚠️ Continuing without database - using KV storage fallback");
+    console.log("⚠️ Database not available - using KV storage fallback");
+    // Don't log the full error to avoid cluttering deployment logs
   }
 } else {
-  console.log("⚠️ DATABASE_URL not configured, using KV storage fallback");
+  console.log("⚠️ DATABASE_URL not configured - using KV storage fallback");
 }
 
 const app = new Application();
@@ -44,6 +87,10 @@ const queueService = new QueueService(twitterService, commandProcessor);
 const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
 const pollingService = new PollingService(twitterService, queueService);
 const apiUsageService = ApiUsageService.getInstance();
+
+// Make services available globally for cron jobs
+(globalThis as any).pollingService = pollingService;
+(globalThis as any).commandProcessor = commandProcessor;
 
 // Validate environment variables
 const twitterBearerToken = Deno.env.get("TWITTER_BEARER_TOKEN");
@@ -62,36 +109,6 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
 
 // Determine mode based on environment variable
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
-
-// Set up main mention checking cron job - every 3 minutes
-Deno.cron("ethosAgent-mention-check", "*/3 * * * *", async () => {
-  console.log("🕐 Deno.cron() triggered for mention check");
-  try {
-    await pollingService.runSinglePoll();
-    console.log("✅ Cron mention check completed successfully");
-  } catch (error) {
-    console.error("❌ Cron mention check error:", error);
-  }
-});
-
-console.log("✅ Deno.cron() successfully registered for mention checking every 3 minutes");
-
-// Set up rate limit cleanup cron job (runs every hour at minute 0)
-try {
-  Deno.cron("ethosAgent-rate-limit-cleanup", "0 * * * *", async () => {
-    console.log("🧹 Deno.cron triggered: Cleaning up old rate limit records");
-    try {
-      const storageService = commandProcessor.storageService;
-      await storageService.cleanupOldRateLimits();
-      console.log("✅ Deno.cron rate limit cleanup completed");
-    } catch (error) {
-      console.error("❌ Deno.cron rate limit cleanup failed:", error);
-    }
-  });
-  console.log("🧹 Deno.cron() registered for rate limit cleanup every hour");
-} catch (error) {
-  console.log("⚠️ Deno.cron() for rate limit cleanup not available (likely running locally):", error.message);
-}
 
 // Webhook endpoints
 router.get("/webhook/twitter", webhookHandler.handleChallengeRequest.bind(webhookHandler));
