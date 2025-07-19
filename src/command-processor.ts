@@ -511,6 +511,16 @@ Learn more about Ethos at https://ethos.network`;
 
       console.log(`💾 Processing save command: ${saveContext}`);
 
+      // 🚨 PREVENT AGENT SELF-REVIEW: Check if the target is the agent itself
+      if (targetUsername.toLowerCase() === "ethosagent") {
+        console.log(`🚫 Agent self-review blocked: @${mentionerUsername} trying to save review to @ethosAgent`);
+        return {
+          success: false,
+          message: "Cannot review the agent itself",
+          replyText: `I can't save a review to my own profile! Try a different target.`
+        };
+      }
+
       // 🚨 ANTI-ABUSE: Check if user is trying to review themselves with positive sentiment
       if (targetUsername.toLowerCase() === mentionerUsername.toLowerCase() && reviewScore === "positive") {
         console.log(`🚨 Self-review abuse detected: @${mentionerUsername} trying to review themselves positively`);
