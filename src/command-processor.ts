@@ -695,11 +695,19 @@ Link to tweet: ${originalTweetLink}`;
             const activityResult = await this.ethosService.getActivityByTx('review', txHash);
             if (activityResult.success && activityResult.data) {
               const activity = activityResult.data;
-              let linkCandidate = activity.url || activity.reviewUrl || activity.link;
-              if (!linkCandidate) {
-                const idCandidate = activity.reviewId || activity.id || activity.reviewID || activity.attestationUID || activity.uid;
-                if (idCandidate) {
-                  linkCandidate = `https://app.ethos.network/review/${idCandidate}`;
+              // Prefer activity data.id from v2 response shape
+              let linkCandidate = '';
+              const reviewIdFromData = activity?.data?.id;
+              if (reviewIdFromData) {
+                linkCandidate = `https://app.ethos.network/activity/review/${reviewIdFromData}`;
+              } else {
+                // Legacy or alternative shapes as fallback
+                linkCandidate = activity.url || activity.reviewUrl || activity.link || '';
+                if (!linkCandidate) {
+                  const idCandidate = activity.reviewId || activity.id || activity.reviewID || activity.attestationUID || activity.uid;
+                  if (idCandidate) {
+                    linkCandidate = `https://app.ethos.network/activity/review/${idCandidate}`;
+                  }
                 }
               }
               if (linkCandidate) {
