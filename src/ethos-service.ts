@@ -354,4 +354,33 @@ export class EthosService {
       };
     }
   }
+
+  /**
+   * Lookup an activity by transaction hash using the v2 activities API
+   */
+  async getActivityByTx(activityType: string, txHash: string): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const url = `${this.baseUrl}/api/v2/activities/${activityType}/tx/${txHash}`;
+      console.log(`🔎 Fetching Ethos activity by tx: ${url}`);
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'EthosAgent/1.0'
+        }
+      });
+      console.log(`📡 Activities by tx response status: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`❌ Activities by tx error: ${response.status} ${response.statusText}`);
+        console.log(`❌ Error details:`, errorText);
+        return { success: false, error: `Activities API error: ${response.status}` };
+      }
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error('❌ Error fetching activity by tx:', error);
+      return { success: false, error: error.message || 'Failed to fetch activity by tx' };
+    }
+  }
 } 

@@ -685,6 +685,36 @@ Link to tweet: ${originalTweetLink}`;
           }
         }
 
+        // If no link was returned, try to resolve it by polling Ethos with the transaction hash
+        if (!reviewLink) {
+          const txHash = (reviewResult.data && (reviewResult.data.tx || reviewResult.data.transactionHash)) || "";
+          const isValidTx = /^0x[a-fA-F0-9]{64}$/.test(txHash);
+          if (isValidTx) {
+            console.log("⏳ No review link in response. Waiting 10s then checking Ethos activities by tx hash...");
+            await new Promise((resolve) => setTimeout(resolve, 10_000));
+            const activityResult = await this.ethosService.getActivityByTx('review', txHash);
+            if (activityResult.success && activityResult.data) {
+              const activity = activityResult.data;
+              let linkCandidate = activity.url || activity.reviewUrl || activity.link;
+              if (!linkCandidate) {
+                const idCandidate = activity.reviewId || activity.id || activity.reviewID || activity.attestationUID || activity.uid;
+                if (idCandidate) {
+                  linkCandidate = `https://app.ethos.network/review/${idCandidate}`;
+                }
+              }
+              if (linkCandidate) {
+                reviewLink = ` ${linkCandidate}`;
+              } else {
+                console.log("⚠️ Activity fetched by tx but no usable link or id present in payload");
+              }
+            } else {
+              console.log(`⚠️ Could not fetch activity by tx ${txHash}: ${activityResult.error || 'unknown error'}`);
+            }
+          } else {
+            console.log("ℹ️ No valid tx hash present in Ethos response; skipping activity lookup");
+          }
+        }
+
         // Send Slack notification for successful save
         const finalMessage = reviewLink ? 
           `I just saved this tweet permanently onchain. You can view it below${reviewLink}` :
