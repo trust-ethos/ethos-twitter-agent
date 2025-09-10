@@ -17,6 +17,7 @@ export class TwitterService {
   private accessToken: string;
   private accessTokenSecret: string;
   private apiUsageService: ApiUsageService;
+  private ethosClientHeaderValue: string;
 
   constructor() {
     this.clientId = Deno.env.get("TWITTER_CLIENT_ID");
@@ -27,11 +28,20 @@ export class TwitterService {
     this.accessToken = Deno.env.get("TWITTER_ACCESS_TOKEN") || "";
     this.accessTokenSecret = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET") || "";
     this.apiUsageService = ApiUsageService.getInstance();
+    this.ethosClientHeaderValue = "ethos-twitter-agent@1.0.0";
 
     console.log("🔧 Twitter Service initialized");
     if (!this.bearerToken) {
       console.log("ℹ️ Bearer Token not configured - user lookups and posting will be limited");
     }
+  }
+
+  private getEthosHeaders(extra?: Record<string, string>): Record<string, string> {
+    const base: Record<string, string> = {
+      'Accept': 'application/json',
+      'X-Ethos-Client': this.ethosClientHeaderValue,
+    };
+    return { ...base, ...(extra || {}) };
   }
 
   /**
@@ -1049,9 +1059,7 @@ export class TwitterService {
       const url = 'https://api.ethos.network/api/v1/score/bulk';
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getEthosHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ userkeys })
       });
 
@@ -1388,7 +1396,10 @@ export class TwitterService {
       
       // Use the Users API to get comprehensive stats
       const userkey = `service:x.com:username:${username}`;
-      const userStatsResponse = await fetch(`https://api.ethos.network/api/v1/users/${encodeURIComponent(userkey)}/stats`);
+      const userStatsResponse = await fetch(
+        `https://api.ethos.network/api/v1/users/${encodeURIComponent(userkey)}/stats`,
+        { headers: this.getEthosHeaders() }
+      );
 
       console.log(`📊 Users API response for @${username}: ${userStatsResponse.status}`);
       

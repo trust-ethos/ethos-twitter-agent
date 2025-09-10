@@ -263,7 +263,11 @@ async function testEthosIntegration() {
   
   for (const username of testUsers) {
     try {
-      const response = await fetch(`https://api.ethos.network/api/v1/users/service:x.com:username:${username}/stats`);
+      const response = await fetch(`https://api.ethos.network/api/v1/users/service:x.com:username:${username}/stats`, {
+        headers: {
+          'X-Ethos-Client': 'ethos-twitter-agent@1.0.0'
+        }
+      });
       
       if (response.ok) {
         const data = await response.json();

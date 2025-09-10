@@ -40,9 +40,20 @@ export interface EthosUserSearchResponse {
 
 export class EthosService {
   private baseUrl: string;
+  private clientHeaderValue: string;
 
   constructor() {
     this.baseUrl = Deno.env.get("ETHOS_API_BASE_URL") || "https://api.ethos.network";
+    this.clientHeaderValue = "ethos-twitter-agent@1.0.0";
+  }
+
+  private getEthosHeaders(extra?: Record<string, string>): Record<string, string> {
+    const base: Record<string, string> = {
+      'Accept': 'application/json',
+      'User-Agent': 'EthosAgent/1.0',
+      'X-Ethos-Client': this.clientHeaderValue,
+    };
+    return { ...base, ...(extra || {}) };
   }
 
   /**
@@ -66,10 +77,7 @@ export class EthosService {
         
         const scoresResponse = await fetch(scoresUrl, {
           method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'EthosAgent/1.0'
-          }
+          headers: this.getEthosHeaders()
         });
         
         console.log(`📡 Scores API response status: ${scoresResponse.status} ${scoresResponse.statusText}`);
@@ -101,7 +109,7 @@ export class EthosService {
       const statsUrl = `${this.baseUrl}/api/v1/users/${userkey}/stats`;
       console.log(`🔗 Stats API URL: ${statsUrl}`);
       
-      const statsResponse = await fetch(statsUrl);
+      const statsResponse = await fetch(statsUrl, { headers: this.getEthosHeaders() });
       console.log(`📡 Stats API response status: ${statsResponse.status} ${statsResponse.statusText}`);
       
       if (!statsResponse.ok) {
@@ -215,10 +223,7 @@ export class EthosService {
       
       const response = await fetch(addressesUrl, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'EthosAgent/1.0'
-        }
+        headers: this.getEthosHeaders()
       });
       
       console.log(`📡 Addresses API response status: ${response.status} ${response.statusText}`);
@@ -364,10 +369,7 @@ export class EthosService {
       console.log(`🔎 Fetching Ethos activity by tx: ${url}`);
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'EthosAgent/1.0'
-        }
+        headers: this.getEthosHeaders()
       });
       console.log(`📡 Activities by tx response status: ${response.status} ${response.statusText}`);
       if (!response.ok) {
