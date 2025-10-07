@@ -7,7 +7,6 @@ import { QueueService } from "./src/queue-service.ts";
 import { PollingService } from "./src/polling-service.ts";
 import { initDatabase } from "./src/database.ts";
 import { BlocklistService } from "./src/blocklist-service.ts";
-import { ApiUsageService } from "./src/api-usage-service.ts";
 
 // ============================================================================
 // CRON JOBS MUST BE DEFINED AT TOP-LEVEL BEFORE ANY AWAIT CALLS
@@ -86,7 +85,6 @@ const commandProcessor = new CommandProcessor(twitterService);
 const queueService = new QueueService(twitterService, commandProcessor);
 const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
 const pollingService = new PollingService(twitterService, queueService);
-const apiUsageService = ApiUsageService.getInstance();
 
 // Make services available globally for cron jobs
 (globalThis as any).pollingService = pollingService;
@@ -427,29 +425,6 @@ function checkAdminAuth(ctx: any): boolean {
   
   return true;
 }
-
-// Admin endpoint to get API usage statistics
-router.get("/admin/api-usage", async (ctx) => {
-  if (!checkAdminAuth(ctx)) return;
-  
-  try {
-    const hours = parseInt(ctx.request.url.searchParams.get("hours") || "24");
-    const stats = await apiUsageService.getUsageStats(hours);
-    
-    ctx.response.body = {
-      status: "success",
-      timeframe: `${hours} hours`,
-      ...stats
-    };
-  } catch (error) {
-    console.error("❌ Failed to get API usage stats:", error);
-    ctx.response.status = 500;
-    ctx.response.body = {
-      status: "error",
-      message: "Failed to get API usage statistics"
-    };
-  }
-});
 
 // Admin endpoint to view blocklist
 router.get("/admin/blocklist", async (ctx) => {

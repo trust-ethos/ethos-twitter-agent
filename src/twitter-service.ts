@@ -1,5 +1,4 @@
 import type { TwitterUser, TwitterTweet, EngagingUser, UserWithEthosScore, EngagementStats } from "./types.ts";
-import { ApiUsageService } from './api-usage-service.ts';
 
 // Declare global Deno for TypeScript
 declare const Deno: {
@@ -16,7 +15,6 @@ export class TwitterService {
   private apiSecret: string;
   private accessToken: string;
   private accessTokenSecret: string;
-  private apiUsageService: ApiUsageService;
   private ethosClientHeaderValue: string;
 
   constructor() {
@@ -27,7 +25,6 @@ export class TwitterService {
     this.apiSecret = Deno.env.get("TWITTER_API_SECRET") || "";
     this.accessToken = Deno.env.get("TWITTER_ACCESS_TOKEN") || "";
     this.accessTokenSecret = Deno.env.get("TWITTER_ACCESS_TOKEN_SECRET") || "";
-    this.apiUsageService = ApiUsageService.getInstance();
     this.ethosClientHeaderValue = "ethos-twitter-agent@1.0.0";
 
     console.log("🔧 Twitter Service initialized");
@@ -599,23 +596,6 @@ export class TwitterService {
           }
         });
 
-        // Log API usage
-        await this.apiUsageService.logApiCall({
-          endpoint: 'tweets/search/recent',
-          method: 'GET',
-          actionType: 'mention_check',
-          relatedCommand: 'polling',
-          postsConsumed: validMaxResults, // Number of posts requested
-          responseStatus: response.status,
-          rateLimited: response.status === 429,
-          requestDetails: {
-            query,
-            max_results: validMaxResults,
-            since_id: sinceId || null
-          },
-          responseSummary: null // Will be filled after parsing response
-        });
-
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`❌ Twitter API error: ${response.status} ${response.statusText}`);
@@ -640,20 +620,6 @@ export class TwitterService {
         }
 
         const data = await response.json();
-        
-        // Update the API usage log with response summary
-        await this.apiUsageService.logApiCall({
-          endpoint: 'tweets/search/recent',
-          method: 'GET',
-          actionType: 'mention_check_success',
-          relatedCommand: 'polling',
-          postsConsumed: 0, // This is the response summary, no additional posts consumed
-          responseStatus: response.status,
-          responseSummary: {
-            mentions_found: data.data?.length || 0,
-            has_next_token: !!data.meta?.next_token
-          }
-        });
         
         if (attempt > 1) {
           console.log(`✅ Mentions search succeeded on retry attempt ${attempt}`);
@@ -1105,22 +1071,6 @@ export class TwitterService {
       url.searchParams.set('tweet.fields', 'public_metrics');
 
       const response = await this.makeEngagementOAuthRequest("GET", url.toString());
-      
-      // Log API usage for tweet metrics
-      await this.apiUsageService.logApiCall({
-        endpoint: 'tweets/:id',
-        method: 'GET',
-        actionType: 'get_tweet_metrics',
-        relatedTweetId: tweetId,
-        relatedCommand: 'validate',
-        postsConsumed: 1,
-        responseStatus: response.status,
-        rateLimited: response.status === 429,
-        requestDetails: {
-          tweet_id: tweetId,
-          fields: 'public_metrics'
-        }
-      });
       
       if (!response.ok) {
         console.error(`❌ Failed to fetch tweet metrics: ${response.status} ${response.statusText}`);

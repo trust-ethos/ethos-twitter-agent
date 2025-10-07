@@ -126,36 +126,6 @@ CREATE TABLE command_history (
 );
 
 -- ============================================================================
--- API USAGE TRACKING SYSTEM
--- ============================================================================
-
--- Track Twitter API usage for cost monitoring
-CREATE TABLE api_usage_log (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    
-    -- API call details
-    endpoint VARCHAR(255) NOT NULL, -- e.g., 'tweets/search/recent', 'tweets/:id/retweeted_by'
-    method VARCHAR(10) NOT NULL, -- GET, POST, etc.
-    action_type VARCHAR(50) NOT NULL, -- 'mention_check', 'validate_retweeters', 'validate_repliers', etc.
-    
-    -- Context
-    related_tweet_id BIGINT, -- If related to a specific tweet
-    related_command VARCHAR(50), -- 'validate', 'save', 'profile', etc.
-    user_id BIGINT REFERENCES twitter_users(id), -- User who triggered the action
-    
-    -- Usage metrics
-    posts_consumed INTEGER NOT NULL DEFAULT 1, -- Number of posts counted toward quota
-    response_status INTEGER, -- HTTP status code
-    rate_limited BOOLEAN DEFAULT FALSE,
-    
-    -- Metadata
-    request_details JSONB, -- Store request parameters for debugging
-    response_summary JSONB, -- Store response metadata (user count, etc.)
-    
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- ============================================================================
 -- INDEXES FOR PERFORMANCE
 -- ============================================================================
 
@@ -192,14 +162,6 @@ CREATE INDEX idx_command_history_tweet_id ON command_history(tweet_id);
 CREATE INDEX idx_command_history_requester ON command_history(requester_user_id);
 CREATE INDEX idx_command_history_status ON command_history(status);
 CREATE INDEX idx_command_history_created_at ON command_history(created_at);
-
--- API usage log indexes
-CREATE INDEX idx_api_usage_log_endpoint ON api_usage_log(endpoint);
-CREATE INDEX idx_api_usage_log_action_type ON api_usage_log(action_type);
-CREATE INDEX idx_api_usage_log_related_command ON api_usage_log(related_command);
-CREATE INDEX idx_api_usage_log_created_at ON api_usage_log(created_at);
-CREATE INDEX idx_api_usage_log_user_id ON api_usage_log(user_id);
-CREATE INDEX idx_api_usage_log_tweet_id ON api_usage_log(related_tweet_id);
 
 -- ============================================================================
 -- FUNCTIONS AND TRIGGERS
