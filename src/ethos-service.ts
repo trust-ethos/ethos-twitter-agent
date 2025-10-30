@@ -305,7 +305,7 @@ export class EthosService {
       const staticAuthorAddress = "0x792cCe0d4230FF69FA69F466Ef62B8f81eB619d7";
       
       // Create the source as a flat string format using user ID instead of username
-      const sourceString = `ethosService:ethosTwitterAgent:service:x.com:${request.reviewerUserId}`;
+      const sourceString = `agent-ethos-X-post-saves-${request.reviewerUserId}`;
 
       // Prepare the review payload with source as flat string
       const reviewPayload = {
