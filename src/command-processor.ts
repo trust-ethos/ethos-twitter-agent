@@ -4,6 +4,7 @@ import { EthosService } from "./ethos-service.ts";
 import { StorageService } from "./storage-service.ts";
 import { SlackService } from "./slack-service.ts";
 import { BlocklistService } from "./blocklist-service.ts";
+import { IntentResolver } from "./intent-resolver.ts";
 
 export class CommandProcessor {
   private twitterService: TwitterService;
@@ -11,6 +12,7 @@ export class CommandProcessor {
   private storageService: StorageService;
   private slackService: SlackService;
   private blocklistService: BlocklistService;
+  private intentResolver: IntentResolver;
 
   constructor(twitterService: TwitterService) {
     this.twitterService = twitterService;
@@ -18,6 +20,7 @@ export class CommandProcessor {
     this.storageService = new StorageService();
     this.slackService = new SlackService();
     this.blocklistService = BlocklistService.getInstance();
+    this.intentResolver = new IntentResolver();
   }
 
   /**
@@ -69,8 +72,9 @@ export class CommandProcessor {
 
   /**
    * Parse a mention tweet to extract the command
+   * Uses AI-powered intent resolution for non-exact matches
    */
-  parseCommand(tweet: TwitterTweet, mentionedUser: TwitterUser): Command | null {
+  async parseCommand(tweet: TwitterTweet, mentionedUser: TwitterUser): Promise<Command | null> {
     const text = tweet.text.toLowerCase();
     const originalText = tweet.text;
     
@@ -120,18 +124,40 @@ export class CommandProcessor {
     const potentialCommand = parts[firstNonMentionIndex].toLowerCase();
     
     // Check if the first word after mentions is a valid command
-    if (!validCommands.includes(potentialCommand)) {
-      console.log(`ℹ️ Ignoring - first word after mentions is not a command: "${potentialCommand}" in "${originalText}"`);
-      return null;
+    let resolvedCommand: string | null = null;
+    
+    if (validCommands.includes(potentialCommand)) {
+      resolvedCommand = potentialCommand;
+    } else {
+      // Try to resolve the intent using AI
+      // Get all text after mentions for context
+      const commandText = parts.slice(firstNonMentionIndex).join(' ');
+      console.log(`🤖 Attempting AI intent resolution for: "${commandText}"`);
+      
+      resolvedCommand = await this.intentResolver.resolveIntent(commandText);
+      
+      if (resolvedCommand) {
+        console.log(`✅ AI resolved command: "${commandText}" → "${resolvedCommand}"`);
+      } else {
+        console.log(`ℹ️ Could not resolve intent for: "${commandText}" in "${originalText}"`);
+        return null;
+      }
     }
     
-    // Args are everything after the command
+    // Args are everything after the first word (which may or may not be the exact command)
     const args = parts.slice(firstNonMentionIndex + 1);
     
     // Check if this is a "save target" command by looking at the args
-    const isSaveTargetCommand = potentialCommand === "save" && 
-                                args.length >= 2 && 
-                                args.some(arg => arg.toLowerCase() === "target");
+    // Triggers if:
+    // 1. The word "target" appears in args, OR
+    // 2. There's an @mention in the args (someone they want to save the review to)
+    const hasTargetWord = args.some(arg => arg.toLowerCase() === "target");
+    const hasTargetMention = args.some(arg => 
+      arg.startsWith('@') && !arg.toLowerCase().includes('ethosagent')
+    );
+    const isSaveTargetCommand = resolvedCommand === "save" && 
+                                args.length >= 1 && 
+                                (hasTargetWord || hasTargetMention);
     
     // Check @ethosAgent position based on command type
     const lastMention = initialMentions[initialMentions.length - 1];
@@ -156,9 +182,9 @@ export class CommandProcessor {
       }
     }
 
-    console.log(`🎯 Found valid command: ${potentialCommand} (after mentions: [${initialMentions.join(', ')}])`);
+    console.log(`🎯 Found valid command: ${resolvedCommand} (after mentions: [${initialMentions.join(', ')}])`);
     return {
-      type: potentialCommand,
+      type: resolvedCommand,
       args,
       originalTweet: tweet,
       mentionedUser

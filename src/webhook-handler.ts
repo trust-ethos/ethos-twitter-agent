@@ -138,7 +138,7 @@ export class TwitterWebhookHandler {
       }
 
       // Parse the command
-      const command = this.commandProcessor.parseCommand(tweet, author);
+      const command = await this.commandProcessor.parseCommand(tweet, author);
       
       if (!command) {
         console.log("ℹ️ No valid command found in tweet");

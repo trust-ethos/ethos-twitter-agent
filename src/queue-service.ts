@@ -138,7 +138,7 @@ export class QueueService {
       }
 
       // Parse the command using the command processor
-      const command = this.commandProcessor.parseCommand(mention, author);
+      const command = await this.commandProcessor.parseCommand(mention, author);
       
       if (!command) {
         console.log("ℹ️ No valid command found in tweet");
