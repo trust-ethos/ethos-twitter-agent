@@ -127,9 +127,9 @@ export class StorageService {
     };
 
     try {
-      // Save to KV storage
+      // Save to KV storage - use ["saved_tweets", tweetId] format for proper prefix searching
       if (this.kv) {
-        await this.kv.set([`saved_tweet:${tweetId}`], savedTweet);
+        await this.kv.set(["saved_tweets", tweetId], savedTweet);
         console.log(`✅ Tweet ${tweetId} marked as saved in KV storage`);
       }
       
@@ -149,21 +149,36 @@ export class StorageService {
    */
   async getRecentSavedTweets(limit: number = 20): Promise<SavedTweet[]> {
     const tweets: SavedTweet[] = [];
+    const seenIds = new Set<string>();
 
     try {
-      // Get from KV storage
       if (this.kv) {
-        const iter = this.kv.list({ prefix: ["saved_tweet:"] });
+        // Get from KV storage - new format ["saved_tweets", tweetId]
+        const iter = this.kv.list({ prefix: ["saved_tweets"] });
         for await (const entry of iter) {
           const tweet = entry.value as SavedTweet;
-          tweets.push(tweet);
+          if (tweet.tweetId && !seenIds.has(tweet.tweetId)) {
+            seenIds.add(tweet.tweetId);
+            tweets.push(tweet);
+          }
+        }
+        
+        // Also check old format for backward compatibility (single element keys)
+        // Old format was ["saved_tweet:${tweetId}"]
+        const oldIter = this.kv.list({ prefix: ["saved_tweet:"] });
+        for await (const entry of oldIter) {
+          const tweet = entry.value as SavedTweet;
+          if (tweet.tweetId && !seenIds.has(tweet.tweetId)) {
+            seenIds.add(tweet.tweetId);
+            tweets.push(tweet);
+          }
         }
       }
 
       // Add from in-memory storage
       for (const tweet of this.localStorage.values()) {
-        // Avoid duplicates
-        if (!tweets.find(t => t.tweetId === tweet.tweetId)) {
+        if (!seenIds.has(tweet.tweetId)) {
+          seenIds.add(tweet.tweetId);
           tweets.push(tweet);
         }
       }
@@ -186,27 +201,48 @@ export class StorageService {
     let totalSaved = 0;
     let recentSaves = 0;
     const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+    const seenIds = new Set<string>();
 
     try {
-      // Count from KV storage
       if (this.kv) {
-        const iter = this.kv.list({ prefix: ["saved_tweet:"] });
+        // Count from KV storage - new format ["saved_tweets", tweetId]
+        const iter = this.kv.list({ prefix: ["saved_tweets"] });
         for await (const entry of iter) {
-          totalSaved++;
           const tweet = entry.value as SavedTweet;
-          const savedTime = new Date(tweet.savedAt).getTime();
-          if (savedTime > oneDayAgo) {
-            recentSaves++;
+          if (tweet.tweetId && !seenIds.has(tweet.tweetId)) {
+            seenIds.add(tweet.tweetId);
+            totalSaved++;
+            const savedTime = new Date(tweet.savedAt).getTime();
+            if (savedTime > oneDayAgo) {
+              recentSaves++;
+            }
+          }
+        }
+        
+        // Also check old format for backward compatibility
+        const oldIter = this.kv.list({ prefix: ["saved_tweet:"] });
+        for await (const entry of oldIter) {
+          const tweet = entry.value as SavedTweet;
+          if (tweet.tweetId && !seenIds.has(tweet.tweetId)) {
+            seenIds.add(tweet.tweetId);
+            totalSaved++;
+            const savedTime = new Date(tweet.savedAt).getTime();
+            if (savedTime > oneDayAgo) {
+              recentSaves++;
+            }
           }
         }
       }
 
       // Add in-memory counts
-      totalSaved += this.localStorage.size;
       for (const tweet of this.localStorage.values()) {
-        const savedTime = new Date(tweet.savedAt).getTime();
-        if (savedTime > oneDayAgo) {
-          recentSaves++;
+        if (!seenIds.has(tweet.tweetId)) {
+          seenIds.add(tweet.tweetId);
+          totalSaved++;
+          const savedTime = new Date(tweet.savedAt).getTime();
+          if (savedTime > oneDayAgo) {
+            recentSaves++;
+          }
         }
       }
     } catch (error) {
