@@ -484,11 +484,52 @@ router.post("/admin/blocklist/add", async (ctx) => {
   }
 });
 
+// ============================================================================
+// PUBLIC API ENDPOINTS
+// ============================================================================
+
+// Public API endpoint for saved tweets (used by frontend)
+router.get("/api/saved-tweets", async (ctx) => {
+  try {
+    const storageService = commandProcessor.storageService;
+    const recentTweets = await storageService.getRecentSavedTweets(50);
+    const stats = await storageService.getSavedTweetStats();
+    
+    ctx.response.body = {
+      status: "success",
+      count: recentTweets.length,
+      stats,
+      data: recentTweets
+    };
+  } catch (error) {
+    console.error("❌ Failed to get saved tweets:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { 
+      status: "error", 
+      message: "Failed to get saved tweets"
+    };
+  }
+});
+
+// Serve the frontend dashboard
+router.get("/dashboard", async (ctx) => {
+  try {
+    const html = await Deno.readTextFile("./public/index.html");
+    ctx.response.headers.set("Content-Type", "text/html");
+    ctx.response.body = html;
+  } catch (error) {
+    console.error("❌ Failed to serve dashboard:", error);
+    ctx.response.status = 404;
+    ctx.response.body = { status: "error", message: "Dashboard not found" };
+  }
+});
+
 // API status endpoint (simple JSON response)
 router.get("/", (ctx) => {
   ctx.response.body = { 
     status: "ok", 
     message: "Ethos Twitter Agent API is running",
+    dashboard: "/dashboard",
     timestamp: new Date().toISOString()
   };
 });

@@ -9,7 +9,7 @@ import { IntentResolver } from "./intent-resolver.ts";
 export class CommandProcessor {
   private twitterService: TwitterService;
   private ethosService: EthosService;
-  private storageService: StorageService;
+  private _storageService: StorageService;
   private slackService: SlackService;
   private blocklistService: BlocklistService;
   private intentResolver: IntentResolver;
@@ -17,10 +17,15 @@ export class CommandProcessor {
   constructor(twitterService: TwitterService) {
     this.twitterService = twitterService;
     this.ethosService = new EthosService();
-    this.storageService = new StorageService();
+    this._storageService = new StorageService();
     this.slackService = new SlackService();
     this.blocklistService = BlocklistService.getInstance();
     this.intentResolver = new IntentResolver();
+  }
+
+  /** Public accessor for storage service (used by dashboard API) */
+  get storageService(): StorageService {
+    return this._storageService;
   }
 
   /**
@@ -483,7 +488,7 @@ Learn more about Ethos at https://ethos.network`;
       const mentionerUserId = command.mentionedUser.id;
 
       // 🚨 RATE LIMITING: Check if user has exceeded save command limit
-      const isRateLimited = await this.storageService.isRateLimited(mentionerUserId, "save");
+      const isRateLimited = await this._storageService.isRateLimited(mentionerUserId, "save");
       if (isRateLimited) {
         console.log(`🚨 Rate limit hit: @${mentionerUsername} (${mentionerUserId}) exceeded save command limit`);
         return {
@@ -691,10 +696,10 @@ Learn more about Ethos at https://ethos.network`;
 
       // Check if this tweet has already been saved
       console.log(`🔍 Checking if tweet ${originalTweetId} has already been saved...`);
-      const alreadySaved = await this.storageService.isTweetSaved(originalTweetId);
+      const alreadySaved = await this._storageService.isTweetSaved(originalTweetId);
       
       if (alreadySaved) {
-        const savedTweetInfo = await this.storageService.getSavedTweet(originalTweetId);
+        const savedTweetInfo = await this._storageService.getSavedTweet(originalTweetId);
         console.log(`⚠️ Tweet ${originalTweetId} was already saved by @${savedTweetInfo?.reviewerUsername} on ${savedTweetInfo?.savedAt}`);
         
         const originalSaverName = savedTweetInfo?.reviewerUsername || "someone";
@@ -768,10 +773,10 @@ Link to tweet: ${originalTweetLink}`;
 
       if (reviewResult.success) {
         // Mark the tweet as saved in our storage
-        await this.storageService.markTweetSaved(originalTweetId, targetUsername, mentionerUsername, reviewScore);
+        await this._storageService.markTweetSaved(originalTweetId, targetUsername, mentionerUsername, reviewScore);
         
         // 📝 RATE LIMITING: Record successful command usage
-        await this.storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "save");
+        await this._storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "save");
         
         // Log successful review creation
         console.log(`🔍 Review creation successful`);

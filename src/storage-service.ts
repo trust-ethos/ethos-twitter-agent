@@ -145,6 +145,41 @@ export class StorageService {
   }
 
   /**
+   * Get recent saved tweets for display
+   */
+  async getRecentSavedTweets(limit: number = 20): Promise<SavedTweet[]> {
+    const tweets: SavedTweet[] = [];
+
+    try {
+      // Get from KV storage
+      if (this.kv) {
+        const iter = this.kv.list({ prefix: ["saved_tweet:"] });
+        for await (const entry of iter) {
+          const tweet = entry.value as SavedTweet;
+          tweets.push(tweet);
+        }
+      }
+
+      // Add from in-memory storage
+      for (const tweet of this.localStorage.values()) {
+        // Avoid duplicates
+        if (!tweets.find(t => t.tweetId === tweet.tweetId)) {
+          tweets.push(tweet);
+        }
+      }
+
+      // Sort by savedAt descending (most recent first)
+      tweets.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+
+      // Return limited results
+      return tweets.slice(0, limit);
+    } catch (error) {
+      console.error("❌ Error getting recent saved tweets:", error);
+      return [];
+    }
+  }
+
+  /**
    * Get saved tweet statistics
    */
   async getSavedTweetStats(): Promise<{ totalSaved: number; recentSaves: number }> {
