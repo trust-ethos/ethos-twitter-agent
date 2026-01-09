@@ -80,7 +80,7 @@ export class CommandProcessor {
     }
 
     // Define valid commands that we actually support
-    const validCommands = ["profile", "save", "help"];
+    const validCommands = ["profile", "save", "help", "grifter?"];
     
     // Parse the tweet to find mentions and the command structure
     // Split by whitespace but preserve the original structure
@@ -187,6 +187,9 @@ export class CommandProcessor {
         case "profile":
           return await this.handleProfileCommand(command, allUsers);
         
+        case "grifter?":
+          return await this.handleGrifterCommand(command, allUsers);
+        
         case "help":
           return await this.handleHelpCommand(command);
         
@@ -205,7 +208,7 @@ export class CommandProcessor {
       
       // Only send Slack notifications for known commands that have unexpected errors
       // Don't spam Slack for unknown commands (people mentioning bot in conversation)
-      const knownCommands = ["profile", "help", "save"];
+      const knownCommands = ["profile", "help", "save", "grifter?"];
       if (knownCommands.includes(command.type)) {
         // Send Slack notification for unexpected error on known commands
         await this.slackService.notifyError(
@@ -312,6 +315,81 @@ export class CommandProcessor {
   }
 
   /**
+   * Handle the 'grifter?' command with Ethos integration
+   * Analyzes the profile of the original tweet author (if this is a reply)
+   * or the person who mentioned the bot (if this is not a reply)
+   * Returns a grifter assessment based on their Ethos stats
+   */
+  private async handleGrifterCommand(command: Command, allUsers?: TwitterUser[]): Promise<CommandResult> {
+    try {
+      const tweet = command.originalTweet;
+      const mentionerUsername = command.mentionedUser.username;
+      const mentionerName = command.mentionedUser.name;
+
+      // Check if this is a reply to another tweet
+      const isReply = tweet.in_reply_to_user_id || tweet.referenced_tweets?.some(ref => ref.type === "replied_to");
+      
+      let targetUsername: string;
+      let targetName: string;
+      let analysisContext: string;
+
+      if (isReply && tweet.in_reply_to_user_id) {
+        // This is a reply - find the original tweet author from the webhook data
+        const originalAuthor = allUsers?.find(user => user.id === tweet.in_reply_to_user_id);
+        
+        if (originalAuthor) {
+          targetUsername = originalAuthor.username;
+          targetName = originalAuthor.name;
+          analysisContext = `analyzing grifter status of ${targetName} (@${targetUsername}) as requested by @${mentionerUsername}`;
+        } else {
+          // Fallback if we can't find the original author in webhook data
+          return {
+            success: false,
+            message: "Could not find original tweet author information",
+            replyText: `I couldn't find information about the original tweet author. Please make sure you're replying to a valid tweet.`
+          };
+        }
+      } else {
+        // Not a reply - analyze the person who mentioned the bot
+        targetUsername = mentionerUsername;
+        targetName = mentionerName;
+        analysisContext = `analyzing grifter status of ${targetName} (@${targetUsername}) at their request`;
+      }
+
+      console.log(`🕵️ Processing grifter command: ${analysisContext}`);
+
+      // Fetch Ethos stats for the target user
+      const ethosResponse = await this.ethosService.getUserStats(targetUsername);
+      
+      let replyText: string;
+      
+      if (ethosResponse.success && ethosResponse.data) {
+        // Format response with grifter assessment
+        replyText = this.ethosService.formatGrifterAssessment(ethosResponse.data, targetName, targetUsername);
+        console.log(`✅ Ethos data found for grifter check: ${targetUsername}`);
+      } else {
+        // Fallback message when Ethos data is not available
+        replyText = this.ethosService.getGrifterFallbackMessage(targetName, targetUsername, ethosResponse.error);
+        console.log(`ℹ️ No Ethos data for grifter check ${targetUsername}: ${ethosResponse.error}`);
+      }
+
+      return {
+        success: true,
+        message: "Grifter command processed successfully",
+        replyText
+      };
+    } catch (error) {
+      console.error("❌ Error processing grifter command:", error);
+      
+      return {
+        success: false,
+        message: "Error processing grifter command",
+        replyText: this.getStandardErrorMessage()
+      };
+    }
+  }
+
+  /**
    * Handle the 'help' command
    */
   private async handleHelpCommand(command: Command): Promise<CommandResult> {
@@ -333,6 +411,10 @@ export class CommandProcessor {
 **profile** - Get someone's Ethos credibility score and reputation info
    • Reply to someone's tweet with "@ethosAgent profile" to check their reputation
    • Or just mention me with "@ethosAgent profile" to check your own
+
+**grifter?** - Check if someone might be a grifter based on their Ethos reputation
+   • Reply to someone's tweet with "@ethosAgent grifter?" to assess them
+   • Or mention me with "@ethosAgent grifter?" to check yourself
 
 **save [positive/negative/neutral] ** - Save a tweet permanently onchain as a review
    • Reply to any tweet with "@ethosAgent save" to save it with neutral sentiment

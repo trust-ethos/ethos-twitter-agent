@@ -209,6 +209,56 @@ export class EthosService {
   }
 
   /**
+   * Format Ethos stats into a grifter assessment
+   */
+  formatGrifterAssessment(stats: EthosUserStats, name: string, username: string): string {
+    const profileUrl = this.getProfileUrl(username);
+    
+    const hasScore = stats.score !== null;
+    const score = stats.score ?? 0;
+    
+    let assessment: string;
+    let verdict: string;
+    
+    if (!hasScore) {
+      // No Ethos score - unknown
+      verdict = "🔍 VERDICT: Unknown";
+      assessment = `${name} has no Ethos score. Without reputation data, it's hard to say if they're a grifter. Proceed with caution.`;
+    } else if (score >= 1500) {
+      // High score - not a grifter
+      verdict = "✅ VERDICT: Not a grifter";
+      assessment = `${name} has an Ethos score of ${score}. This person has a solid reputation onchain.`;
+    } else if (score >= 1200) {
+      // Score 1200-1500 - unlikely
+      verdict = "✅ VERDICT: Unlikely a grifter";
+      assessment = `${name} has an Ethos score of ${score}. They're probably fine, but do your own research.`;
+    } else if (score >= 800) {
+      // Score 800-1200 - questionable
+      verdict = "⚠️ VERDICT: Questionably a grifter";
+      assessment = `${name} has an Ethos score of ${score}. That's below average. Be careful and verify before trusting them.`;
+    } else {
+      // Score <800 - more than likely a grifter
+      verdict = "🚨 VERDICT: More than likely a grifter";
+      assessment = `${name} has a low Ethos score of ${score}. The score speaks for itself. Be very careful!`;
+    }
+    
+    return `${verdict}\n\n${assessment}\n\nFull profile: ${profileUrl}`;
+  }
+
+  /**
+   * Create a fallback message for grifter check when Ethos data is not available
+   */
+  getGrifterFallbackMessage(name: string, username: string, reason?: string): string {
+    const profileUrl = this.getProfileUrl(username);
+    
+    if (reason === "User not found on Ethos") {
+      return `🔍 VERDICT: Unknown\n\n${name} doesn't have an Ethos profile. No reputation data means I can't tell if they're a grifter. That alone might be a red flag... or they just haven't joined yet.\n\nCheck for yourself: ${profileUrl}`;
+    }
+    
+    return `I couldn't fetch ${name}'s Ethos data right now. Try again later or check manually: ${profileUrl}`;
+  }
+
+  /**
    * Check if a user has a valid Ethos profile using the addresses API
    * @param twitterId - Twitter user ID
    */
