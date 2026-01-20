@@ -52,29 +52,38 @@ export class TwitterWebhookHandler {
 
   /**
    * Handle incoming webhook events
-   * Verifies signature before processing to prevent spoofed requests
+   * Optionally verifies signature before processing to prevent spoofed requests
    */
   async handleWebhook(ctx: Context) {
+    // TODO: Set to true once we confirm X sends x-twitter-webhooks-signature header for V2 API
+    const ENFORCE_SIGNATURE_VERIFICATION = false;
+
     try {
       console.log("📨 Received webhook event");
 
-      // Get the signature from the header (case-insensitive lookup)
-      const signatureHeader = ctx.request.headers.get("x-twitter-webhooks-signature");
-
       // Read the raw body as text for signature verification
       const rawBody = await ctx.request.body({ type: "text" }).value;
+
+      // Get the signature from the header (case-insensitive lookup)
+      const signatureHeader = ctx.request.headers.get("x-twitter-webhooks-signature");
 
       // Verify the webhook signature before processing
       const isValidSignature = await this.twitterService.validateWebhookSignature(rawBody, signatureHeader);
 
       if (!isValidSignature) {
-        console.error("🚫 Rejecting webhook request: Invalid signature");
-        ctx.response.status = 401;
-        ctx.response.body = { error: "Invalid signature" };
-        return;
+        if (ENFORCE_SIGNATURE_VERIFICATION) {
+          console.error("🚫 Rejecting webhook request: Invalid signature");
+          ctx.response.status = 401;
+          ctx.response.body = { error: "Invalid signature" };
+          return;
+        } else {
+          // Log warning but allow request through (for testing/debugging)
+          console.warn("⚠️ Webhook signature verification failed (not enforced)");
+          console.warn(`   Header present: ${signatureHeader ? 'yes' : 'no'}`);
+        }
       }
 
-      // Parse the verified body as JSON
+      // Parse the body as JSON
       const event: TwitterWebhookEvent = JSON.parse(rawBody);
 
       // Log the raw event for debugging
