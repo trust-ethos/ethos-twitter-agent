@@ -21,11 +21,12 @@ export class TwitterWebhookHandler {
   }
 
   /**
-   * Handle Twitter's webhook challenge request
+   * Handle Twitter's webhook challenge request (CRC check)
+   * Twitter sends this to verify the webhook endpoint is authentic
    */
   async handleChallengeRequest(ctx: Context) {
     const challengeToken = ctx.request.url.searchParams.get("crc_token");
-    
+
     if (!challengeToken) {
       ctx.response.status = 400;
       ctx.response.body = { error: "Missing crc_token" };
@@ -34,29 +35,50 @@ export class TwitterWebhookHandler {
 
     console.log("🔐 Handling webhook challenge request");
 
-    // In production, you'd compute the HMAC-SHA256 of the challenge token
-    // For now, we'll just return a mock response
-    const responseToken = "sha256=mock_response_token";
+    const responseToken = await this.twitterService.computeCrcResponse(challengeToken);
+
+    if (!responseToken) {
+      ctx.response.status = 500;
+      ctx.response.body = { error: "Server configuration error" };
+      return;
+    }
 
     ctx.response.body = {
       response_token: responseToken
     };
 
-    console.log("✅ Challenge request handled successfully");
+    console.log("✅ Challenge request handled successfully with valid HMAC response");
   }
 
   /**
    * Handle incoming webhook events
+   * Verifies signature before processing to prevent spoofed requests
    */
   async handleWebhook(ctx: Context) {
     try {
       console.log("📨 Received webhook event");
 
-      const body = await ctx.request.body({ type: "json" }).value;
-      const event: TwitterWebhookEvent = body;
+      // Get the signature from the header (case-insensitive lookup)
+      const signatureHeader = ctx.request.headers.get("x-twitter-webhooks-signature");
+
+      // Read the raw body as text for signature verification
+      const rawBody = await ctx.request.body({ type: "text" }).value;
+
+      // Verify the webhook signature before processing
+      const isValidSignature = await this.twitterService.validateWebhookSignature(rawBody, signatureHeader);
+
+      if (!isValidSignature) {
+        console.error("🚫 Rejecting webhook request: Invalid signature");
+        ctx.response.status = 401;
+        ctx.response.body = { error: "Invalid signature" };
+        return;
+      }
+
+      // Parse the verified body as JSON
+      const event: TwitterWebhookEvent = JSON.parse(rawBody);
 
       // Log the raw event for debugging
-      console.log("📋 Processing webhook event");
+      console.log("📋 Processing verified webhook event");
 
       // Process mentions
       if (event.data && event.data.length > 0) {

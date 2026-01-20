@@ -1,4 +1,5 @@
 import type { TwitterUser, TwitterTweet, EngagingUser, UserWithEthosScore, EngagementStats } from "./types.ts";
+import { timingSafeEqual } from "https://deno.land/std@0.200.0/crypto/timing_safe_equal.ts";
 
 // Declare global Deno for TypeScript
 declare const Deno: {
@@ -477,27 +478,74 @@ export class TwitterService {
   }
 
   /**
-   * Validate webhook signature using HMAC-SHA256
-   * This works without any API credentials
+   * Compute HMAC-SHA256 signature for Twitter webhook verification
    */
-  validateWebhookSignature(payload: string, signature: string): boolean {
-    try {
-      if (!signature || !payload) {
-        console.warn("⚠️ Missing signature or payload");
-        return false;
-      }
+  private async computeHmacSha256(data: string, secret: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secret);
+    const messageData = encoder.encode(data);
 
-      console.log("🔐 Validating webhook signature...");
-      
-      // For development, we'll accept all signatures
-      // In production, implement proper HMAC-SHA256 validation
-      
-      console.log("✅ Signature validation passed (development mode)");
-      return true;
-    } catch (error) {
-      console.error("❌ Signature validation failed:", error);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    return btoa(String.fromCharCode(...new Uint8Array(signature)));
+  }
+
+  /**
+   * Validate webhook signature using HMAC-SHA256
+   * Returns true if signature is valid, false otherwise
+   */
+  async validateWebhookSignature(payload: string, signatureHeader: string | null): Promise<boolean> {
+    if (!this.apiSecret) {
+      console.error("❌ Cannot verify signature: TWITTER_API_SECRET not configured");
       return false;
     }
+
+    if (!signatureHeader) {
+      console.error("❌ Missing X-Twitter-Webhooks-Signature header");
+      return false;
+    }
+
+    // Twitter sends signature as "sha256=<base64-encoded-signature>"
+    if (!signatureHeader.startsWith('sha256=')) {
+      console.error("❌ Invalid signature format: must start with 'sha256='");
+      return false;
+    }
+
+    const providedSignature = signatureHeader.substring(7); // Remove "sha256=" prefix
+    const computedSignature = await this.computeHmacSha256(payload, this.apiSecret);
+
+    // Use timing-safe comparison to prevent timing attacks
+    const encoder = new TextEncoder();
+    const isValid = timingSafeEqual(encoder.encode(providedSignature), encoder.encode(computedSignature));
+
+    if (isValid) {
+      console.log("✅ Webhook signature verified successfully");
+    } else {
+      console.error("❌ Webhook signature verification failed");
+    }
+
+    return isValid;
+  }
+
+  /**
+   * Compute CRC response token for Twitter webhook challenge
+   * Returns the response_token value to send back to Twitter
+   */
+  async computeCrcResponse(challengeToken: string): Promise<string | null> {
+    if (!this.apiSecret) {
+      console.error("❌ Cannot compute CRC response: TWITTER_API_SECRET not configured");
+      return null;
+    }
+
+    const hmacSignature = await this.computeHmacSha256(challengeToken, this.apiSecret);
+    return `sha256=${hmacSignature}`;
   }
 
   /**
