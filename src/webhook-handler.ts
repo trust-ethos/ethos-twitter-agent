@@ -55,8 +55,8 @@ export class TwitterWebhookHandler {
    * Optionally verifies signature before processing to prevent spoofed requests
    */
   async handleWebhook(ctx: Context) {
-    // TODO: Set to true once we confirm X sends x-twitter-webhooks-signature header for V2 API
-    const ENFORCE_SIGNATURE_VERIFICATION = false;
+    // Enforce webhook signature verification to prevent spoofed requests
+    const ENFORCE_SIGNATURE_VERIFICATION = true;
 
     try {
       console.log("📨 Received webhook event");
