@@ -837,9 +837,18 @@ Link to tweet: ${originalTweetLink}`;
         }
 
         // Send Slack notification for successful save
-        const finalMessage = reviewLink ? 
-          `I just saved this tweet permanently onchain. You can view it below${reviewLink}` :
-          `I just saved this tweet permanently onchain. You can view it below`;
+        // Use rotating phrases with username to avoid Twitter duplicate content errors
+        const successPhrases = [
+          `Saved ${targetUsername}'s tweet onchain.`,
+          `${targetUsername}'s tweet is now preserved onchain.`,
+          `Done! ${targetUsername}'s tweet has been saved onchain.`,
+          `Got it! Saved ${targetUsername}'s tweet onchain.`,
+          `${targetUsername}'s tweet is now permanently onchain.`,
+        ];
+        // Pick phrase based on tweet ID for consistent but varied selection
+        const phraseIndex = parseInt(originalTweetId.slice(-2), 10) % successPhrases.length || 0;
+        const baseMessage = successPhrases[phraseIndex];
+        const finalMessage = reviewLink ? `${baseMessage} View it here${reviewLink}` : baseMessage;
 
         await this.slackService.notifySuccessfulSave(
           originalTweetId, 
