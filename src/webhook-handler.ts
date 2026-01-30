@@ -214,7 +214,21 @@ export class TwitterWebhookHandler {
               );
             }
             // Note: Save command notifications are handled in the command processor
-            
+
+            // Send follow-up tweet if available (e.g., top review for grifter? command)
+            if (result.followUpText && replyResult.postedTweetId) {
+              try {
+                const followUpResult = await this.twitterService.replyToTweet(replyResult.postedTweetId, result.followUpText);
+                if (followUpResult.success) {
+                  console.log(`📤 Follow-up tweet sent successfully`);
+                } else {
+                  console.error(`❌ Failed to send follow-up tweet:`, followUpResult.error);
+                }
+              } catch (followUpError) {
+                console.error(`❌ Error sending follow-up tweet:`, followUpError);
+              }
+            }
+
           } else {
             console.error(`❌ Failed to reply to tweet ${tweet.id}:`, replyResult.error);
             

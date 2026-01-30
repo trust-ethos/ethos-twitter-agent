@@ -38,6 +38,7 @@ export interface CommandResult {
   success: boolean;
   message?: string;
   replyText?: string;
+  followUpText?: string;
 }
 
 // Engagement Analysis Types

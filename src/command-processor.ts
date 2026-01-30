@@ -359,18 +359,20 @@ export class CommandProcessor {
 
       // Check if this is a reply to another tweet
       const isReply = tweet.in_reply_to_user_id || tweet.referenced_tweets?.some(ref => ref.type === "replied_to");
-      
+
       let targetUsername: string;
       let targetName: string;
+      let targetUserId: string;
       let analysisContext: string;
 
       if (isReply && tweet.in_reply_to_user_id) {
         // This is a reply - find the original tweet author from the webhook data
         const originalAuthor = allUsers?.find(user => user.id === tweet.in_reply_to_user_id);
-        
+
         if (originalAuthor) {
           targetUsername = originalAuthor.username;
           targetName = originalAuthor.name;
+          targetUserId = originalAuthor.id;
           analysisContext = `analyzing grifter status of ${targetName} (@${targetUsername}) as requested by @${mentionerUsername}`;
         } else {
           // Fallback if we can't find the original author in webhook data
@@ -384,6 +386,7 @@ export class CommandProcessor {
         // Not a reply - analyze the person who mentioned the bot
         targetUsername = mentionerUsername;
         targetName = mentionerName;
+        targetUserId = command.mentionedUser.id;
         analysisContext = `analyzing grifter status of ${targetName} (@${targetUsername}) at their request`;
       }
 
@@ -391,13 +394,23 @@ export class CommandProcessor {
 
       // Fetch Ethos stats for the target user
       const ethosResponse = await this.ethosService.getUserStats(targetUsername);
-      
+
       let replyText: string;
-      
+      let followUpText: string | undefined;
+
       if (ethosResponse.success && ethosResponse.data) {
         // Format response with grifter assessment
         replyText = this.ethosService.formatGrifterAssessment(ethosResponse.data, targetName, targetUsername);
         console.log(`✅ Ethos data found for grifter check: ${targetUsername}`);
+
+        // Fetch the top review to include as a follow-up tweet
+        const topReviewResponse = await this.ethosService.getTopReview(targetUserId);
+        if (topReviewResponse.success && topReviewResponse.review && topReviewResponse.review.comment) {
+          followUpText = this.ethosService.formatReviewForTweet(topReviewResponse.review);
+          console.log(`✅ Found top review for follow-up tweet`);
+        } else {
+          console.log(`ℹ️ No reviews found for follow-up tweet`);
+        }
       } else {
         // Fallback message when Ethos data is not available
         replyText = this.ethosService.getGrifterFallbackMessage(targetName, targetUsername, ethosResponse.error);
@@ -407,7 +420,8 @@ export class CommandProcessor {
       return {
         success: true,
         message: "Grifter command processed successfully",
-        replyText
+        replyText,
+        followUpText
       };
     } catch (error) {
       console.error("❌ Error processing grifter command:", error);

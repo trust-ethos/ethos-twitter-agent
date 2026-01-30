@@ -38,9 +38,24 @@ export interface EthosUserSearchResponse {
   error?: string;
 }
 
+export interface TopReview {
+  author: string;
+  authorUsername: string;
+  comment: string;
+  score: 'positive' | 'negative' | 'neutral';
+  upvotes: number;
+}
+
 export class EthosService {
   private baseUrl: string;
   private clientHeaderValue: string;
+
+  // Queue for serializing review creation to avoid nonce conflicts
+  private reviewQueue: Array<{
+    request: CreateReviewRequest;
+    resolve: (result: CreateReviewResponse) => void;
+  }> = [];
+  private isProcessingQueue = false;
 
   constructor() {
     this.baseUrl = Deno.env.get("ETHOS_API_BASE_URL") || "https://api.ethos.network";
@@ -330,9 +345,50 @@ export class EthosService {
 
   /**
    * Create a review on Ethos for a specific user
+   * Uses a queue to serialize requests and avoid nonce conflicts
    * @param request - Review creation request data
    */
   async createReview(request: CreateReviewRequest): Promise<CreateReviewResponse> {
+    return new Promise((resolve) => {
+      console.log(`📥 Queuing review creation for ${request.targetUsername} (queue size: ${this.reviewQueue.length})`);
+      this.reviewQueue.push({ request, resolve });
+      this.processReviewQueue();
+    });
+  }
+
+  /**
+   * Process the review queue sequentially to avoid nonce conflicts
+   */
+  private async processReviewQueue(): Promise<void> {
+    if (this.isProcessingQueue) {
+      return; // Already processing
+    }
+
+    this.isProcessingQueue = true;
+
+    while (this.reviewQueue.length > 0) {
+      const item = this.reviewQueue.shift();
+      if (!item) break;
+
+      console.log(`⚙️ Processing queued review (${this.reviewQueue.length} remaining in queue)`);
+      const result = await this._executeCreateReview(item.request);
+      item.resolve(result);
+
+      // Small delay between requests to ensure blockchain state settles
+      if (this.reviewQueue.length > 0) {
+        console.log(`⏳ Waiting 5s before next review to avoid nonce conflicts...`);
+        await new Promise(r => setTimeout(r, 5000));
+      }
+    }
+
+    this.isProcessingQueue = false;
+  }
+
+  /**
+   * Internal method that actually creates the review
+   * @param request - Review creation request data
+   */
+  private async _executeCreateReview(request: CreateReviewRequest): Promise<CreateReviewResponse> {
     try {
       console.log(`💾 Creating Ethos review for ${request.targetUsername} with score: ${request.score}`);
 
@@ -434,5 +490,99 @@ export class EthosService {
       console.error('❌ Error fetching activity by tx:', error);
       return { success: false, error: error.message || 'Failed to fetch activity by tx' };
     }
+  }
+
+  /**
+   * Get the top upvoted review for a user using the v2 activities API
+   * @param twitterUserId - Twitter user ID (numeric string)
+   */
+  async getTopReview(twitterUserId: string): Promise<{ success: boolean; review?: TopReview; error?: string }> {
+    try {
+      console.log(`🔍 Fetching top review for Twitter user ID: ${twitterUserId}`);
+
+      const userkey = `service:x.com:${twitterUserId}`;
+      const url = `${this.baseUrl}/api/v2/activities/profile/received`;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: this.getEthosHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          userkey,
+          filter: ['review'],
+          orderBy: 'votes',
+          sort: 'desc',
+          limit: 1
+        })
+      });
+
+      console.log(`📡 Top review API response status: ${response.status} ${response.statusText}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log(`❌ Top review API error: ${response.status} ${response.statusText}`);
+        console.log(`❌ Error details:`, errorText);
+        return { success: false, error: `Activities API error: ${response.status}` };
+      }
+
+      const data = await response.json();
+      console.log(`📡 Top review API response:`, JSON.stringify(data, null, 2));
+
+      if (!data.values || data.values.length === 0) {
+        console.log(`ℹ️ No reviews found for user ${twitterUserId}`);
+        return { success: true, review: undefined };
+      }
+
+      const reviewData = data.values[0];
+
+      // Parse metadata if it's a JSON string
+      let description = '';
+      if (reviewData.data?.metadata) {
+        try {
+          const metadata = typeof reviewData.data.metadata === 'string'
+            ? JSON.parse(reviewData.data.metadata)
+            : reviewData.data.metadata;
+          description = metadata.description || '';
+        } catch {
+          // metadata parsing failed, use comment as fallback
+        }
+      }
+
+      // Use the full description if available, otherwise fall back to comment
+      const reviewText = description || reviewData.data?.comment || '';
+
+      // Extract review details from the activity data
+      const review: TopReview = {
+        author: reviewData.author?.name || reviewData.authorUser?.displayName || 'Anonymous',
+        authorUsername: reviewData.author?.username || reviewData.authorUser?.username || '',
+        comment: reviewText,
+        score: (reviewData.data?.score?.toLowerCase() as 'positive' | 'negative' | 'neutral') || 'neutral',
+        upvotes: reviewData.votes?.upvotes || 0
+      };
+
+      console.log(`✅ Found top review for user ${twitterUserId}: "${review.comment.substring(0, 50)}..." by @${review.authorUsername}`);
+
+      return { success: true, review };
+    } catch (error) {
+      console.error('❌ Error fetching top review:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch top review' };
+    }
+  }
+
+  /**
+   * Format a review into a tweet-friendly string
+   */
+  formatReviewForTweet(review: TopReview): string {
+    const emoji = review.score === 'positive' ? '👍' : review.score === 'negative' ? '👎' : '😐';
+
+    // Truncate comment if needed (leaving room for upvotes)
+    let comment = review.comment;
+    const maxCommentLength = 220;
+    if (comment.length > maxCommentLength) {
+      comment = comment.substring(0, maxCommentLength - 3) + '...';
+    }
+
+    const upvoteText = review.upvotes > 0 ? `\n\n(${review.upvotes} upvote${review.upvotes !== 1 ? 's' : ''})` : '';
+
+    return `${emoji} Top review: "${comment}"${upvoteText}`;
   }
 } 
