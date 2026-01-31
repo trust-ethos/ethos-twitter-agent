@@ -571,18 +571,31 @@ export class EthosService {
   /**
    * Format a review into a tweet-friendly string
    */
-  formatReviewForTweet(review: TopReview): string {
+  formatReviewForTweet(review: TopReview, totalReviews?: number, positivePercentage?: number): string {
     const emoji = review.score === 'positive' ? '👍' : review.score === 'negative' ? '👎' : '😐';
 
-    // Truncate comment if needed (leaving room for upvotes)
+    // Build the review count context
+    let reviewContext = '';
+    if (totalReviews && totalReviews > 1) {
+      const negativePercentage = 100 - (positivePercentage || 0);
+      if (negativePercentage > 50) {
+        reviewContext = `${totalReviews} reviews, ${negativePercentage}% negative.\n\n`;
+      } else if (positivePercentage && positivePercentage > 50) {
+        reviewContext = `${totalReviews} reviews, ${positivePercentage}% positive.\n\n`;
+      } else {
+        reviewContext = `${totalReviews} reviews.\n\n`;
+      }
+    }
+
+    // Truncate comment if needed (leaving room for context and upvotes)
     let comment = review.comment;
-    const maxCommentLength = 220;
+    const maxCommentLength = 180;
     if (comment.length > maxCommentLength) {
       comment = comment.substring(0, maxCommentLength - 3) + '...';
     }
 
-    const upvoteText = review.upvotes > 0 ? `\n\n(${review.upvotes} upvote${review.upvotes !== 1 ? 's' : ''})` : '';
+    const upvoteText = review.upvotes > 0 ? ` (${review.upvotes} upvote${review.upvotes !== 1 ? 's' : ''})` : '';
 
-    return `${emoji} Top review: "${comment}"${upvoteText}`;
+    return `${reviewContext}${emoji} Top review${upvoteText}: "${comment}"`;
   }
 } 
