@@ -260,15 +260,10 @@ export class EthosService {
     // Add review count context if they have reviews
     let reviewContext = '';
     if (stats.numReviews > 0) {
-      const negativePercentage = 100 - stats.positivePercentage;
       if (stats.numReviews === 1) {
-        reviewContext = `\n\n1 person reviewed them.`;
-      } else if (negativePercentage > 50) {
-        reviewContext = `\n\n${stats.numReviews} people reviewed them, ${negativePercentage}% negatively.`;
-      } else if (stats.positivePercentage > 50) {
-        reviewContext = `\n\n${stats.numReviews} people reviewed them, ${stats.positivePercentage}% positively.`;
+        reviewContext = `\n\nAt least, that's what 1 person said on Ethos.`;
       } else {
-        reviewContext = `\n\n${stats.numReviews} people reviewed them.`;
+        reviewContext = `\n\nAt least, that's what ${stats.numReviews} people have said on Ethos.`;
       }
     }
 
