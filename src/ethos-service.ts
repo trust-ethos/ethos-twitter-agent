@@ -228,13 +228,13 @@ export class EthosService {
    */
   formatGrifterAssessment(stats: EthosUserStats, name: string, username: string): string {
     const profileUrl = this.getProfileUrl(username);
-    
+
     const hasScore = stats.score !== null;
     const score = stats.score ?? 0;
-    
+
     let assessment: string;
     let verdict: string;
-    
+
     if (!hasScore) {
       // No Ethos score - unknown
       verdict = "🔍 VERDICT: Unknown";
@@ -256,8 +256,23 @@ export class EthosService {
       verdict = "🚨 VERDICT: More than likely a grifter";
       assessment = `${name} has a low Ethos score of ${score}. The score speaks for itself. Be very careful!`;
     }
-    
-    return `${verdict}\n\n${assessment}\n\nFull profile: ${profileUrl}`;
+
+    // Add review count context if they have reviews
+    let reviewContext = '';
+    if (stats.numReviews > 0) {
+      const negativePercentage = 100 - stats.positivePercentage;
+      if (stats.numReviews === 1) {
+        reviewContext = `\n\n1 person reviewed them.`;
+      } else if (negativePercentage > 50) {
+        reviewContext = `\n\n${stats.numReviews} people reviewed them, ${negativePercentage}% negatively.`;
+      } else if (stats.positivePercentage > 50) {
+        reviewContext = `\n\n${stats.numReviews} people reviewed them, ${stats.positivePercentage}% positively.`;
+      } else {
+        reviewContext = `\n\n${stats.numReviews} people reviewed them.`;
+      }
+    }
+
+    return `${verdict}\n\n${assessment}${reviewContext}\n\nFull profile: ${profileUrl}`;
   }
 
   /**
