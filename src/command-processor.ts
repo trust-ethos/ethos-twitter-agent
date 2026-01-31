@@ -406,11 +406,7 @@ export class CommandProcessor {
         // Fetch the top review to include as a follow-up tweet
         const topReviewResponse = await this.ethosService.getTopReview(targetUserId);
         if (topReviewResponse.success && topReviewResponse.review && topReviewResponse.review.comment) {
-          followUpText = this.ethosService.formatReviewForTweet(
-            topReviewResponse.review,
-            ethosResponse.data.numReviews,
-            ethosResponse.data.positivePercentage
-          );
+          followUpText = this.ethosService.formatReviewForTweet(topReviewResponse.review);
           console.log(`✅ Found top review for follow-up tweet`);
         } else {
           console.log(`ℹ️ No reviews found for follow-up tweet`);
