@@ -232,6 +232,16 @@ export class EthosService {
     const hasScore = stats.score !== null;
     const score = stats.score ?? 0;
 
+    // Build review count context
+    let reviewContext = '';
+    if (stats.numReviews > 0) {
+      if (stats.numReviews === 1) {
+        reviewContext = ` At least, that's what 1 person said on Ethos.`;
+      } else {
+        reviewContext = ` At least, that's what ${stats.numReviews} people have said on Ethos.`;
+      }
+    }
+
     let assessment: string;
     let verdict: string;
 
@@ -242,32 +252,22 @@ export class EthosService {
     } else if (score >= 1500) {
       // High score - not a grifter
       verdict = "✅ VERDICT: Not a grifter";
-      assessment = `${name} has an Ethos score of ${score}. This person has a solid reputation onchain.`;
+      assessment = `${name} has an Ethos score of ${score}.${reviewContext} This person has a solid reputation onchain.`;
     } else if (score >= 1200) {
       // Score 1200-1500 - unlikely
       verdict = "✅ VERDICT: Unlikely a grifter";
-      assessment = `${name} has an Ethos score of ${score}. They're probably fine, but do your own research.`;
+      assessment = `${name} has an Ethos score of ${score}.${reviewContext} They're probably fine, but do your own research.`;
     } else if (score >= 800) {
       // Score 800-1200 - questionable
       verdict = "⚠️ VERDICT: Questionably a grifter";
-      assessment = `${name} has an Ethos score of ${score}. That's below average. Be careful and verify before trusting them.`;
+      assessment = `${name} has an Ethos score of ${score}.${reviewContext} That's below average. Be careful and verify before trusting them.`;
     } else {
       // Score <800 - more than likely a grifter
       verdict = "🚨 VERDICT: More than likely a grifter";
-      assessment = `${name} has a low Ethos score of ${score}. The score speaks for itself. Be very careful!`;
+      assessment = `${name} has a low Ethos score of ${score}.${reviewContext}`;
     }
 
-    // Add review count context if they have reviews
-    let reviewContext = '';
-    if (stats.numReviews > 0) {
-      if (stats.numReviews === 1) {
-        reviewContext = `\n\nAt least, that's what 1 person said on Ethos.`;
-      } else {
-        reviewContext = `\n\nAt least, that's what ${stats.numReviews} people have said on Ethos.`;
-      }
-    }
-
-    return `${verdict}\n\n${assessment}${reviewContext}\n\nFull profile: ${profileUrl}`;
+    return `${verdict}\n\n${assessment}\n\nFull profile: ${profileUrl}`;
   }
 
   /**
