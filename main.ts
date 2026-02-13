@@ -40,6 +40,11 @@ Deno.cron("ethosAgent-rate-limit-cleanup", "0 * * * *", async () => {
     } else {
       console.log("⚠️ CommandProcessor not yet initialized");
     }
+    // Also clean up ask rate limiter records
+    if (commandProcessor?.askLimiter) {
+      await commandProcessor.askLimiter.cleanup();
+      console.log("✅ Deno.cron ask rate limit cleanup completed");
+    }
   } catch (error) {
     console.error("❌ Deno.cron rate limit cleanup failed:", error);
   }
@@ -66,7 +71,9 @@ if (databaseUrl) {
       const stats = await db.getStats();
       console.log("📊 Database stats:", stats);
     } else {
-      console.log("⚠️ Database health check failed - using KV storage fallback");
+      console.log(
+        "⚠️ Database health check failed - using KV storage fallback",
+      );
     }
   } catch (error) {
     console.log("⚠️ Database not available - using KV storage fallback");
@@ -83,7 +90,10 @@ const router = new Router();
 const twitterService = new TwitterService();
 const commandProcessor = new CommandProcessor(twitterService);
 const queueService = new QueueService(twitterService, commandProcessor);
-const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
+const webhookHandler = new TwitterWebhookHandler(
+  commandProcessor,
+  twitterService,
+);
 const pollingService = new PollingService(twitterService, queueService);
 
 // Make services available globally for cron jobs
@@ -101,23 +111,33 @@ const ethosEnv = Deno.env.get("ETHOS_ENV") || "prod"; // Default to prod
 
 console.log(`🌍 Ethos Environment: ${ethosEnv}`);
 
-if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccessToken || !twitterAccessTokenSecret) {
+if (
+  !twitterBearerToken || !twitterApiKey || !twitterApiSecret ||
+  !twitterAccessToken || !twitterAccessTokenSecret
+) {
   console.log("⚠️ Twitter API credentials not fully configured");
 }
 
 // Determine mode based on environment variable
-const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
+const usePolling = Deno.env.get("USE_POLLING") === "true" ||
+  Deno.env.get("TWITTER_API_PLAN") === "basic";
 
 // Webhook endpoints
-router.get("/webhook/twitter", webhookHandler.handleChallengeRequest.bind(webhookHandler));
-router.post("/webhook/twitter", webhookHandler.handleWebhook.bind(webhookHandler));
+router.get(
+  "/webhook/twitter",
+  webhookHandler.handleChallengeRequest.bind(webhookHandler),
+);
+router.post(
+  "/webhook/twitter",
+  webhookHandler.handleWebhook.bind(webhookHandler),
+);
 
 // Health and status endpoints
 router.get("/health", (ctx) => {
-  ctx.response.body = { 
-    status: "healthy", 
+  ctx.response.body = {
+    status: "healthy",
     timestamp: new Date().toISOString(),
-    mode: usePolling ? "polling" : "webhook"
+    mode: usePolling ? "polling" : "webhook",
   };
 });
 
@@ -128,7 +148,10 @@ router.get("/polling/status", async (ctx) => {
   } catch (error) {
     console.error("❌ Failed to get polling status:", error);
     ctx.response.status = 500;
-    ctx.response.body = { status: "error", message: "Failed to get polling status" };
+    ctx.response.body = {
+      status: "error",
+      message: "Failed to get polling status",
+    };
   }
 });
 
@@ -140,10 +163,10 @@ router.get("/test/twitter", async (ctx) => {
   } catch (error) {
     console.error("❌ Twitter test failed:", error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "Twitter API test failed",
-      error: error.message 
+      error: error.message,
     };
   }
 });
@@ -158,18 +181,18 @@ router.get("/test/user/:username", async (ctx) => {
     }
 
     const user = await twitterService.getUserByUsername(username);
-    ctx.response.body = { 
-      status: "success", 
+    ctx.response.body = {
+      status: "success",
       message: `User lookup for @${username}`,
-      data: user 
+      data: user,
     };
   } catch (error) {
     console.error(`❌ User lookup failed for @${ctx.params.username}:`, error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "User lookup failed",
-      error: error.message 
+      error: error.message,
     };
   }
 });
@@ -177,32 +200,35 @@ router.get("/test/user/:username", async (ctx) => {
 router.get("/test/storage", async (ctx) => {
   try {
     const storageService = commandProcessor.storageService;
-    
+
     // Test basic storage operations
     const testKey = "test-" + Date.now();
-    const testData = { message: "Hello from storage test", timestamp: new Date().toISOString() };
-    
+    const testData = {
+      message: "Hello from storage test",
+      timestamp: new Date().toISOString(),
+    };
+
     await storageService.storeSavedTweet({
       tweetId: testKey,
       authorHandle: "test",
       content: "Test tweet content",
-      userId: "test-user"
+      userId: "test-user",
     });
-    
+
     const stored = await storageService.getSavedTweet(testKey);
-    
+
     ctx.response.body = {
       status: "success",
       message: "Storage test completed",
-      data: { stored }
+      data: { stored },
     };
   } catch (error) {
     console.error("❌ Storage test failed:", error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "Storage test failed",
-      error: error.message 
+      error: error.message,
     };
   }
 });
@@ -211,25 +237,25 @@ router.get("/test/database", async (ctx) => {
   try {
     const { getDatabase } = await import("./src/database.ts");
     const db = getDatabase();
-    
+
     const isHealthy = await db.healthCheck();
     const stats = await db.getStats();
-    
+
     ctx.response.body = {
       status: "success",
       message: "Database test completed",
-      data: { 
+      data: {
         healthy: isHealthy,
-        stats 
-      }
+        stats,
+      },
     };
   } catch (error) {
     console.error("❌ Database test failed:", error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "Database test failed",
-      error: error.message 
+      error: error.message,
     };
   }
 });
@@ -238,25 +264,26 @@ router.get("/test/saved-tweets", async (ctx) => {
   try {
     const storageService = commandProcessor.storageService;
     const recentTweets = await storageService.getRecentSavedTweets(10);
-    
+
     ctx.response.body = {
       status: "success",
       message: "Recent saved tweets retrieved",
       count: recentTweets.length,
-      data: recentTweets.map(tweet => ({
+      data: recentTweets.map((tweet) => ({
         tweetId: tweet.tweetId,
         authorHandle: tweet.authorHandle,
-        content: tweet.content.substring(0, 100) + (tweet.content.length > 100 ? "..." : ""),
-        savedAt: tweet.savedAt
-      }))
+        content: tweet.content.substring(0, 100) +
+          (tweet.content.length > 100 ? "..." : ""),
+        savedAt: tweet.savedAt,
+      })),
     };
   } catch (error) {
     console.error("❌ Failed to get saved tweets:", error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "Failed to get saved tweets",
-      error: error.message 
+      error: error.message,
     };
   }
 });
@@ -266,19 +293,19 @@ router.get("/debug/storage-state", async (ctx) => {
   try {
     const storageService = commandProcessor.storageService;
     const state = await storageService.getDebugInfo();
-    
+
     ctx.response.body = {
       status: "success",
       message: "Storage state retrieved",
-      data: state
+      data: state,
     };
   } catch (error) {
     console.error("❌ Failed to get storage state:", error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "Failed to get storage state",
-      error: error.message 
+      error: error.message,
     };
   }
 });
@@ -287,30 +314,30 @@ router.get("/test/storage-service/:tweetId", async (ctx) => {
   try {
     const tweetId = ctx.params.tweetId;
     const storageService = commandProcessor.storageService;
-    
+
     // Test retrieving a specific saved tweet
     const savedTweet = await storageService.getSavedTweet(tweetId);
-    
+
     if (savedTweet) {
       ctx.response.body = {
         status: "success",
         message: `Saved tweet found for ID ${tweetId}`,
-        data: savedTweet
+        data: savedTweet,
       };
     } else {
       ctx.response.status = 404;
       ctx.response.body = {
         status: "not_found",
-        message: `No saved tweet found for ID ${tweetId}`
+        message: `No saved tweet found for ID ${tweetId}`,
       };
     }
   } catch (error) {
     console.error(`❌ Failed to get saved tweet ${ctx.params.tweetId}:`, error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "Failed to get saved tweet",
-      error: error.message 
+      error: error.message,
     };
   }
 });
@@ -319,9 +346,9 @@ router.get("/test/cron", async (ctx) => {
   ctx.response.body = {
     status: "success",
     message: "Manual cron trigger - check server logs for mention processing",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
+
   // Trigger polling manually
   try {
     await pollingService.runSinglePoll();
@@ -335,13 +362,13 @@ router.get("/debug/database-schema", async (ctx) => {
   try {
     const { getDatabase } = await import("./src/database.ts");
     const db = getDatabase();
-    
+
     // Get table info for key tables
     const tableInfo = await Promise.all([
       db.client`SELECT COUNT(*) as count FROM saved_tweets`,
       db.client`SELECT COUNT(*) as count FROM twitter_users`,
       db.client`SELECT id, tweet_id, author_handle, content, saved_at FROM saved_tweets ORDER BY saved_at DESC LIMIT 5`,
-      db.client`SELECT id, username, display_name, created_at FROM twitter_users ORDER BY created_at DESC LIMIT 5`
+      db.client`SELECT id, username, display_name, created_at FROM twitter_users ORDER BY created_at DESC LIMIT 5`,
     ]);
 
     ctx.response.body = {
@@ -351,15 +378,15 @@ router.get("/debug/database-schema", async (ctx) => {
         saved_tweets: {
           description: "🎯 MAIN TABLE: Tweets saved via Ethos agent",
           count: parseInt(tableInfo[0][0].count),
-          sample_records: tableInfo[2]
+          sample_records: tableInfo[2],
         },
         twitter_users: {
           description: "👥 USER TABLE: Twitter user information",
           count: parseInt(tableInfo[1][0].count),
-          sample_records: tableInfo[3]
-        }
+          sample_records: tableInfo[3],
+        },
       },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
     console.error("❌ Database schema error:", error);
@@ -367,7 +394,7 @@ router.get("/debug/database-schema", async (ctx) => {
     ctx.response.body = {
       status: "error",
       message: "Failed to get database schema info",
-      error: error.message
+      error: error.message,
     };
   }
 });
@@ -376,26 +403,26 @@ router.get("/test/twitter-users", async (ctx) => {
   try {
     const { getDatabase } = await import("./src/database.ts");
     const db = getDatabase();
-    
+
     const users = await db.client`
       SELECT username, display_name, followers_count, profile_image_url, created_at 
       FROM twitter_users 
       ORDER BY created_at DESC 
       LIMIT 10
     `;
-    
+
     ctx.response.body = {
       status: "success",
       message: "Recent Twitter users from database",
       count: users.length,
-      data: users
+      data: users,
     };
   } catch (error) {
     console.error("❌ Failed to get Twitter users:", error);
     ctx.response.status = 500;
     ctx.response.body = {
       status: "error",
-      message: "Failed to get Twitter users"
+      message: "Failed to get Twitter users",
     };
   }
 });
@@ -404,48 +431,48 @@ router.get("/test/twitter-users", async (ctx) => {
 function checkAdminAuth(ctx: any): boolean {
   const adminKey = ctx.request.headers.get("x-admin-key");
   const expectedKey = Deno.env.get("ADMIN_API_KEY");
-  
+
   if (!expectedKey) {
     ctx.response.status = 500;
     ctx.response.body = {
       status: "error",
-      message: "Admin API not configured"
+      message: "Admin API not configured",
     };
     return false;
   }
-  
+
   if (!adminKey || adminKey !== expectedKey) {
     ctx.response.status = 401;
     ctx.response.body = {
       status: "error",
-      message: "Unauthorized - valid admin key required"
+      message: "Unauthorized - valid admin key required",
     };
     return false;
   }
-  
+
   return true;
 }
 
 // Admin endpoint to view blocklist
 router.get("/admin/blocklist", async (ctx) => {
   if (!checkAdminAuth(ctx)) return;
-  
+
   try {
     const blocklistService = BlocklistService.getInstance();
     const blockedUsers = await blocklistService.getBlockedUsers();
     const stats = await blocklistService.getStats();
-    
+
     ctx.response.body = {
       status: "success",
       stats,
-      blockedUsers
+      blockedUsers,
     };
   } catch (error) {
     console.error("❌ Failed to get blocklist:", error);
     ctx.response.status = 500;
     ctx.response.body = {
       status: "error",
-      message: "Failed to get blocklist"
+      message: "Failed to get blocklist",
     };
   }
 });
@@ -453,33 +480,37 @@ router.get("/admin/blocklist", async (ctx) => {
 // Admin endpoint to add user to blocklist
 router.post("/admin/blocklist/add", async (ctx) => {
   if (!checkAdminAuth(ctx)) return;
-  
+
   try {
     const body = await ctx.request.body().value;
     const { username, reason } = body;
-    
+
     if (!username) {
       ctx.response.status = 400;
       ctx.response.body = {
         status: "error",
-        message: "Username is required"
+        message: "Username is required",
       };
       return;
     }
-    
+
     const blocklistService = BlocklistService.getInstance();
-    await blocklistService.blockUser(username, undefined, reason || "Added via API");
-    
+    await blocklistService.blockUser(
+      username,
+      undefined,
+      reason || "Added via API",
+    );
+
     ctx.response.body = {
       status: "success",
-      message: `Blocked user @${username}`
+      message: `Blocked user @${username}`,
     };
   } catch (error) {
     console.error("❌ Failed to add user to blocklist:", error);
     ctx.response.status = 500;
     ctx.response.body = {
       status: "error",
-      message: "Failed to add user to blocklist"
+      message: "Failed to add user to blocklist",
     };
   }
 });
@@ -494,19 +525,19 @@ router.get("/api/saved-tweets", async (ctx) => {
     const storageService = commandProcessor.storageService;
     const recentTweets = await storageService.getRecentSavedTweets(50);
     const stats = await storageService.getSavedTweetStats();
-    
+
     ctx.response.body = {
       status: "success",
       count: recentTweets.length,
       stats,
-      data: recentTweets
+      data: recentTweets,
     };
   } catch (error) {
     console.error("❌ Failed to get saved tweets:", error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
-      message: "Failed to get saved tweets"
+    ctx.response.body = {
+      status: "error",
+      message: "Failed to get saved tweets",
     };
   }
 });
@@ -526,11 +557,11 @@ router.get("/dashboard", async (ctx) => {
 
 // API status endpoint (simple JSON response)
 router.get("/", (ctx) => {
-  ctx.response.body = { 
-    status: "ok", 
+  ctx.response.body = {
+    status: "ok",
     message: "Ethos Twitter Agent API is running",
     dashboard: "/dashboard",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 });
 

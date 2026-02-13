@@ -32,6 +32,7 @@ export interface Command {
   args: string[];
   originalTweet: TwitterTweet;
   mentionedUser: TwitterUser;
+  questionText?: string;
 }
 
 export interface CommandResult {
@@ -52,7 +53,7 @@ export interface EngagingUser {
     following_count: number;
     tweet_count: number;
   };
-  engagement_type: 'retweet' | 'reply' | 'quote_tweet';
+  engagement_type: "retweet" | "reply" | "quote_tweet";
 }
 
 export interface UserWithEthosScore extends EngagingUser {
@@ -86,4 +87,4 @@ export interface EngagementStats {
   is_sampled: boolean; // Whether sampling was used due to high engagement
   sample_size?: number; // Total users analyzed when sampling was used
   estimated_total_engagers?: number; // Estimated total engagers (from metrics API)
-} 
+}
