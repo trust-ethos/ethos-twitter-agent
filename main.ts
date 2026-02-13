@@ -5,6 +5,7 @@ import { TwitterService } from "./src/twitter-service.ts";
 import { CommandProcessor } from "./src/command-processor.ts";
 import { QueueService } from "./src/queue-service.ts";
 import { PollingService } from "./src/polling-service.ts";
+import { StreamingService } from "./src/streaming-service.ts";
 import { initDatabase } from "./src/database.ts";
 import { BlocklistService } from "./src/blocklist-service.ts";
 
@@ -13,10 +14,17 @@ import { BlocklistService } from "./src/blocklist-service.ts";
 // ============================================================================
 
 // Set up main mention checking cron job - every 3 minutes
+// When streaming is active and connected, the cron skips (streaming handles mentions in real-time)
 Deno.cron("ethosAgent-mention-check", "*/3 * * * *", async () => {
+  // Skip polling when streaming is connected
+  const streamingService = (globalThis as any).streamingService as StreamingService | undefined;
+  if (streamingService?.getStatus().isConnected) {
+    console.log("🔌 Cron skipped — streaming is connected");
+    return;
+  }
+
   console.log("🕐 Deno.cron() triggered for mention check");
   try {
-    // Get the services we need (they will be available in global scope after initialization)
     const pollingService = (globalThis as any).pollingService;
     if (pollingService) {
       await pollingService.runSinglePoll();
@@ -107,6 +115,23 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
 
 // Determine mode based on environment variable
 const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
+const useStreaming = Deno.env.get("USE_STREAMING") === "true";
+
+// Initialize streaming if enabled
+if (useStreaming) {
+  console.log("🔌 Streaming mode enabled — initializing filtered stream");
+  const streamingService = new StreamingService(twitterService, queueService);
+  (globalThis as any).streamingService = streamingService;
+
+  streamingService.onFallbackToPolling = () => {
+    console.log("🔴 Streaming fell back to polling — cron will resume automatically");
+  };
+
+  // Start streaming (non-blocking)
+  streamingService.start();
+} else {
+  console.log("📡 Polling mode — streaming not enabled (set USE_STREAMING=true to enable)");
+}
 
 // Webhook endpoints
 router.get("/webhook/twitter", webhookHandler.handleChallengeRequest.bind(webhookHandler));
@@ -114,10 +139,20 @@ router.post("/webhook/twitter", webhookHandler.handleWebhook.bind(webhookHandler
 
 // Health and status endpoints
 router.get("/health", (ctx) => {
-  ctx.response.body = { 
-    status: "healthy", 
+  let mode: string;
+  const streamingService = (globalThis as any).streamingService as StreamingService | undefined;
+  if (streamingService) {
+    mode = streamingService.getStatus().mode;
+  } else if (usePolling) {
+    mode = "polling";
+  } else {
+    mode = "webhook";
+  }
+
+  ctx.response.body = {
+    status: "healthy",
     timestamp: new Date().toISOString(),
-    mode: usePolling ? "polling" : "webhook"
+    mode,
   };
 });
 
@@ -130,6 +165,15 @@ router.get("/polling/status", async (ctx) => {
     ctx.response.status = 500;
     ctx.response.body = { status: "error", message: "Failed to get polling status" };
   }
+});
+
+router.get("/streaming/status", (ctx) => {
+  const streamingService = (globalThis as any).streamingService as StreamingService | undefined;
+  if (!streamingService) {
+    ctx.response.body = { status: "disabled", message: "Streaming is not enabled" };
+    return;
+  }
+  ctx.response.body = { status: "success", data: streamingService.getStatus() };
 });
 
 // Test endpoints for debugging
@@ -545,6 +589,14 @@ app.addEventListener("error", (evt) => {
 
 // Get port from environment variable or default to 8000
 const port = parseInt(Deno.env.get("PORT") || "8000");
+
+// Graceful shutdown for streaming
+globalThis.addEventListener("unload", () => {
+  const streamingService = (globalThis as any).streamingService as StreamingService | undefined;
+  if (streamingService) {
+    streamingService.stop();
+  }
+});
 
 console.log(`🚀 Starting server on port ${port}...`);
 
