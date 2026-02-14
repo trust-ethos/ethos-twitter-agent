@@ -94,8 +94,17 @@ export class QueueService {
 
     this.kv.listenQueue(async (job: CommandJob) => {
       console.log(`📥 Processing queued job: ${job.id}`);
-      
+
       try {
+        // Guard against at-least-once redelivery from KV queue
+        const dedupKey = ["queue_processed", job.id];
+        const already = await this.kv!.get(dedupKey);
+        if (already.value) {
+          console.log(`⏭️ Skipping redelivered job: ${job.id}`);
+          return;
+        }
+        await this.kv!.set(dedupKey, true, { expireIn: 24 * 60 * 60 * 1000 });
+
         if (job.type === 'process_mention') {
           await this.processMentionSync(
             job.data.mention,

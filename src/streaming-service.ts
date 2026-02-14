@@ -272,6 +272,11 @@ export class StreamingService {
         return;
       }
 
+      // Skip our own tweets
+      if (author.username.toLowerCase() === this.botUsername.toLowerCase()) {
+        return;
+      }
+
       // Dedup check
       if (await this.deduplicationService.hasProcessed(tweet.id)) {
         console.log(`⏭️ Skipping already processed stream tweet: ${tweet.id}`);
