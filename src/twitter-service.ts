@@ -695,6 +695,106 @@ export class TwitterService {
   }
 
   /**
+   * Get current filtered stream rules
+   */
+  async getStreamRules(): Promise<{ data?: Array<{ id: string; value: string; tag?: string }> }> {
+    if (!this.bearerToken) {
+      console.log("⚠️ No bearer token configured - stream rules require bearer token");
+      return {};
+    }
+
+    try {
+      const response = await fetch("https://api.x.com/2/tweets/search/stream/rules", {
+        headers: {
+          "Authorization": `Bearer ${this.bearerToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Failed to get stream rules: ${response.status} ${response.statusText}`);
+        console.error(`❌ Error details: ${errorText}`);
+        return {};
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("❌ Error fetching stream rules:", error);
+      return {};
+    }
+  }
+
+  /**
+   * Add filtered stream rules
+   */
+  async addStreamRules(rules: Array<{ value: string; tag?: string }>): Promise<any> {
+    if (!this.bearerToken) {
+      console.log("⚠️ No bearer token configured - stream rules require bearer token");
+      return null;
+    }
+
+    try {
+      const response = await fetch("https://api.x.com/2/tweets/search/stream/rules", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.bearerToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ add: rules }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Failed to add stream rules: ${response.status} ${response.statusText}`);
+        console.error(`❌ Error details: ${errorText}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log(`✅ Stream rules added:`, data);
+      return data;
+    } catch (error) {
+      console.error("❌ Error adding stream rules:", error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete filtered stream rules by IDs
+   */
+  async deleteStreamRules(ids: string[]): Promise<any> {
+    if (!this.bearerToken) {
+      console.log("⚠️ No bearer token configured - stream rules require bearer token");
+      return null;
+    }
+
+    try {
+      const response = await fetch("https://api.x.com/2/tweets/search/stream/rules", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${this.bearerToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ delete: { ids } }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ Failed to delete stream rules: ${response.status} ${response.statusText}`);
+        console.error(`❌ Error details: ${errorText}`);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log(`✅ Stream rules deleted:`, data);
+      return data;
+    } catch (error) {
+      console.error("❌ Error deleting stream rules:", error);
+      return null;
+    }
+  }
+
+  /**
    * Get tweet information by tweet ID
    */
   async getTweetById(tweetId: string): Promise<TwitterTweet | null> {

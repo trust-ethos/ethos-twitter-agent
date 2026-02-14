@@ -1,0 +1,12 @@
+.git
+.github
+.env
+.env.local
+.claude
+.cursor
+.playwright-mcp
+node_modules
+astro-dashboard
+images
+*.log
+.DS_Store
