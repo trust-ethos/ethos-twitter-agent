@@ -736,19 +736,22 @@ Learn more about Ethos at https://ethos.network`;
         reviewDescription = "Please don't do that again, anon.";
         console.log(`🚨 Using anti-abuse title and description for converted positive self-review by @${mentionerUsername}`);
       } else {
-        // Create the normal title: first 120 characters of tweet 
-        reviewTitle = originalTweet.text.length > 120 
-          ? originalTweet.text.substring(0, 117) + "..." 
-          : originalTweet.text;
-        
-        // Create the normal detailed description
-        reviewDescription = `Original tweet saved by @${mentionerUsername}: "${originalTweet.text}"
+        // Create the normal title: first 120 characters of tweet, strip t.co links
+        const titleText = originalTweet.text.replace(/https?:\/\/t\.co\/\S+/g, '').trim();
+        reviewTitle = titleText.length > 120
+          ? titleText.substring(0, 117) + "..."
+          : titleText;
 
-Authored at: ${originalTweet.created_at}
+        // Create the normal detailed description with markdown
+        reviewDescription = `${originalTweet.text}
 
-Author user id: ${originalTweet.author_id}
+**X post saved by**: [@${mentionerUsername}](https://app.ethos.network/profile/x/${mentionerUsername})
 
-Link to tweet: ${originalTweetLink}`;
+**Authored at**: ${originalTweet.created_at}
+
+**Author user id**: ${originalTweet.author_id}
+
+**Link to tweet**: [link](${originalTweetLink})`;
       }
 
       console.log(`📝 Review details - Score: ${reviewScore}, Title: ${reviewTitle}`);
