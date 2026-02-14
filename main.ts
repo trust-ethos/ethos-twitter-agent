@@ -4,56 +4,9 @@ import { TwitterWebhookHandler } from "./src/webhook-handler.ts";
 import { TwitterService } from "./src/twitter-service.ts";
 import { CommandProcessor } from "./src/command-processor.ts";
 import { QueueService } from "./src/queue-service.ts";
-import { PollingService } from "./src/polling-service.ts";
 import { StreamingService } from "./src/streaming-service.ts";
 import { initDatabase } from "./src/database.ts";
 import { BlocklistService } from "./src/blocklist-service.ts";
-
-// ============================================================================
-// CRON JOBS MUST BE DEFINED AT TOP-LEVEL BEFORE ANY AWAIT CALLS
-// ============================================================================
-
-// Set up main mention checking cron job - every 3 minutes
-// When streaming is active and connected, the cron skips (streaming handles mentions in real-time)
-Deno.cron("ethosAgent-mention-check", "*/3 * * * *", async () => {
-  // Skip polling when streaming is connected
-  const streamingService = (globalThis as any).streamingService as StreamingService | undefined;
-  if (streamingService?.getStatus().isConnected) {
-    console.log("🔌 Cron skipped — streaming is connected");
-    return;
-  }
-
-  console.log("🕐 Deno.cron() triggered for mention check");
-  try {
-    const pollingService = (globalThis as any).pollingService;
-    if (pollingService) {
-      await pollingService.runSinglePoll();
-      console.log("✅ Cron mention check completed successfully");
-    } else {
-      console.log("⚠️ PollingService not yet initialized");
-    }
-  } catch (error) {
-    console.error("❌ Cron mention check error:", error);
-  }
-});
-
-// Set up rate limit cleanup cron job (runs every hour at minute 0)
-Deno.cron("ethosAgent-rate-limit-cleanup", "0 * * * *", async () => {
-  console.log("🧹 Deno.cron triggered: Cleaning up old rate limit records");
-  try {
-    const commandProcessor = (globalThis as any).commandProcessor;
-    if (commandProcessor?.storageService) {
-      await commandProcessor.storageService.cleanupOldRateLimits();
-      console.log("✅ Deno.cron rate limit cleanup completed");
-    } else {
-      console.log("⚠️ CommandProcessor not yet initialized");
-    }
-  } catch (error) {
-    console.error("❌ Deno.cron rate limit cleanup failed:", error);
-  }
-});
-
-console.log("✅ Deno.cron jobs registered successfully");
 
 // ============================================================================
 // ASYNC INITIALIZATION
@@ -92,11 +45,6 @@ const twitterService = new TwitterService();
 const commandProcessor = new CommandProcessor(twitterService);
 const queueService = new QueueService(twitterService, commandProcessor);
 const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
-const pollingService = new PollingService(twitterService, queueService);
-
-// Make services available globally for cron jobs
-(globalThis as any).pollingService = pollingService;
-(globalThis as any).commandProcessor = commandProcessor;
 
 // Validate environment variables
 const twitterBearerToken = Deno.env.get("TWITTER_BEARER_TOKEN");
@@ -113,25 +61,11 @@ if (!twitterBearerToken || !twitterApiKey || !twitterApiSecret || !twitterAccess
   console.log("⚠️ Twitter API credentials not fully configured");
 }
 
-// Determine mode based on environment variable
-const usePolling = Deno.env.get("USE_POLLING") === "true" || Deno.env.get("TWITTER_API_PLAN") === "basic";
-const useStreaming = Deno.env.get("USE_STREAMING") === "true";
-
-// Initialize streaming if enabled
-if (useStreaming) {
-  console.log("🔌 Streaming mode enabled — initializing filtered stream");
-  const streamingService = new StreamingService(twitterService, queueService);
-  (globalThis as any).streamingService = streamingService;
-
-  streamingService.onFallbackToPolling = () => {
-    console.log("🔴 Streaming fell back to polling — cron will resume automatically");
-  };
-
-  // Start streaming (non-blocking)
-  streamingService.start();
-} else {
-  console.log("📡 Polling mode — streaming not enabled (set USE_STREAMING=true to enable)");
-}
+// Initialize streaming
+console.log("🔌 Streaming mode — initializing filtered stream");
+const streamingService = new StreamingService(twitterService, queueService);
+(globalThis as any).streamingService = streamingService;
+streamingService.start();
 
 // Webhook endpoints
 router.get("/webhook/twitter", webhookHandler.handleChallengeRequest.bind(webhookHandler));
@@ -139,40 +73,14 @@ router.post("/webhook/twitter", webhookHandler.handleWebhook.bind(webhookHandler
 
 // Health and status endpoints
 router.get("/health", (ctx) => {
-  let mode: string;
-  const streamingService = (globalThis as any).streamingService as StreamingService | undefined;
-  if (streamingService) {
-    mode = streamingService.getStatus().mode;
-  } else if (usePolling) {
-    mode = "polling";
-  } else {
-    mode = "webhook";
-  }
-
   ctx.response.body = {
     status: "healthy",
     timestamp: new Date().toISOString(),
-    mode,
+    mode: streamingService.getStatus().mode,
   };
 });
 
-router.get("/polling/status", async (ctx) => {
-  try {
-    const status = await pollingService.getStatus();
-    ctx.response.body = { status: "success", data: status };
-  } catch (error) {
-    console.error("❌ Failed to get polling status:", error);
-    ctx.response.status = 500;
-    ctx.response.body = { status: "error", message: "Failed to get polling status" };
-  }
-});
-
 router.get("/streaming/status", (ctx) => {
-  const streamingService = (globalThis as any).streamingService as StreamingService | undefined;
-  if (!streamingService) {
-    ctx.response.body = { status: "disabled", message: "Streaming is not enabled" };
-    return;
-  }
   ctx.response.body = { status: "success", data: streamingService.getStatus() };
 });
 
@@ -356,22 +264,6 @@ router.get("/test/storage-service/:tweetId", async (ctx) => {
       message: "Failed to get saved tweet",
       error: error.message 
     };
-  }
-});
-
-router.get("/test/cron", async (ctx) => {
-  ctx.response.body = {
-    status: "success",
-    message: "Manual cron trigger - check server logs for mention processing",
-    timestamp: new Date().toISOString()
-  };
-  
-  // Trigger polling manually
-  try {
-    await pollingService.runSinglePoll();
-    console.log("✅ Manual cron trigger completed successfully");
-  } catch (error) {
-    console.error("❌ Manual cron trigger error:", error);
   }
 });
 

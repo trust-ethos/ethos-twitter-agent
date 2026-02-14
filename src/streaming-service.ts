@@ -6,7 +6,7 @@ import { DeduplicationService } from "./deduplication-service.ts";
 import { TextLineStream } from "@std/streams/text_line_stream.ts";
 
 interface StreamStatus {
-  mode: "streaming" | "streaming-fallback-polling" | "disconnected";
+  mode: "streaming" | "disconnected";
   isConnected: boolean;
   reconnectAttempts: number;
   tweetsReceived: number;
@@ -27,7 +27,6 @@ const STREAM_PARAMS = new URLSearchParams({
 const RULE_TAG = "ethosAgent-mentions";
 const HEARTBEAT_INTERVAL_MS = 10_000;
 const HEARTBEAT_TIMEOUT_MS = 30_000;
-const MAX_CONSECUTIVE_FAILURES = 5;
 
 export class StreamingService {
   private twitterService: TwitterService;
@@ -52,8 +51,6 @@ export class StreamingService {
   private tcpBackoffMs = 0;
   private httpBackoffMs = 5_000;
   private rateLimitBackoffMs = 60_000;
-
-  onFallbackToPolling: (() => void) | null = null;
 
   constructor(
     twitterService: TwitterService,
@@ -106,11 +103,7 @@ export class StreamingService {
 
   getStatus(): StreamStatus {
     return {
-      mode: this.isConnected
-        ? "streaming"
-        : this.consecutiveErrors >= MAX_CONSECUTIVE_FAILURES
-          ? "streaming-fallback-polling"
-          : "disconnected",
+      mode: this.isConnected ? "streaming" : "disconnected",
       isConnected: this.isConnected,
       reconnectAttempts: this.reconnectAttempts,
       tweetsReceived: this.tweetsReceived,
@@ -289,7 +282,7 @@ export class StreamingService {
         `📨 Stream tweet from @${author.username}: ${tweet.text?.substring(0, 80)}...`,
       );
 
-      // Queue for processing (same path as polling)
+      // Queue for processing
       await this.queueService.enqueueMentionProcessing(
         tweet,
         author,
@@ -314,17 +307,6 @@ export class StreamingService {
     console.error(
       `❌ Connection error #${this.consecutiveErrors}: status=${statusCode} message=${message}`,
     );
-
-    // Trigger fallback after max failures
-    if (this.consecutiveErrors >= MAX_CONSECUTIVE_FAILURES) {
-      console.error(
-        `🔴 Stream failed ${this.consecutiveErrors} times — falling back to polling`,
-      );
-      if (this.onFallbackToPolling) {
-        this.onFallbackToPolling();
-      }
-      return;
-    }
 
     // Determine backoff type based on status code
     if (statusCode === 429) {

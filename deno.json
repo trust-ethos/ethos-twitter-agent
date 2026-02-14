@@ -2,8 +2,8 @@
   "lock": false,
   "tasks": {
     "check": "deno fmt --check && deno lint && deno check **/*.ts",
-    "start": "deno run -A --unstable-kv --unstable-cron main.ts",
-    "dev": "deno run -A --unstable-kv --unstable-cron --watch main.ts",
+    "start": "deno run -A --unstable-kv main.ts",
+    "dev": "deno run -A --unstable-kv --watch main.ts",
     "test": "deno test -A --unstable-kv"
   },
   "lint": {
