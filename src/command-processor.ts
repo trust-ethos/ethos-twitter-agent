@@ -2,7 +2,6 @@ import type { Command, CommandResult, TwitterTweet, TwitterUser } from "./types.
 import type { TwitterService } from "./twitter-service.ts";
 import { EthosService } from "./ethos-service.ts";
 import { StorageService } from "./storage-service.ts";
-import { SlackService } from "./slack-service.ts";
 import { BlocklistService } from "./blocklist-service.ts";
 import { IntentResolver } from "./intent-resolver.ts";
 
@@ -10,7 +9,6 @@ export class CommandProcessor {
   private twitterService: TwitterService;
   private ethosService: EthosService;
   private _storageService: StorageService;
-  private slackService: SlackService;
   private blocklistService: BlocklistService;
   private intentResolver: IntentResolver;
 
@@ -18,7 +16,6 @@ export class CommandProcessor {
     this.twitterService = twitterService;
     this.ethosService = new EthosService();
     this._storageService = new StorageService();
-    this.slackService = new SlackService();
     this.blocklistService = BlocklistService.getInstance();
     this.intentResolver = new IntentResolver();
   }
@@ -237,25 +234,15 @@ export class CommandProcessor {
     } catch (error) {
       console.error(`❌ Unexpected error processing ${command.type} command:`, error);
       
-      // Only send Slack notifications for known commands that have unexpected errors
-      // Don't spam Slack for unknown commands (people mentioning bot in conversation)
       const knownCommands = ["profile", "help", "save", "grifter?"];
       if (knownCommands.includes(command.type)) {
-        // Send Slack notification for unexpected error on known commands
-        await this.slackService.notifyError(
-          `${command.type} command`, 
-          error instanceof Error ? error.message : String(error),
-          `@${command.mentionedUser.username} using command "${command.type}"`
-        );
-        
         return {
           success: false,
           message: `Unexpected error processing ${command.type} command`,
           replyText: this.getStandardErrorMessage()
         };
       }
-      
-      // For unknown commands, don't send Slack notifications - just return the regular response
+
       return {
         success: false,
         message: `Unknown command: ${command.type}`,
@@ -655,13 +642,6 @@ Learn more about Ethos at https://ethos.network`;
         // Override their intended sentiment to negative
         reviewScore = "negative";
         
-        // Send Slack notification about the abuse attempt
-        await this.slackService.notifyError(
-          "self-review abuse attempt", 
-          `@${mentionerUsername} tried to review themselves positively`, 
-          `Original sentiment: positive, converted to negative`
-        );
-        
         console.log(`🚨 Converted positive self-review to negative sentiment for @${mentionerUsername}`);
       } else if (targetUsername.toLowerCase() === mentionerUsername.toLowerCase()) {
         console.log(`ℹ️ Self-review detected but allowing ${reviewScore} sentiment for @${mentionerUsername}`);
@@ -850,7 +830,6 @@ Link to tweet: ${originalTweetLink}`;
           }
         }
 
-        // Send Slack notification for successful save
         // Use rotating phrases with username to avoid Twitter duplicate content errors
         const successPhrases = [
           `Saved ${targetUsername}'s tweet onchain.`,
@@ -864,27 +843,12 @@ Link to tweet: ${originalTweetLink}`;
         const baseMessage = successPhrases[phraseIndex];
         const finalMessage = reviewLink ? `${baseMessage} View it here${reviewLink}` : baseMessage;
 
-        await this.slackService.notifySuccessfulSave(
-          originalTweetId, 
-          originalTweetLink, 
-          reviewScore, 
-          targetUsername,
-          finalMessage // Include the actual reply text that was sent
-        );
-
         return {
           success: true,
           message: "Review saved successfully",
           replyText: finalMessage
         };
       } else {
-        // Send Slack notification for failed save
-        await this.slackService.notifyError(
-          "save command", 
-          reviewResult.error || "Unknown error", 
-          `@${mentionerUsername} trying to save tweet ${originalTweetId} for @${targetUsername}`
-        );
-
         return {
           success: false,
           message: "Failed to save review",
@@ -894,14 +858,7 @@ Link to tweet: ${originalTweetLink}`;
 
     } catch (error) {
       console.error("❌ Error processing save command:", error);
-      
-      // Send Slack notification for unexpected error
-      await this.slackService.notifyError(
-        "save command", 
-        error instanceof Error ? error.message : String(error),
-        `@${command.mentionedUser.username} trying to save tweet`
-      );
-      
+
       return {
         success: false,
         message: "Error processing save command",

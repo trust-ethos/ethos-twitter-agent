@@ -3,7 +3,6 @@
 import { TwitterService } from "./twitter-service.ts";
 import { QueueService } from "./queue-service.ts";
 import { DeduplicationService } from "./deduplication-service.ts";
-import { SlackService } from "./slack-service.ts";
 import { TextLineStream } from "@std/streams/text_line_stream.ts";
 
 interface StreamStatus {
@@ -29,13 +28,11 @@ const RULE_TAG = "ethosAgent-mentions";
 const HEARTBEAT_INTERVAL_MS = 10_000;
 const HEARTBEAT_TIMEOUT_MS = 30_000;
 const MAX_CONSECUTIVE_FAILURES = 5;
-const SLACK_NOTIFY_AFTER_FAILURES = 3;
 
 export class StreamingService {
   private twitterService: TwitterService;
   private queueService: QueueService;
   private deduplicationService: DeduplicationService;
-  private slackService: SlackService;
   private bearerToken: string;
   private botUsername: string;
 
@@ -66,7 +63,6 @@ export class StreamingService {
     this.twitterService = twitterService;
     this.queueService = queueService;
     this.deduplicationService = DeduplicationService.getInstance();
-    this.slackService = new SlackService();
     this.botUsername = botUsername;
     this.bearerToken = Deno.env.get("TWITTER_BEARER_TOKEN") || "";
   }
@@ -319,26 +315,10 @@ export class StreamingService {
       `❌ Connection error #${this.consecutiveErrors}: status=${statusCode} message=${message}`,
     );
 
-    // Slack notification after threshold
-    if (this.consecutiveErrors === SLACK_NOTIFY_AFTER_FAILURES) {
-      this.slackService.notifyError(
-        "Stream Connection",
-        `Filtered stream has failed ${this.consecutiveErrors} consecutive times. Status: ${statusCode}`,
-        "StreamingService",
-        message,
-      );
-    }
-
     // Trigger fallback after max failures
     if (this.consecutiveErrors >= MAX_CONSECUTIVE_FAILURES) {
       console.error(
         `🔴 Stream failed ${this.consecutiveErrors} times — falling back to polling`,
-      );
-      this.slackService.notifyError(
-        "Stream Fallback",
-        `Filtered stream failed ${this.consecutiveErrors} times, falling back to cron polling`,
-        "StreamingService",
-        `Last error: ${statusCode} — ${message}`,
       );
       if (this.onFallbackToPolling) {
         this.onFallbackToPolling();

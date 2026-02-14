@@ -3,7 +3,6 @@
 
 import { TwitterService } from "./twitter-service.ts";
 import { CommandProcessor } from "./command-processor.ts";
-import { SlackService } from "./slack-service.ts";
 
 /**
  * Job data structure for the queue
@@ -27,7 +26,6 @@ export class QueueService {
   private kv: Deno.Kv | null = null;
   private twitterService: TwitterService;
   private commandProcessor: CommandProcessor;
-  private slackService: SlackService;
   private isListening: boolean = false;
 
   constructor(
@@ -36,7 +34,6 @@ export class QueueService {
   ) {
     this.twitterService = twitterService;
     this.commandProcessor = commandProcessor;
-    this.slackService = new SlackService();
     this.initializeKV();
   }
 
@@ -112,14 +109,6 @@ export class QueueService {
         }
       } catch (error) {
         console.error(`❌ Failed to process queued job ${job.id}:`, error);
-        
-        // Send error notification to Slack
-        await this.slackService.notifyError(
-          "Queue job processing",
-          error instanceof Error ? error.message : String(error),
-          `Job: ${job.id}`,
-          `Type: ${job.type}`
-        );
       }
     });
   }
@@ -160,30 +149,6 @@ export class QueueService {
           if (replyResult.success) {
             console.log(`📤 Replied successfully to @${author.username}`);
             
-            // Send Slack notification for successful response (only for successful commands)
-            if (result.success && command.type === 'profile') {
-              // For profile commands, we need to determine who was analyzed
-              const isReply = mention.in_reply_to_user_id;
-              let targetUser = author.username; // default to self-analysis
-              
-              if (isReply) {
-                // Find the original author
-                const originalAuthor = users.find(user => user.id === mention.in_reply_to_user_id);
-                if (originalAuthor) {
-                  targetUser = originalAuthor.username;
-                }
-              }
-              
-              await this.slackService.notifyProfileSuccess(
-                targetUser,
-                author.username,
-                result.replyText || "",
-                replyResult.postedTweetId || undefined,
-                botUsername
-              );
-            }
-            // Note: Save command notifications are handled in the command processor
-
             // Send follow-up tweet if available (e.g., top review for grifter? command)
             if (result.followUpText && replyResult.postedTweetId) {
               try {
@@ -200,36 +165,12 @@ export class QueueService {
 
           } else {
             console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyResult.error);
-            
-            // Send Slack notification for failed reply
-            await this.slackService.notifyError(
-              `${command.type} command reply`,
-              replyResult.error || "Unknown error",
-              `@${author.username}`,
-              mention.text
-            );
           }
         } catch (replyError) {
           console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyError);
-          
-          // Send Slack notification for reply exception
-          await this.slackService.notifyError(
-            `${command.type} command reply`,
-            replyError instanceof Error ? replyError.message : String(replyError),
-            `@${author.username}`,
-            mention.text
-          );
         }
       } else if (!result.success) {
         console.log(`❌ Command processing failed: ${result.message}`);
-        
-        // Send Slack notification for command processing failure (only when no replyText)
-        await this.slackService.notifyError(
-          `${command.type} command processing`,
-          result.message,
-          `@${author.username}`,
-          mention.text
-        );
       } else {
         console.log(`✅ Command processed successfully but no reply needed`);
       }

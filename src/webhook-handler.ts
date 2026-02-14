@@ -2,20 +2,17 @@ import type { Context } from "oak";
 import type { TwitterWebhookEvent } from "./types.ts";
 import type { CommandProcessor } from "./command-processor.ts";
 import type { TwitterService } from "./twitter-service.ts";
-import { SlackService } from "./slack-service.ts";
 import { DeduplicationService } from "./deduplication-service.ts";
 
 export class TwitterWebhookHandler {
   private commandProcessor: CommandProcessor;
   private twitterService: TwitterService;
-  private slackService: SlackService;
   private botUsername: string;
   private deduplicationService: DeduplicationService;
 
   constructor(commandProcessor: CommandProcessor, twitterService: TwitterService) {
     this.commandProcessor = commandProcessor;
     this.twitterService = twitterService;
-    this.slackService = new SlackService();
     this.botUsername = Deno.env.get("BOT_USERNAME") || "ethosAgent";
     this.deduplicationService = DeduplicationService.getInstance();
   }
@@ -191,30 +188,6 @@ export class TwitterWebhookHandler {
           if (replyResult.success) {
             console.log(`📤 Replied successfully to @${author.username}`);
             
-            // Send Slack notification for successful response (only for successful commands)
-            if (result.success && command.type === 'profile') {
-              // For profile commands, we need to determine who was analyzed
-              const isReply = tweet.in_reply_to_user_id;
-              let targetUser = author.username; // default to self-analysis
-              
-              if (isReply) {
-                // Find the original author
-                const originalAuthor = event.includes?.users?.find(user => user.id === tweet.in_reply_to_user_id);
-                if (originalAuthor) {
-                  targetUser = originalAuthor.username;
-                }
-              }
-              
-              await this.slackService.notifyProfileSuccess(
-                targetUser,
-                author.username,
-                result.replyText || "",
-                replyResult.postedTweetId || undefined,
-                this.botUsername
-              );
-            }
-            // Note: Save command notifications are handled in the command processor
-
             // Send follow-up tweet if available (e.g., top review for grifter? command)
             if (result.followUpText && replyResult.postedTweetId) {
               try {
@@ -231,36 +204,12 @@ export class TwitterWebhookHandler {
 
           } else {
             console.error(`❌ Failed to reply to tweet ${tweet.id}:`, replyResult.error);
-            
-            // Send Slack notification for failed reply
-            await this.slackService.notifyError(
-              `${command.type} command reply`,
-              replyResult.error || "Unknown error",
-              `@${author.username}`,
-              tweet.text
-            );
           }
         } catch (replyError) {
           console.error(`❌ Failed to reply to tweet ${tweet.id}:`, replyError);
-          
-          // Send Slack notification for reply exception
-          await this.slackService.notifyError(
-            `${command.type} command reply`,
-            replyError instanceof Error ? replyError.message : String(replyError),
-            `@${author.username}`,
-            tweet.text
-          );
         }
       } else if (!result.success) {
         console.log(`❌ Command processing failed: ${result.message}`);
-        
-        // Send Slack notification for command processing failure (only when no replyText)
-        await this.slackService.notifyError(
-          `${command.type} command processing`,
-          result.message,
-          `@${author.username}`,
-          tweet.text
-        );
       } else {
         console.log(`✅ Command processed successfully but no reply needed`);
       }
