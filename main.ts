@@ -100,7 +100,11 @@ const pollingService = new PollingService(twitterService, queueService);
 
 // Validate environment variables
 const twitterBearerToken = Deno.env.get("TWITTER_BEARER_TOKEN");
-console.log(`🔑 Bearer token last 4: ...${twitterBearerToken?.slice(-4) ?? "MISSING"}`);
+// TEMPORARY: dump env for Railway migration — remove after
+for (const key of ["TWITTER_BEARER_TOKEN","TWITTER_API_KEY","TWITTER_API_SECRET","TWITTER_ACCESS_TOKEN","TWITTER_ACCESS_TOKEN_SECRET","TWITTER_CLIENT_ID","TWITTER_CLIENT_SECRET","ETHOS_API_KEY","ADMIN_API_KEY","SLACK_WEBHOOK_URL","OPENROUTER_API_KEY","DATABASE_URL","ETHOS_API_BASE_URL","ETHOS_ENVIRONMENT","WEBHOOK_SECRET","TWITTER_API_PLAN"]) {
+  const v = Deno.env.get(key);
+  console.log(`ENV ${key}=${v ?? "NOT SET"}`);
+}
 const twitterApiKey = Deno.env.get("TWITTER_API_KEY");
 const twitterApiSecret = Deno.env.get("TWITTER_API_SECRET");
 const twitterAccessToken = Deno.env.get("TWITTER_ACCESS_TOKEN");
