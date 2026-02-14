@@ -78,7 +78,6 @@ export class StreamingService {
     }
 
     console.log("🔌 Starting streaming service...");
-    console.log(`🔑 Bearer token starts with: ${this.bearerToken.substring(0, 20)}...`);
     this.isStopping = false;
 
     await this.ensureStreamRules();
