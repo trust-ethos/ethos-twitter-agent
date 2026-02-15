@@ -1,6 +1,5 @@
 import { Application, Router } from "oak";
 import { load } from "dotenv";
-import { TwitterWebhookHandler } from "./src/webhook-handler.ts";
 import { TwitterService } from "./src/twitter-service.ts";
 import { CommandProcessor } from "./src/command-processor.ts";
 import { QueueService } from "./src/queue-service.ts";
@@ -44,7 +43,6 @@ const router = new Router();
 const twitterService = new TwitterService();
 const commandProcessor = new CommandProcessor(twitterService);
 const queueService = new QueueService(twitterService, commandProcessor);
-const webhookHandler = new TwitterWebhookHandler(commandProcessor, twitterService);
 
 // Validate environment variables
 const twitterBearerToken = Deno.env.get("TWITTER_BEARER_TOKEN");
@@ -66,10 +64,6 @@ console.log("🔌 Streaming mode — initializing filtered stream");
 const streamingService = new StreamingService(twitterService, queueService);
 (globalThis as any).streamingService = streamingService;
 streamingService.start();
-
-// Webhook endpoints
-router.get("/webhook/twitter", webhookHandler.handleChallengeRequest.bind(webhookHandler));
-router.post("/webhook/twitter", webhookHandler.handleWebhook.bind(webhookHandler));
 
 // Health and status endpoints
 router.get("/health", (ctx) => {
