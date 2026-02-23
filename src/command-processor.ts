@@ -721,15 +721,15 @@ Learn more about Ethos at https://ethos.network`;
 
       // Get original tweet author information
       const originalAuthor = allUsers?.find(user => user.id === originalTweet.author_id);
-      
+
       // 🚨 ANTI-ABUSE: Create custom title and description for converted positive self-reviews
       let reviewTitle: string;
       let reviewDescription: string;
-      
+
       const isSelfReview = targetUsername.toLowerCase() === mentionerUsername.toLowerCase();
       const isConvertedPositiveSelfReview = isSelfReview && reviewScore === "negative" && command.args.includes('positive');
       const originalTweetLink = `https://x.com/${originalAuthor?.username || 'user'}/status/${originalTweetId}`;
-      
+
       if (isConvertedPositiveSelfReview) {
         // Use anti-abuse message for converted positive self-reviews
         reviewTitle = "User tried to abuse Ethos and review themself positively through my code";
@@ -742,16 +742,47 @@ Learn more about Ethos at https://ethos.network`;
           ? titleText.substring(0, 117) + "..."
           : titleText;
 
-        // Create the normal detailed description with markdown
-        reviewDescription = `${originalTweet.text}
+        // Fetch the reply chain for conversational context
+        const replyChain = await this.twitterService.getReplyChain(originalTweet);
 
-**X post saved by**: [@${mentionerUsername}](https://app.ethos.network/profile/x/${mentionerUsername})
+        if (replyChain.length > 1) {
+          // Resolve author usernames for every tweet in the chain
+          const authorUsernames = new Map<string, string>();
+          for (const chainTweet of replyChain) {
+            if (authorUsernames.has(chainTweet.author_id)) continue;
+            // Try allUsers first (cheap, already in memory)
+            const knownUser = allUsers?.find(u => u.id === chainTweet.author_id);
+            if (knownUser) {
+              authorUsernames.set(chainTweet.author_id, knownUser.username);
+            } else {
+              // Fall back to API lookup
+              const lookedUp = await this.twitterService.getUserById(chainTweet.author_id);
+              authorUsernames.set(chainTweet.author_id, lookedUp?.username || chainTweet.author_id);
+            }
+          }
 
-**Authored at**: ${originalTweet.created_at}
+          // Format each tweet in the chain as a single blockquote block
+          const chainLines = replyChain.map((chainTweet) => {
+            const username = authorUsernames.get(chainTweet.author_id) || chainTweet.author_id;
+            return `> @${username}: ${chainTweet.text}`;
+          });
 
-**Author user id**: ${originalTweet.author_id}
+          reviewDescription = `${chainLines.join('\n\n')}
 
-**Link to tweet**: [link](${originalTweetLink})`;
+X post saved by: [@${mentionerUsername}](https://app.ethos.network/profile/x/${mentionerUsername})
+Authored at: ${originalTweet.created_at}
+Author user id: ${originalTweet.author_id}
+Link to tweet: [link](${originalTweetLink})`;
+        } else {
+          // Standalone tweet — preserve existing single-tweet format
+          const quotedText = originalTweet.text.split('\n').map((line: string) => `> ${line}`).join('\n');
+          reviewDescription = `${quotedText}
+
+X post saved by: [@${mentionerUsername}](https://app.ethos.network/profile/x/${mentionerUsername})
+Authored at: ${originalTweet.created_at}
+Author user id: ${originalTweet.author_id}
+Link to tweet: [link](${originalTweetLink})`;
+        }
       }
 
       console.log(`📝 Review details - Score: ${reviewScore}, Title: ${reviewTitle}`);
@@ -833,13 +864,14 @@ Learn more about Ethos at https://ethos.network`;
           }
         }
 
-        // Use rotating phrases with username to avoid Twitter duplicate content errors
+        // Use rotating phrases with the tweet author's username (not the review target, which may differ for "save target" commands)
+        const tweetAuthorUsername = originalAuthor?.username || targetUsername;
         const successPhrases = [
-          `Saved ${targetUsername}'s tweet onchain.`,
-          `${targetUsername}'s tweet is now preserved onchain.`,
-          `Done! ${targetUsername}'s tweet has been saved onchain.`,
-          `Got it! Saved ${targetUsername}'s tweet onchain.`,
-          `${targetUsername}'s tweet is now permanently onchain.`,
+          `Saved ${tweetAuthorUsername}'s tweet onchain.`,
+          `${tweetAuthorUsername}'s tweet is now preserved onchain.`,
+          `Done! ${tweetAuthorUsername}'s tweet has been saved onchain.`,
+          `Got it! Saved ${tweetAuthorUsername}'s tweet onchain.`,
+          `${tweetAuthorUsername}'s tweet is now permanently onchain.`,
         ];
         // Pick phrase based on tweet ID for consistent but varied selection
         const phraseIndex = parseInt(originalTweetId.slice(-2), 10) % successPhrases.length || 0;
