@@ -5,6 +5,11 @@ import { StorageService } from "./storage-service.ts";
 import { BlocklistService } from "./blocklist-service.ts";
 import { IntentResolver } from "./intent-resolver.ts";
 
+/** Return the full tweet text, preferring note_tweet.text for long-form posts. */
+function fullText(tweet: TwitterTweet): string {
+  return tweet.note_tweet?.text || tweet.text;
+}
+
 export class CommandProcessor {
   private twitterService: TwitterService;
   private ethosService: EthosService;
@@ -737,7 +742,7 @@ Learn more about Ethos at https://ethos.network`;
         console.log(`🚨 Using anti-abuse title and description for converted positive self-review by @${mentionerUsername}`);
       } else {
         // Create the normal title: first 120 characters of tweet, strip t.co links
-        const titleText = originalTweet.text.replace(/https?:\/\/t\.co\/\S+/g, '').trim();
+        const titleText = fullText(originalTweet).replace(/https?:\/\/t\.co\/\S+/g, '').trim();
         reviewTitle = titleText.length > 120
           ? titleText.substring(0, 117) + "..."
           : titleText;
@@ -761,10 +766,12 @@ Learn more about Ethos at https://ethos.network`;
             }
           }
 
-          // Format each tweet in the chain as a single blockquote block
+          // Format each tweet in the chain as a blockquote, preserving newlines
           const chainLines = replyChain.map((chainTweet) => {
             const username = authorUsernames.get(chainTweet.author_id) || chainTweet.author_id;
-            return `> @${username}: ${chainTweet.text}`;
+            const tweetText = fullText(chainTweet);
+            const quoted = tweetText.split('\n').map((line: string) => `> ${line}`).join('\n');
+            return `> **@${username}:**\n${quoted}`;
           });
 
           reviewDescription = `${chainLines.join('\n\n')}
@@ -775,7 +782,7 @@ Author user id: ${originalTweet.author_id}
 Link to tweet: [link](${originalTweetLink})`;
         } else {
           // Standalone tweet — preserve existing single-tweet format
-          const quotedText = originalTweet.text.split('\n').map((line: string) => `> ${line}`).join('\n');
+          const quotedText = fullText(originalTweet).split('\n').map((line: string) => `> ${line}`).join('\n');
           reviewDescription = `${quotedText}
 
 X post saved by: [@${mentionerUsername}](https://app.ethos.network/profile/x/${mentionerUsername})

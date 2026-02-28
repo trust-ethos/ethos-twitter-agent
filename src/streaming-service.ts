@@ -19,7 +19,7 @@ interface StreamStatus {
 type BackoffType = "tcp" | "http" | "rate_limit";
 
 const STREAM_PARAMS = new URLSearchParams({
-  "tweet.fields": "created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets",
+  "tweet.fields": "created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets,note_tweet",
   "expansions": "author_id,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id",
   "user.fields": "id,username,name,profile_image_url",
 });

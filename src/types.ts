@@ -17,6 +17,9 @@ export interface TwitterTweet {
     type: "replied_to" | "quoted" | "retweeted";
     id: string;
   }>;
+  note_tweet?: {
+    text: string;
+  };
 }
 
 export interface TwitterWebhookEvent {

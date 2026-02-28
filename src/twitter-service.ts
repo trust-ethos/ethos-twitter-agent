@@ -623,7 +623,7 @@ export class TwitterService {
         const params = new URLSearchParams({
           query,
           max_results: validMaxResults.toString(),
-          'tweet.fields': 'created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets',
+          'tweet.fields': 'created_at,author_id,in_reply_to_user_id,conversation_id,referenced_tweets,note_tweet',
           // Request profile_image_url to get real URLs, then we can optimize them later
           'user.fields': 'id,username,name,profile_image_url',
           expansions: 'author_id,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id'
@@ -812,7 +812,7 @@ export class TwitterService {
     try {
       console.log(`🔍 Fetching tweet info for ID: ${tweetId}`);
       
-      const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,author_id,referenced_tweets,in_reply_to_user_id`, {
+      const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,author_id,referenced_tweets,in_reply_to_user_id,note_tweet`, {
         headers: {
           'Authorization': `Bearer ${this.bearerToken}`,
         },
