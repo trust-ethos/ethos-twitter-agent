@@ -812,7 +812,7 @@ export class TwitterService {
     try {
       console.log(`🔍 Fetching tweet info for ID: ${tweetId}`);
       
-      const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,author_id`, {
+      const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,author_id,referenced_tweets,in_reply_to_user_id`, {
         headers: {
           'Authorization': `Bearer ${this.bearerToken}`,
         },
@@ -839,6 +839,29 @@ export class TwitterService {
       console.error(`❌ Error fetching tweet ${tweetId}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Walk up a reply chain from the given tweet, collecting all parent tweets.
+   * Returns tweets in chronological order (oldest first, startTweet last).
+   */
+  async getReplyChain(startTweet: TwitterTweet, maxDepth: number = 10): Promise<TwitterTweet[]> {
+    const chain: TwitterTweet[] = [startTweet];
+    let current = startTweet;
+
+    for (let i = 0; i < maxDepth; i++) {
+      const parentRef = current.referenced_tweets?.find(ref => ref.type === "replied_to");
+      if (!parentRef) break;
+
+      const parent = await this.getTweetById(parentRef.id);
+      if (!parent) break;
+
+      chain.unshift(parent); // prepend so oldest ends up first
+      current = parent;
+    }
+
+    console.log(`🔗 Reply chain: ${chain.length} tweet${chain.length === 1 ? '' : 's'}`);
+    return chain;
   }
 
   /**

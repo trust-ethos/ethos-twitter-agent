@@ -22,4 +22,9 @@ Thumbs.db
 .deno/
 
 # Polling state (persisted across restarts but not committed)
-polling-state.json 
+polling-state.json
+
+# Dashboard artifacts
+dashboard/node_modules/
+dashboard/.next/
+dashboard/.env.local

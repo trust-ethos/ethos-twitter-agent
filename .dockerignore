@@ -7,6 +7,7 @@
 .playwright-mcp
 node_modules
 astro-dashboard
+dashboard
 images
 *.log
 .DS_Store

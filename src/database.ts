@@ -218,6 +218,24 @@ class DatabaseClient {
   // SAVED TWEETS OPERATIONS
   // ============================================================================
 
+  async runMigrations(): Promise<void> {
+    try {
+      // Add review_score column if it doesn't exist
+      await this.sql`
+        ALTER TABLE saved_tweets
+        ADD COLUMN IF NOT EXISTS review_score VARCHAR(10) DEFAULT 'neutral'
+      `;
+      // Add ethos_review_id column if missing (for synced reviews)
+      await this.sql`
+        ALTER TABLE saved_tweets
+        ADD COLUMN IF NOT EXISTS ethos_review_id BIGINT
+      `;
+      console.log("✅ Database migrations complete");
+    } catch (error) {
+      console.error("⚠️ Migration warning:", error);
+    }
+  }
+
   async saveTweet(data: {
     tweet_id: number;
     tweet_url: string;
@@ -228,38 +246,135 @@ class DatabaseClient {
     saved_by_username: string;
     ethos_review_id?: number;
     ethos_source?: string;
+    review_score?: string;
     published_at: Date;
   }): Promise<void> {
     await this.sql`
       INSERT INTO saved_tweets (
         tweet_id, tweet_url, original_content, author_user_id, author_username,
-        saved_by_user_id, saved_by_username, ethos_review_id, ethos_source, published_at
+        saved_by_user_id, saved_by_username, ethos_review_id, ethos_source, review_score, published_at
       ) VALUES (
-        ${data.tweet_id}, ${data.tweet_url}, ${data.original_content}, 
-        ${data.author_user_id || null}, ${data.author_username || null}, 
-        ${data.saved_by_user_id}, ${data.saved_by_username}, 
-        ${data.ethos_review_id || null}, ${data.ethos_source || null}, 
+        ${data.tweet_id}, ${data.tweet_url}, ${data.original_content},
+        ${data.author_user_id || null}, ${data.author_username || null},
+        ${data.saved_by_user_id}, ${data.saved_by_username},
+        ${data.ethos_review_id || null}, ${data.ethos_source || null},
+        ${data.review_score || 'neutral'},
         ${data.published_at.toISOString()}
       )
       ON CONFLICT (tweet_id, saved_by_user_id) DO NOTHING
     `;
   }
 
+  async upsertSyncedReview(data: {
+    tweet_id: number;
+    tweet_url: string;
+    original_content: string;
+    author_username?: string;
+    saved_by_user_id: number;
+    saved_by_username: string;
+    ethos_review_id: number;
+    review_score: string;
+    published_at: Date;
+  }): Promise<boolean> {
+    const result = await this.sql`
+      INSERT INTO saved_tweets (
+        tweet_id, tweet_url, original_content, author_username,
+        saved_by_user_id, saved_by_username, ethos_review_id, review_score, published_at
+      ) VALUES (
+        ${data.tweet_id}, ${data.tweet_url}, ${data.original_content},
+        ${data.author_username || null},
+        ${data.saved_by_user_id}, ${data.saved_by_username},
+        ${data.ethos_review_id}, ${data.review_score},
+        ${data.published_at.toISOString()}
+      )
+      ON CONFLICT (tweet_id, saved_by_user_id) DO UPDATE SET
+        review_score = ${data.review_score},
+        ethos_review_id = ${data.ethos_review_id},
+        saved_by_username = ${data.saved_by_username},
+        author_username = COALESCE(${data.author_username || null}, saved_tweets.author_username),
+        tweet_url = COALESCE(NULLIF(${data.tweet_url}, ''), saved_tweets.tweet_url),
+        published_at = ${data.published_at.toISOString()},
+        updated_at = NOW()
+      RETURNING id
+    `;
+    return result.length > 0;
+  }
+
+  async getExistingEthosReviewIds(): Promise<Set<number>> {
+    const rows = await this.sql`
+      SELECT ethos_review_id FROM saved_tweets WHERE ethos_review_id IS NOT NULL
+    `;
+    return new Set(rows.map((r: any) => Number(r.ethos_review_id)));
+  }
+
   async getSavedTweets(limit: number = 50, offset: number = 0, tweetId?: number): Promise<any[]> {
     if (tweetId) {
       return await this.sql`
-        SELECT * FROM saved_tweets 
+        SELECT * FROM saved_tweets
         WHERE tweet_id = ${tweetId}
-        ORDER BY created_at DESC 
+        ORDER BY created_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
     }
-    
+
     return await this.sql`
-      SELECT * FROM saved_tweets 
-      ORDER BY created_at DESC 
+      SELECT * FROM saved_tweets
+      ORDER BY created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `;
+  }
+
+  async getSavedTweetsForDashboard(limit: number = 50): Promise<any[]> {
+    return await this.sql`
+      SELECT
+        tweet_id,
+        author_username,
+        saved_by_username,
+        review_score,
+        published_at,
+        tweet_url,
+        original_content,
+        ethos_review_id
+      FROM saved_tweets
+      ORDER BY published_at DESC
+      LIMIT ${limit}
+    `;
+  }
+
+  async getSavedTweetStatsFromDb(): Promise<{ totalSaved: number; recentSaves: number }> {
+    const [total, recent] = await Promise.all([
+      this.sql`SELECT COUNT(*) as count FROM saved_tweets`,
+      this.sql`SELECT COUNT(*) as count FROM saved_tweets WHERE published_at > NOW() - INTERVAL '24 hours'`
+    ]);
+    return {
+      totalSaved: parseInt(total[0].count),
+      recentSaves: parseInt(recent[0].count),
+    };
+  }
+
+  async getLeaderboard(limit: number = 10): Promise<{ topSavers: any[]; mostReviewed: any[] }> {
+    const [savers, reviewed] = await Promise.all([
+      this.sql`
+        SELECT saved_by_username as username, COUNT(*) as count
+        FROM saved_tweets
+        WHERE saved_by_username IS NOT NULL AND saved_by_username != 'unknown' AND saved_by_username != 'ethosAgent'
+        GROUP BY saved_by_username
+        ORDER BY count DESC
+        LIMIT ${limit}
+      `,
+      this.sql`
+        SELECT author_username as username, COUNT(*) as count
+        FROM saved_tweets
+        WHERE author_username IS NOT NULL AND author_username != 'unknown'
+        GROUP BY author_username
+        ORDER BY count DESC
+        LIMIT ${limit}
+      `
+    ]);
+    return {
+      topSavers: savers.map((r: any) => ({ username: r.username, count: parseInt(r.count) })),
+      mostReviewed: reviewed.map((r: any) => ({ username: r.username, count: parseInt(r.count) })),
+    };
   }
 
   // ============================================================================

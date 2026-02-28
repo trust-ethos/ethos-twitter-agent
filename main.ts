@@ -4,7 +4,7 @@ import { TwitterService } from "./src/twitter-service.ts";
 import { CommandProcessor } from "./src/command-processor.ts";
 import { QueueService } from "./src/queue-service.ts";
 import { StreamingService } from "./src/streaming-service.ts";
-import { initDatabase } from "./src/database.ts";
+import { initDatabase, getDatabase } from "./src/database.ts";
 import { BlocklistService } from "./src/blocklist-service.ts";
 
 // ============================================================================
@@ -23,6 +23,7 @@ if (databaseUrl) {
     const isHealthy = await db.healthCheck();
     if (isHealthy) {
       console.log("🗄️ Database connected successfully");
+      await db.runMigrations();
       const stats = await db.getStats();
       console.log("📊 Database stats:", stats);
     } else {
@@ -414,6 +415,154 @@ router.post("/admin/blocklist/add", async (ctx) => {
   }
 });
 
+// Admin endpoint to sync reviews from Ethos API
+router.post("/admin/sync-reviews", async (ctx) => {
+  if (!checkAdminAuth(ctx)) return;
+
+  try {
+    const db = getDatabase();
+    const ethosBaseUrl = Deno.env.get("ETHOS_API_BASE_URL") || "https://api.ethos.network";
+    const ethosAgentUserkey = "service:x.com:1826663819524857857";
+    const ethosAgentTwitterId = 1826663819524857857;
+
+    // Ensure ethosAgent user exists in twitter_users (FK target)
+    await db.upsertTwitterUser({
+      id: ethosAgentTwitterId,
+      username: "ethosAgent",
+    });
+
+    // Get existing review IDs to avoid duplicates
+    const existingIds = await db.getExistingEthosReviewIds();
+    console.log(`🔄 Sync: ${existingIds.size} reviews already in database`);
+
+    let offset = 0;
+    const limit = 100;
+    let totalFromEthos = 0;
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    while (true) {
+      const res = await fetch(`${ethosBaseUrl}/api/v2/activities/profile/given`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Ethos-Client": "ethos-agent@1.0",
+        },
+        body: JSON.stringify({
+          userkey: ethosAgentUserkey,
+          filter: ["review"],
+          limit,
+          offset,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Ethos API returned ${res.status}`);
+      }
+
+      const data = await res.json();
+      totalFromEthos = data.total;
+      const reviews = data.values || [];
+
+      if (reviews.length === 0) break;
+
+      for (const review of reviews) {
+        const reviewId = review.data?.id;
+        if (!reviewId) {
+          skipped++;
+          continue;
+        }
+
+        // Parse metadata description for rich fields
+        let tweetId = 0;
+        let savedByUsername = "unknown";
+        let tweetUrl = "";
+        try {
+          const metadata = JSON.parse(review.data.metadata || "{}");
+          const desc = metadata.description || "";
+
+          // Extract "X post saved by": [@username](...)
+          const saverMatch = desc.match(/\*\*X post saved by\*\*:\s*\[@(\w+)\]/);
+          if (saverMatch) {
+            savedByUsername = saverMatch[1];
+          }
+
+          // Extract tweet URL from description or source
+          const linkMatch = desc.match(/\[link\]\((https:\/\/x\.com\/[^)]+)\)/);
+          if (linkMatch) {
+            tweetUrl = linkMatch[1];
+          }
+
+          // Extract tweet ID from URL or source
+          const source = metadata.source || "";
+          const tweetMatch = (tweetUrl || source || desc).match(/status\/(\d+)/);
+          if (tweetMatch) {
+            tweetId = parseInt(tweetMatch[1]);
+          }
+        } catch { /* ignore parse errors */ }
+
+        // Subject = the person whose tweet was reviewed (target)
+        const targetUsername = review.subject?.username || "unknown";
+        const score = review.data.score || "neutral";
+        // Use Ethos createdAt as the actual timestamp
+        const createdAt = new Date(review.data.createdAt * 1000);
+        if (!tweetUrl && tweetId) {
+          tweetUrl = `https://x.com/i/status/${tweetId}`;
+        }
+        const content = review.data.comment || "";
+
+        try {
+          await db.upsertSyncedReview({
+            tweet_id: tweetId || reviewId,
+            tweet_url: tweetUrl || review.link || "",
+            original_content: content,
+            author_username: targetUsername,
+            saved_by_user_id: ethosAgentTwitterId,
+            saved_by_username: savedByUsername,
+            ethos_review_id: reviewId,
+            review_score: score,
+            published_at: createdAt,
+          });
+          inserted++;
+          if (existingIds.has(reviewId)) updated++;
+        } catch (err) {
+          console.error(`⚠️ Failed to insert review ${reviewId}:`, err);
+          skipped++;
+        }
+      }
+
+      offset += limit;
+      if (offset >= totalFromEthos) break;
+
+      // Small delay to be nice to the API
+      await new Promise((r) => setTimeout(r, 200));
+    }
+
+    const stats = await db.getSavedTweetStatsFromDb();
+
+    ctx.response.body = {
+      status: "success",
+      message: `Synced reviews from Ethos`,
+      sync: {
+        totalOnEthos: totalFromEthos,
+        previouslyInDb: existingIds.size,
+        newlyInserted: inserted - updated,
+        updated,
+        skipped,
+        currentTotal: stats.totalSaved,
+      },
+    };
+  } catch (error) {
+    console.error("❌ Failed to sync reviews:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: `Sync failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+});
+
 // ============================================================================
 // PUBLIC API ENDPOINTS
 // ============================================================================
@@ -421,21 +570,48 @@ router.post("/admin/blocklist/add", async (ctx) => {
 // Public API endpoint for saved tweets (used by frontend)
 router.get("/api/saved-tweets", async (ctx) => {
   try {
-    const storageService = commandProcessor.storageService;
-    const recentTweets = await storageService.getRecentSavedTweets(50);
-    const stats = await storageService.getSavedTweetStats();
-    
+    // Try database first (has full history), fall back to KV
+    let recentTweets: any[];
+    let stats: { totalSaved: number; recentSaves: number };
+
+    let leaderboard: any = undefined;
+    try {
+      const db = getDatabase();
+      const [rows, dbStats, lb] = await Promise.all([
+        db.getSavedTweetsForDashboard(50),
+        db.getSavedTweetStatsFromDb(),
+        db.getLeaderboard(10),
+      ]);
+      recentTweets = rows.map((row: any) => ({
+        tweetId: String(row.tweet_id),
+        targetUsername: row.author_username || "unknown",
+        reviewerUsername: row.saved_by_username || "unknown",
+        savedAt: row.published_at,
+        reviewScore: row.review_score || "neutral",
+        tweetUrl: row.tweet_url,
+        ethosReviewId: row.ethos_review_id ? Number(row.ethos_review_id) : null,
+      }));
+      stats = dbStats;
+      leaderboard = lb;
+    } catch {
+      // Database unavailable — fall back to KV storage
+      const storageService = commandProcessor.storageService;
+      recentTweets = await storageService.getRecentSavedTweets(50);
+      stats = await storageService.getSavedTweetStats();
+    }
+
     ctx.response.body = {
       status: "success",
       count: recentTweets.length,
       stats,
+      leaderboard,
       data: recentTweets
     };
   } catch (error) {
     console.error("❌ Failed to get saved tweets:", error);
     ctx.response.status = 500;
-    ctx.response.body = { 
-      status: "error", 
+    ctx.response.body = {
+      status: "error",
       message: "Failed to get saved tweets"
     };
   }

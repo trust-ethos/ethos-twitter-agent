@@ -11,6 +11,7 @@ export interface TwitterTweet {
   text: string;
   author_id: string;
   created_at: string;
+  conversation_id?: string;
   in_reply_to_user_id?: string;
   referenced_tweets?: Array<{
     type: "replied_to" | "quoted" | "retweeted";
