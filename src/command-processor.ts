@@ -553,7 +553,18 @@ Learn more about Ethos at https://ethos.network`;
 
       console.log(`🔗 Analyzing conversation: ${conversationId}`);
 
-      // 4. Fetch thread replies
+      // 4. Fetch root tweet engagement metrics (optional)
+      let rootMetrics: { retweet_count: number; reply_count: number; quote_count: number; like_count: number; impression_count: number } | null = null;
+      try {
+        rootMetrics = await this.twitterService.getTweetMetrics(conversationId);
+        if (rootMetrics) {
+          console.log(`📊 Root tweet metrics: ${rootMetrics.impression_count} views, ${rootMetrics.like_count} likes, ${rootMetrics.retweet_count} RTs`);
+        }
+      } catch (err) {
+        console.error("⚠️ Failed to fetch root tweet metrics:", err);
+      }
+
+      // 5. Fetch thread replies
       const { replies, totalCollected, wasSampled } = await this.twitterService.getThreadReplies(conversationId);
 
       if (replies.length === 0) {
@@ -564,11 +575,11 @@ Learn more about Ethos at https://ethos.network`;
         };
       }
 
-      // 5. Get bulk Ethos scores
+      // 6. Get bulk Ethos scores
       const usernames = replies.map(r => r.authorUsername);
       const scoresMap = await this.twitterService.getBulkEthosScores(usernames);
 
-      // 6. Compute stats
+      // 7. Compute stats
       const withScore = scoresMap.size;
       let totalScore = 0;
       for (const score of scoresMap.values()) {
@@ -576,10 +587,10 @@ Learn more about Ethos at https://ethos.network`;
       }
       const avgScore = withScore > 0 ? totalScore / withScore : 0;
 
-      // 7. Compute derived stats
+      // 8. Compute derived stats
       const pctWithScore = replies.length > 0 ? (withScore / replies.length) * 100 : 0;
 
-      // 8. Get baseline + generate AI response (with DB fallback)
+      // 9. Get baseline + generate AI response (with DB fallback)
       let replyText: string;
       try {
         const db = getDatabase();
@@ -593,7 +604,7 @@ Learn more about Ethos at https://ethos.network`;
           avgScore,
           pctWithScore,
           wasSampled,
-        }, baseline);
+        }, baseline, rootMetrics);
 
         // Store this check for future baseline
         await db.insertSpamCheck({
@@ -606,6 +617,11 @@ Learn more about Ethos at https://ethos.network`;
           without_score: replies.length - withScore,
           avg_score: withScore > 0 ? avgScore : null,
           pct_with_score: replies.length > 0 ? pctWithScore : null,
+          impression_count: rootMetrics?.impression_count ?? null,
+          like_count: rootMetrics?.like_count ?? null,
+          retweet_count: rootMetrics?.retweet_count ?? null,
+          reply_count: rootMetrics?.reply_count ?? null,
+          quote_count: rootMetrics?.quote_count ?? null,
         });
       } catch (error) {
         console.error("⚠️ DB/AI unavailable for spam check, using static format:", error);

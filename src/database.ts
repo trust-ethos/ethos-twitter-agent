@@ -246,6 +246,12 @@ class DatabaseClient {
           created_at TIMESTAMPTZ DEFAULT NOW()
         )
       `;
+      // Add engagement metric columns to spam_checks
+      await this.sql`ALTER TABLE spam_checks ADD COLUMN IF NOT EXISTS impression_count INT`;
+      await this.sql`ALTER TABLE spam_checks ADD COLUMN IF NOT EXISTS like_count INT`;
+      await this.sql`ALTER TABLE spam_checks ADD COLUMN IF NOT EXISTS retweet_count INT`;
+      await this.sql`ALTER TABLE spam_checks ADD COLUMN IF NOT EXISTS reply_count INT`;
+      await this.sql`ALTER TABLE spam_checks ADD COLUMN IF NOT EXISTS quote_count INT`;
       console.log("✅ Database migrations complete");
     } catch (error) {
       console.error("⚠️ Migration warning:", error);
@@ -443,25 +449,44 @@ class DatabaseClient {
     without_score: number;
     avg_score: number | null;
     pct_with_score: number | null;
+    impression_count?: number | null;
+    like_count?: number | null;
+    retweet_count?: number | null;
+    reply_count?: number | null;
+    quote_count?: number | null;
   }): Promise<void> {
     await this.sql`
       INSERT INTO spam_checks (
         conversation_id, invoker_username, total_replies, unique_authors,
-        was_sampled, with_score, without_score, avg_score, pct_with_score
+        was_sampled, with_score, without_score, avg_score, pct_with_score,
+        impression_count, like_count, retweet_count, reply_count, quote_count
       ) VALUES (
         ${data.conversation_id}, ${data.invoker_username}, ${data.total_replies},
         ${data.unique_authors}, ${data.was_sampled}, ${data.with_score},
-        ${data.without_score}, ${data.avg_score}, ${data.pct_with_score}
+        ${data.without_score}, ${data.avg_score}, ${data.pct_with_score},
+        ${data.impression_count ?? null}, ${data.like_count ?? null},
+        ${data.retweet_count ?? null}, ${data.reply_count ?? null},
+        ${data.quote_count ?? null}
       )
     `;
   }
 
-  async getSpamCheckBaseline(): Promise<{ avgScore: number | null; avgPctWithScore: number | null; totalChecks: number }> {
+  async getSpamCheckBaseline(): Promise<{
+    avgScore: number | null;
+    avgPctWithScore: number | null;
+    totalChecks: number;
+    avgLikesPerView: number | null;
+    avgCommentsPerView: number | null;
+    avgRetweetsPerView: number | null;
+  }> {
     const result = await this.sql`
       SELECT
         AVG(avg_score) as avg_score,
         AVG(pct_with_score) as avg_pct_with_score,
-        COUNT(*) as total_checks
+        COUNT(*) as total_checks,
+        AVG(like_count::float / NULLIF(impression_count, 0)) as avg_likes_per_view,
+        AVG(reply_count::float / NULLIF(impression_count, 0)) as avg_comments_per_view,
+        AVG((retweet_count + quote_count)::float / NULLIF(impression_count, 0)) as avg_retweets_per_view
       FROM spam_checks
       WHERE avg_score IS NOT NULL
     `;
@@ -470,6 +495,9 @@ class DatabaseClient {
       avgScore: row.avg_score !== null ? parseFloat(row.avg_score) : null,
       avgPctWithScore: row.avg_pct_with_score !== null ? parseFloat(row.avg_pct_with_score) : null,
       totalChecks: parseInt(row.total_checks),
+      avgLikesPerView: row.avg_likes_per_view !== null ? parseFloat(row.avg_likes_per_view) : null,
+      avgCommentsPerView: row.avg_comments_per_view !== null ? parseFloat(row.avg_comments_per_view) : null,
+      avgRetweetsPerView: row.avg_retweets_per_view !== null ? parseFloat(row.avg_retweets_per_view) : null,
     };
   }
 

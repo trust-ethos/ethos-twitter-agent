@@ -596,6 +596,17 @@ router.post("/admin/test-spam-check", async (ctx) => {
       return;
     }
 
+    // Fetch root tweet engagement metrics (optional)
+    let rootMetrics: { retweet_count: number; reply_count: number; quote_count: number; like_count: number; impression_count: number } | null = null;
+    try {
+      rootMetrics = await twitterService.getTweetMetrics(conversationId);
+      if (rootMetrics) {
+        console.log(`📊 Root tweet metrics: ${rootMetrics.impression_count} views, ${rootMetrics.like_count} likes, ${rootMetrics.retweet_count} RTs`);
+      }
+    } catch (err) {
+      console.error("⚠️ Failed to fetch root tweet metrics:", err);
+    }
+
     // Fetch thread replies
     const { replies, totalCollected, wasSampled } = await twitterService.getThreadReplies(conversationId);
 
@@ -636,7 +647,7 @@ router.post("/admin/test-spam-check", async (ctx) => {
     const pctWithScore = replies.length > 0 ? (withScore / replies.length) * 100 : 0;
 
     let replyText: string;
-    let baseline: { avgScore: number | null; avgPctWithScore: number | null; totalChecks: number } = {
+    let baseline: { avgScore: number | null; avgPctWithScore: number | null; totalChecks: number; avgLikesPerView?: number | null; avgCommentsPerView?: number | null; avgRetweetsPerView?: number | null } = {
       avgScore: null, avgPctWithScore: null, totalChecks: 0
     };
 
@@ -652,7 +663,7 @@ router.post("/admin/test-spam-check", async (ctx) => {
         avgScore,
         pctWithScore,
         wasSampled,
-      }, baseline);
+      }, baseline, rootMetrics);
 
       // Store this check for future baseline
       await db.insertSpamCheck({
@@ -665,6 +676,11 @@ router.post("/admin/test-spam-check", async (ctx) => {
         without_score: replies.length - withScore,
         avg_score: withScore > 0 ? avgScore : null,
         pct_with_score: replies.length > 0 ? pctWithScore : null,
+        impression_count: rootMetrics?.impression_count ?? null,
+        like_count: rootMetrics?.like_count ?? null,
+        retweet_count: rootMetrics?.retweet_count ?? null,
+        reply_count: rootMetrics?.reply_count ?? null,
+        quote_count: rootMetrics?.quote_count ?? null,
       });
     } catch (error) {
       console.error("⚠️ DB/AI unavailable for test spam check:", error);
@@ -686,6 +702,7 @@ router.post("/admin/test-spam-check", async (ctx) => {
       avgScore: Math.round(avgScore),
       pctWithScore: Math.round(pctWithScore),
       baseline,
+      rootMetrics,
       replyText,
       scores: scoreBreakdown
     };

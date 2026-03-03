@@ -616,7 +616,16 @@ export class EthosService {
     avgScore: number | null;
     avgPctWithScore: number | null;
     totalChecks: number;
-  }): Promise<string> {
+    avgLikesPerView?: number | null;
+    avgCommentsPerView?: number | null;
+    avgRetweetsPerView?: number | null;
+  }, metrics?: {
+    impression_count: number;
+    like_count: number;
+    retweet_count: number;
+    reply_count: number;
+    quote_count: number;
+  } | null): Promise<string> {
     const apiKey = Deno.env.get("OPENROUTER_API_KEY");
     if (!apiKey) {
       console.log("⚠️ OpenRouter API key not configured, using static spam check format");
@@ -624,15 +633,51 @@ export class EthosService {
     }
 
     try {
-      // Build the stats header that always appears
-      const sampledNote = stats.wasSampled
-        ? `${stats.totalAnalyzed} of ~${stats.totalReplies} repliers sampled. `
-        : "";
-      const statsLine = `${sampledNote}${stats.totalAnalyzed} repliers analyzed. ${stats.withScore} have Ethos scores (avg ${Math.round(stats.avgScore)}). ${stats.withoutScore} have no score.`;
+      // Build clean stats line
+      const allScored = stats.withoutScore === 0;
+      let statsLine: string;
+      if (stats.wasSampled) {
+        if (allScored) {
+          statsLine = `${stats.totalAnalyzed} of ~${stats.totalReplies} repliers sampled (avg score ${Math.round(stats.avgScore)}).`;
+        } else {
+          statsLine = `${stats.totalAnalyzed} of ~${stats.totalReplies} repliers sampled. ${stats.withScore} have Ethos scores (avg ${Math.round(stats.avgScore)}). ${stats.withoutScore} have no score.`;
+        }
+      } else {
+        if (allScored) {
+          statsLine = `${stats.totalAnalyzed} repliers analyzed (avg score ${Math.round(stats.avgScore)}).`;
+        } else {
+          statsLine = `${stats.totalAnalyzed} repliers analyzed. ${stats.withScore} have Ethos scores (avg ${Math.round(stats.avgScore)}). ${stats.withoutScore} have no score.`;
+        }
+      }
+
+      // Build engagement line if metrics available
+      let engagementLine = "";
+      if (metrics && metrics.impression_count > 0) {
+        const fmt = (n: number): string => {
+          if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+          if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+          return String(n);
+        };
+        const likePct = ((metrics.like_count / metrics.impression_count) * 100).toFixed(1);
+        engagementLine = `\nRoot tweet: ${fmt(metrics.impression_count)} views | ${fmt(metrics.like_count)} likes (${likePct}%) | ${fmt(metrics.retweet_count + metrics.quote_count)} RTs | ${fmt(metrics.reply_count)} replies`;
+      }
 
       const baselineContext = baseline.totalChecks > 0
         ? `Historical baseline (${baseline.totalChecks} previous checks): avg Ethos score ${Math.round(baseline.avgScore!)}, avg ${Math.round(baseline.avgPctWithScore!)}% of repliers have scores.`
         : "No historical baseline yet — this is one of the first checks.";
+
+      // Build engagement ratio context for AI
+      let engagementContext = "";
+      if (metrics && metrics.impression_count > 0) {
+        const likePct = ((metrics.like_count / metrics.impression_count) * 100).toFixed(2);
+        const rtPct = (((metrics.retweet_count + metrics.quote_count) / metrics.impression_count) * 100).toFixed(2);
+        const commentPct = ((metrics.reply_count / metrics.impression_count) * 100).toFixed(2);
+        engagementContext = `\n\nEngagement ratios for root tweet:
+- ${metrics.impression_count.toLocaleString()} views
+- Like rate: ${likePct}%${baseline.avgLikesPerView != null ? ` (baseline: ${(baseline.avgLikesPerView * 100).toFixed(2)}%)` : ""}
+- RT rate: ${rtPct}%${baseline.avgRetweetsPerView != null ? ` (baseline: ${(baseline.avgRetweetsPerView * 100).toFixed(2)}%)` : ""}
+- Comment rate: ${commentPct}%${baseline.avgCommentsPerView != null ? ` (baseline: ${(baseline.avgCommentsPerView * 100).toFixed(2)}%)` : ""}`;
+      }
 
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -646,9 +691,9 @@ export class EthosService {
           model: "anthropic/claude-3-haiku",
           messages: [{
             role: "system",
-            content: `You write brutally honest, one-sentence takes about Twitter thread quality based on Ethos reputation data. You are a sharp-tongued reputation checker for crypto Twitter.
+            content: `You write brutally honest, one-sentence takes about Twitter thread quality based on Ethos reputation data and engagement ratios. You are a sharp-tongued reputation checker for crypto Twitter.
 
-Your job: write ONE sentence (~150 chars max) reacting to this thread's reputation data vs the baseline. The stats will be shown separately — your line is the editorial.
+Your job: write ONE sentence (~150 chars max) reacting to this thread's reputation data and engagement ratios vs the baseline. The stats will be shown separately — your line is the editorial.
 
 Tone guide:
 - Score well above baseline AND high % scored: give genuine props, acknowledge quality
@@ -656,6 +701,9 @@ Tone guide:
 - Score below baseline: get suspicious, call it out directly
 - Low % with scores (under 50%): roast it. Ghost accounts, bot farm energy, "who are these people"
 - Very low % with scores (under 25%): go hard. This is spam territory. Don't sugarcoat it.
+- High views but abnormally low engagement (likes/RTs): views were likely bought or botted
+- Very high like rate but low comments: engagement farm vibes, bought likes
+- Engagement ratios way off baseline: call it out
 - No baseline yet: just react to the raw numbers honestly
 
 Rules:
@@ -671,7 +719,7 @@ Rules:
 - ${stats.withScore} have Ethos scores (${Math.round(stats.pctWithScore)}%), ${stats.withoutScore} don't
 - Avg Ethos score among scored repliers: ${Math.round(stats.avgScore)}
 
-${baselineContext}`
+${baselineContext}${engagementContext}`
           }],
           max_tokens: 80,
           temperature: 0.9
@@ -694,7 +742,7 @@ ${baselineContext}`
       }
 
       console.log(`🤖 AI spam check response: "${aiText}"`);
-      return `${statsLine}\n\n${aiText}`;
+      return `${statsLine}${engagementLine}\n\n${aiText}`;
     } catch (error) {
       console.error("❌ Error generating AI spam check response:", error);
       return this.formatSpamCheckSummary(stats.totalAnalyzed, stats.totalReplies, stats.withScore, stats.avgScore, stats.wasSampled);

@@ -1316,7 +1316,7 @@ export class TwitterService {
   /**
    * Get tweet public metrics to check engagement volume
    */
-  async getTweetMetrics(tweetId: string): Promise<{ retweet_count: number; reply_count: number; quote_count: number; like_count: number } | null> {
+  async getTweetMetrics(tweetId: string): Promise<{ retweet_count: number; reply_count: number; quote_count: number; like_count: number; impression_count: number } | null> {
     try {
       const url = new URL(`https://api.twitter.com/2/tweets/${tweetId}`);
       url.searchParams.set('tweet.fields', 'public_metrics');
@@ -1335,7 +1335,8 @@ export class TwitterService {
           retweet_count: data.data.public_metrics.retweet_count || 0,
           reply_count: data.data.public_metrics.reply_count || 0,
           quote_count: data.data.public_metrics.quote_count || 0,
-          like_count: data.data.public_metrics.like_count || 0
+          like_count: data.data.public_metrics.like_count || 0,
+          impression_count: data.data.public_metrics.impression_count || 0
         };
       }
 
