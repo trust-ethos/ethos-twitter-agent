@@ -770,6 +770,36 @@ router.get("/api/saved-tweets", async (ctx) => {
   }
 });
 
+// Public API endpoint for spam checks (used by frontend)
+router.get("/api/spam-checks", async (ctx) => {
+  try {
+    const db = getDatabase();
+    const rows = await db.getRecentSpamChecks(20);
+    const data = rows.map((row: any) => ({
+      conversationId: String(row.conversation_id),
+      invokerUsername: row.invoker_username,
+      uniqueAuthors: row.unique_authors,
+      wasSampled: row.was_sampled,
+      totalReplies: row.total_replies,
+      withScore: row.with_score,
+      withoutScore: row.without_score,
+      avgScore: row.avg_score !== null ? parseFloat(row.avg_score) : null,
+      pctWithScore: row.pct_with_score !== null ? parseFloat(row.pct_with_score) : null,
+      impressionCount: row.impression_count !== null ? parseInt(row.impression_count) : null,
+      likeCount: row.like_count !== null ? parseInt(row.like_count) : null,
+      retweetCount: row.retweet_count !== null ? parseInt(row.retweet_count) : null,
+      replyCount: row.reply_count !== null ? parseInt(row.reply_count) : null,
+      quoteCount: row.quote_count !== null ? parseInt(row.quote_count) : null,
+      createdAt: row.created_at,
+    }));
+    ctx.response.body = { status: "success", data };
+  } catch (error) {
+    console.error("❌ Failed to get spam checks:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { status: "error", message: "Failed to get spam checks" };
+  }
+});
+
 // Serve the frontend dashboard
 router.get("/dashboard", async (ctx) => {
   try {

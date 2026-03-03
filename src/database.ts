@@ -501,6 +501,16 @@ class DatabaseClient {
     };
   }
 
+  async getRecentSpamChecks(limit: number = 20): Promise<any[]> {
+    return await this.sql`
+      SELECT conversation_id, invoker_username, unique_authors, was_sampled,
+             total_replies, with_score, without_score, avg_score, pct_with_score,
+             impression_count, like_count, retweet_count, reply_count, quote_count,
+             created_at
+      FROM spam_checks ORDER BY created_at DESC LIMIT ${limit}
+    `;
+  }
+
   // ============================================================================
   // UTILITY METHODS
   // ============================================================================
