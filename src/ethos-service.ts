@@ -624,6 +624,12 @@ export class EthosService {
     }
 
     try {
+      // Build the stats header that always appears
+      const sampledNote = stats.wasSampled
+        ? `${stats.totalAnalyzed} of ~${stats.totalReplies} repliers sampled. `
+        : "";
+      const statsLine = `${sampledNote}${stats.totalAnalyzed} repliers analyzed. ${stats.withScore} have Ethos scores (avg ${Math.round(stats.avgScore)}). ${stats.withoutScore} have no score.`;
+
       const baselineContext = baseline.totalChecks > 0
         ? `Historical baseline (${baseline.totalChecks} previous checks): avg Ethos score ${Math.round(baseline.avgScore!)}, avg ${Math.round(baseline.avgPctWithScore!)}% of repliers have scores.`
         : "No historical baseline yet — this is one of the first checks.";
@@ -640,27 +646,35 @@ export class EthosService {
           model: "anthropic/claude-3-haiku",
           messages: [{
             role: "system",
-            content: `You write short, opinionated takes about Twitter thread quality based on Ethos reputation data. You are the Ethos Agent — a reputation checker for crypto Twitter.
+            content: `You write brutally honest, one-sentence takes about Twitter thread quality based on Ethos reputation data. You are a sharp-tongued reputation checker for crypto Twitter.
 
-Your job: write a single punchy reply (~250 chars max, MUST fit in a tweet) comparing this thread's stats to the historical baseline. Be direct and specific with numbers.
+Your job: write ONE sentence (~150 chars max) reacting to this thread's reputation data vs the baseline. The stats will be shown separately — your line is the editorial.
 
-- If the avg score is well above baseline or high % have scores: be complimentary, this is a quality thread
-- If the avg score is below baseline or low % have scores: be snarky/suspicious, this looks spammy
-- If no baseline exists yet: just give your raw take on the numbers
+Tone guide:
+- Score well above baseline AND high % scored: give genuine props, acknowledge quality
+- Score near baseline: meh, mid, nothing special
+- Score below baseline: get suspicious, call it out directly
+- Low % with scores (under 50%): roast it. Ghost accounts, bot farm energy, "who are these people"
+- Very low % with scores (under 25%): go hard. This is spam territory. Don't sugarcoat it.
+- No baseline yet: just react to the raw numbers honestly
+
+Rules:
+- ONE sentence only, max 150 characters
+- Be spicy. Crypto Twitter respects directness, not corporate speak.
 - Never use hashtags or emojis
-- Never mention "Ethos Agent" or "I" — just state the take
-- Keep it under 250 characters`
+- Never say "Ethos Agent" or use first person
+- Don't repeat the stats — they're already shown above your line`
           }, {
             role: "user",
             content: `Thread stats:
 - ${stats.totalAnalyzed} unique repliers analyzed${stats.wasSampled ? ` (sampled from ~${stats.totalReplies})` : ""}
-- ${stats.withScore} have Ethos scores (${stats.pctWithScore}%), ${stats.withoutScore} don't
+- ${stats.withScore} have Ethos scores (${Math.round(stats.pctWithScore)}%), ${stats.withoutScore} don't
 - Avg Ethos score among scored repliers: ${Math.round(stats.avgScore)}
 
 ${baselineContext}`
           }],
-          max_tokens: 120,
-          temperature: 0.8
+          max_tokens: 80,
+          temperature: 0.9
         })
       });
 
@@ -680,7 +694,7 @@ ${baselineContext}`
       }
 
       console.log(`🤖 AI spam check response: "${aiText}"`);
-      return aiText;
+      return `${statsLine}\n\n${aiText}`;
     } catch (error) {
       console.error("❌ Error generating AI spam check response:", error);
       return this.formatSpamCheckSummary(stats.totalAnalyzed, stats.totalReplies, stats.withScore, stats.avgScore, stats.wasSampled);
