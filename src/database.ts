@@ -230,6 +230,22 @@ class DatabaseClient {
         ALTER TABLE saved_tweets
         ADD COLUMN IF NOT EXISTS ethos_review_id BIGINT
       `;
+      // Create spam_checks table for historical baseline tracking
+      await this.sql`
+        CREATE TABLE IF NOT EXISTS spam_checks (
+          id SERIAL PRIMARY KEY,
+          conversation_id TEXT NOT NULL,
+          invoker_username TEXT NOT NULL,
+          total_replies INT NOT NULL,
+          unique_authors INT NOT NULL,
+          was_sampled BOOLEAN NOT NULL DEFAULT false,
+          with_score INT NOT NULL,
+          without_score INT NOT NULL,
+          avg_score FLOAT,
+          pct_with_score FLOAT,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        )
+      `;
       console.log("✅ Database migrations complete");
     } catch (error) {
       console.error("⚠️ Migration warning:", error);
@@ -411,6 +427,50 @@ class DatabaseClient {
         updated_at = NOW()
       WHERE id = ${id}
     `;
+  }
+
+  // ============================================================================
+  // SPAM CHECK OPERATIONS
+  // ============================================================================
+
+  async insertSpamCheck(data: {
+    conversation_id: string;
+    invoker_username: string;
+    total_replies: number;
+    unique_authors: number;
+    was_sampled: boolean;
+    with_score: number;
+    without_score: number;
+    avg_score: number | null;
+    pct_with_score: number | null;
+  }): Promise<void> {
+    await this.sql`
+      INSERT INTO spam_checks (
+        conversation_id, invoker_username, total_replies, unique_authors,
+        was_sampled, with_score, without_score, avg_score, pct_with_score
+      ) VALUES (
+        ${data.conversation_id}, ${data.invoker_username}, ${data.total_replies},
+        ${data.unique_authors}, ${data.was_sampled}, ${data.with_score},
+        ${data.without_score}, ${data.avg_score}, ${data.pct_with_score}
+      )
+    `;
+  }
+
+  async getSpamCheckBaseline(): Promise<{ avgScore: number | null; avgPctWithScore: number | null; totalChecks: number }> {
+    const result = await this.sql`
+      SELECT
+        AVG(avg_score) as avg_score,
+        AVG(pct_with_score) as avg_pct_with_score,
+        COUNT(*) as total_checks
+      FROM spam_checks
+      WHERE avg_score IS NOT NULL
+    `;
+    const row = result[0];
+    return {
+      avgScore: row.avg_score !== null ? parseFloat(row.avg_score) : null,
+      avgPctWithScore: row.avg_pct_with_score !== null ? parseFloat(row.avg_pct_with_score) : null,
+      totalChecks: parseInt(row.total_checks),
+    };
   }
 
   // ============================================================================

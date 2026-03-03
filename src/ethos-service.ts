@@ -579,7 +579,7 @@ export class EthosService {
   }
 
   /**
-   * Format a summary for the spam check command
+   * Format a static summary for the spam check command (fallback)
    */
   formatSpamCheckSummary(
     totalAnalyzed: number,
@@ -598,6 +598,93 @@ export class EthosService {
     }
 
     return `${sampledNote}${totalAnalyzed} repliers analyzed. ${withScore} have Ethos scores (avg ${Math.round(avgScore)}). ${withoutScore} have no score.`;
+  }
+
+  /**
+   * Generate an AI-powered opinionated spam check response using OpenRouter
+   * Falls back to static format if the API call fails
+   */
+  async generateSpamCheckResponse(stats: {
+    totalAnalyzed: number;
+    totalReplies: number;
+    withScore: number;
+    withoutScore: number;
+    avgScore: number;
+    pctWithScore: number;
+    wasSampled: boolean;
+  }, baseline: {
+    avgScore: number | null;
+    avgPctWithScore: number | null;
+    totalChecks: number;
+  }): Promise<string> {
+    const apiKey = Deno.env.get("OPENROUTER_API_KEY");
+    if (!apiKey) {
+      console.log("⚠️ OpenRouter API key not configured, using static spam check format");
+      return this.formatSpamCheckSummary(stats.totalAnalyzed, stats.totalReplies, stats.withScore, stats.avgScore, stats.wasSampled);
+    }
+
+    try {
+      const baselineContext = baseline.totalChecks > 0
+        ? `Historical baseline (${baseline.totalChecks} previous checks): avg Ethos score ${Math.round(baseline.avgScore!)}, avg ${Math.round(baseline.avgPctWithScore!)}% of repliers have scores.`
+        : "No historical baseline yet — this is one of the first checks.";
+
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://ethos.network",
+          "X-Title": "Ethos Twitter Agent"
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-3-haiku",
+          messages: [{
+            role: "system",
+            content: `You write short, opinionated takes about Twitter thread quality based on Ethos reputation data. You are the Ethos Agent — a reputation checker for crypto Twitter.
+
+Your job: write a single punchy reply (~250 chars max, MUST fit in a tweet) comparing this thread's stats to the historical baseline. Be direct and specific with numbers.
+
+- If the avg score is well above baseline or high % have scores: be complimentary, this is a quality thread
+- If the avg score is below baseline or low % have scores: be snarky/suspicious, this looks spammy
+- If no baseline exists yet: just give your raw take on the numbers
+- Never use hashtags or emojis
+- Never mention "Ethos Agent" or "I" — just state the take
+- Keep it under 250 characters`
+          }, {
+            role: "user",
+            content: `Thread stats:
+- ${stats.totalAnalyzed} unique repliers analyzed${stats.wasSampled ? ` (sampled from ~${stats.totalReplies})` : ""}
+- ${stats.withScore} have Ethos scores (${stats.pctWithScore}%), ${stats.withoutScore} don't
+- Avg Ethos score among scored repliers: ${Math.round(stats.avgScore)}
+
+${baselineContext}`
+          }],
+          max_tokens: 120,
+          temperature: 0.8
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`❌ OpenRouter spam check response error: ${response.status} ${response.statusText}`);
+        console.error(`❌ Error details: ${errorText}`);
+        return this.formatSpamCheckSummary(stats.totalAnalyzed, stats.totalReplies, stats.withScore, stats.avgScore, stats.wasSampled);
+      }
+
+      const result = await response.json();
+      const aiText = result.choices?.[0]?.message?.content?.trim();
+
+      if (!aiText) {
+        console.error("❌ OpenRouter returned empty response for spam check");
+        return this.formatSpamCheckSummary(stats.totalAnalyzed, stats.totalReplies, stats.withScore, stats.avgScore, stats.wasSampled);
+      }
+
+      console.log(`🤖 AI spam check response: "${aiText}"`);
+      return aiText;
+    } catch (error) {
+      console.error("❌ Error generating AI spam check response:", error);
+      return this.formatSpamCheckSummary(stats.totalAnalyzed, stats.totalReplies, stats.withScore, stats.avgScore, stats.wasSampled);
+    }
   }
 
   /**

@@ -630,16 +630,48 @@ router.post("/admin/test-spam-check", async (ctx) => {
     }
     const avgScore = withScore > 0 ? totalScore / withScore : 0;
 
-    // Import EthosService to format the summary
+    // Generate AI response with baseline context
     const { EthosService } = await import("./src/ethos-service.ts");
     const ethosService = new EthosService();
-    const replyText = ethosService.formatSpamCheckSummary(
-      replies.length,
-      totalCollected,
-      withScore,
-      avgScore,
-      wasSampled
-    );
+    const pctWithScore = replies.length > 0 ? (withScore / replies.length) * 100 : 0;
+
+    let replyText: string;
+    let baseline: { avgScore: number | null; avgPctWithScore: number | null; totalChecks: number } = {
+      avgScore: null, avgPctWithScore: null, totalChecks: 0
+    };
+
+    try {
+      const db = getDatabase();
+      baseline = await db.getSpamCheckBaseline();
+
+      replyText = await ethosService.generateSpamCheckResponse({
+        totalAnalyzed: replies.length,
+        totalReplies: totalCollected,
+        withScore,
+        withoutScore: replies.length - withScore,
+        avgScore,
+        pctWithScore,
+        wasSampled,
+      }, baseline);
+
+      // Store this check for future baseline
+      await db.insertSpamCheck({
+        conversation_id: conversationId,
+        invoker_username: "admin-test",
+        total_replies: totalCollected,
+        unique_authors: replies.length,
+        was_sampled: wasSampled,
+        with_score: withScore,
+        without_score: replies.length - withScore,
+        avg_score: withScore > 0 ? avgScore : null,
+        pct_with_score: replies.length > 0 ? pctWithScore : null,
+      });
+    } catch (error) {
+      console.error("⚠️ DB/AI unavailable for test spam check:", error);
+      replyText = ethosService.formatSpamCheckSummary(
+        replies.length, totalCollected, withScore, avgScore, wasSampled
+      );
+    }
 
     ctx.response.body = {
       status: "success",
@@ -652,6 +684,8 @@ router.post("/admin/test-spam-check", async (ctx) => {
       withScore,
       withoutScore: replies.length - withScore,
       avgScore: Math.round(avgScore),
+      pctWithScore: Math.round(pctWithScore),
+      baseline,
       replyText,
       scores: scoreBreakdown
     };

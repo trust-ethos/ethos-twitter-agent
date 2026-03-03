@@ -4,6 +4,7 @@ import { EthosService } from "./ethos-service.ts";
 import { StorageService } from "./storage-service.ts";
 import { BlocklistService } from "./blocklist-service.ts";
 import { IntentResolver } from "./intent-resolver.ts";
+import { getDatabase } from "./database.ts";
 
 const SPAM_CHECK_RATE_LIMIT_EXEMPT_USERS = ["serpinxbt"];
 
@@ -575,16 +576,45 @@ Learn more about Ethos at https://ethos.network`;
       }
       const avgScore = withScore > 0 ? totalScore / withScore : 0;
 
-      // 7. Format reply
-      const replyText = this.ethosService.formatSpamCheckSummary(
-        replies.length,
-        totalCollected,
-        withScore,
-        avgScore,
-        wasSampled
-      );
+      // 7. Compute derived stats
+      const pctWithScore = replies.length > 0 ? (withScore / replies.length) * 100 : 0;
 
-      // 8. Record command usage
+      // 8. Get baseline + generate AI response (with DB fallback)
+      let replyText: string;
+      try {
+        const db = getDatabase();
+        const baseline = await db.getSpamCheckBaseline();
+
+        replyText = await this.ethosService.generateSpamCheckResponse({
+          totalAnalyzed: replies.length,
+          totalReplies: totalCollected,
+          withScore,
+          withoutScore: replies.length - withScore,
+          avgScore,
+          pctWithScore,
+          wasSampled,
+        }, baseline);
+
+        // Store this check for future baseline
+        await db.insertSpamCheck({
+          conversation_id: conversationId,
+          invoker_username: mentionerUsername,
+          total_replies: totalCollected,
+          unique_authors: replies.length,
+          was_sampled: wasSampled,
+          with_score: withScore,
+          without_score: replies.length - withScore,
+          avg_score: withScore > 0 ? avgScore : null,
+          pct_with_score: replies.length > 0 ? pctWithScore : null,
+        });
+      } catch (error) {
+        console.error("⚠️ DB/AI unavailable for spam check, using static format:", error);
+        replyText = this.ethosService.formatSpamCheckSummary(
+          replies.length, totalCollected, withScore, avgScore, wasSampled
+        );
+      }
+
+      // 9. Record command usage
       await this._storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "spam check");
 
       console.log(`✅ spam check complete: ${replies.length} analyzed, ${withScore} scored, avg=${Math.round(avgScore)}`);
