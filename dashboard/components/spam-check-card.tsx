@@ -17,7 +17,7 @@ export function SpamCheckCard({ check }: SpamCheckCardProps) {
   const conversationUrl = `https://x.com/i/status/${check.conversationId}`;
   const invokerUrl = `https://x.com/${check.invokerUsername}`;
 
-  const statsLine = `${check.uniqueAuthors} repliers analyzed${check.avgScore !== null ? ` (avg score ${Math.round(check.avgScore)})` : ""}`;
+  const statsLine = `${check.uniqueAuthors} repliers analyzed${check.avgScore !== null ? ` (avg ethos score ${Math.round(check.avgScore)})` : ""}`;
 
   let engagementLine: string | null = null;
   if (check.impressionCount !== null) {
