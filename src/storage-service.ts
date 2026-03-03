@@ -11,7 +11,7 @@ interface SavedTweet {
 interface RateLimitRecord {
   userId: string;
   username: string;
-  commandType: "save" | "reputable?";
+  commandType: "save" | "spam check";
   timestamp: string;
 }
 
@@ -267,7 +267,7 @@ export class StorageService {
   /**
    * Check if a user has exceeded the rate limit (5 commands per hour)
    */
-  async isRateLimited(userId: string, commandType: "save" | "reputable?"): Promise<boolean> {
+  async isRateLimited(userId: string, commandType: "save" | "spam check"): Promise<boolean> {
     try {
       const oneHourAgo = Date.now() - (60 * 60 * 1000);
       let commandCount = 0;
@@ -301,7 +301,7 @@ export class StorageService {
   /**
    * Check if a user has exceeded a daily rate limit (1 command per 24 hours)
    */
-  async isRateLimitedDaily(userId: string, commandType: "save" | "reputable?"): Promise<boolean> {
+  async isRateLimitedDaily(userId: string, commandType: "save" | "spam check"): Promise<boolean> {
     try {
       const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
       let commandCount = 0;
@@ -333,7 +333,7 @@ export class StorageService {
   /**
    * Record a command usage for rate limiting
    */
-  async recordCommandUsage(userId: string, username: string, commandType: "save" | "reputable?"): Promise<void> {
+  async recordCommandUsage(userId: string, username: string, commandType: "save" | "spam check"): Promise<void> {
     try {
       const now = Date.now();
       const record: RateLimitRecord = {

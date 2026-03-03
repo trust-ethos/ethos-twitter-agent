@@ -9,7 +9,7 @@ export class IntentResolver {
   constructor() {
     this.apiKey = Deno.env.get("OPENROUTER_API_KEY");
     this.baseUrl = "https://openrouter.ai/api/v1/chat/completions";
-    this.validCommands = ["profile", "grifter?", "save", "help", "reputable?"];
+    this.validCommands = ["profile", "grifter?", "save", "help", "spam check"];
   }
 
   /**
@@ -67,10 +67,10 @@ Available commands:
 - profile: Get someone's Ethos credibility score and reputation info
 - grifter?: Check if someone might be a grifter/scammer based on their reputation
 - save: Save a tweet permanently onchain as a review (includes "save target @user" to save to a specific person)
-- reputable?: Analyze the reputation of repliers in a thread based on their Ethos scores
+- spam check: Analyze the reputation of repliers in a thread based on their Ethos scores
 - help: Show available commands
 
-Respond with ONLY the single command name that best matches the user's intent, or "unknown" if it doesn't match any command. No explanation, just the command. If user wants to save/store something for or to someone specific, respond with "save".`
+Respond with ONLY the single command name that best matches the user's intent, or "unknown" if it doesn't match any command. No explanation, just the command. If user wants to save/store something for or to someone specific, respond with "save". If user wants to check for spam or bots in a thread, respond with "spam check".`
           }, {
             role: "user",
             content: input
@@ -101,9 +101,6 @@ Respond with ONLY the single command name that best matches the user's intent, o
       if (intent === "grifter") {
         return "grifter?";
       }
-      if (intent === "reputable") {
-        return "reputable?";
-      }
 
       console.log(`ℹ️ AI returned unknown/invalid intent: "${intent}"`);
       return null;
@@ -130,10 +127,13 @@ Respond with ONLY the single command name that best matches the user's intent, o
       "legit": "grifter?",
       "legit?": "grifter?",
       
-      // reputable? variations
-      "reputable": "reputable?",
-      "reputable!": "reputable?",
-      "reputation?": "reputable?",
+      // spam check variations
+      "spam": "spam check",
+      "spamcheck": "spam check",
+      "spam?": "spam check",
+      "spam check?": "spam check",
+      "bot check": "spam check",
+      "botcheck": "spam check",
 
       // profile variations
       "prof": "profile",

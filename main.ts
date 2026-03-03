@@ -563,8 +563,8 @@ router.post("/admin/sync-reviews", async (ctx) => {
   }
 });
 
-// Admin endpoint to test reputable? command without posting a tweet
-router.post("/admin/test-reputable", async (ctx) => {
+// Admin endpoint to test spam check command without posting a tweet
+router.post("/admin/test-spam-check", async (ctx) => {
   if (!checkAdminAuth(ctx)) return;
 
   try {
@@ -633,7 +633,7 @@ router.post("/admin/test-reputable", async (ctx) => {
     // Import EthosService to format the summary
     const { EthosService } = await import("./src/ethos-service.ts");
     const ethosService = new EthosService();
-    const replyText = ethosService.formatReputableSummary(
+    const replyText = ethosService.formatSpamCheckSummary(
       replies.length,
       totalCollected,
       withScore,
@@ -656,7 +656,7 @@ router.post("/admin/test-reputable", async (ctx) => {
       scores: scoreBreakdown
     };
   } catch (error) {
-    console.error("❌ test-reputable failed:", error);
+    console.error("❌ test-spam-check failed:", error);
     ctx.response.status = 500;
     ctx.response.body = {
       status: "error",

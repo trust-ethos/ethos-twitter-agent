@@ -579,9 +579,9 @@ export class EthosService {
   }
 
   /**
-   * Format a summary for the reputable? command
+   * Format a summary for the spam check command
    */
-  formatReputableSummary(
+  formatSpamCheckSummary(
     totalAnalyzed: number,
     totalReplies: number,
     withScore: number,

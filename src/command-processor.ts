@@ -5,7 +5,7 @@ import { StorageService } from "./storage-service.ts";
 import { BlocklistService } from "./blocklist-service.ts";
 import { IntentResolver } from "./intent-resolver.ts";
 
-const REPUTABLE_RATE_LIMIT_EXEMPT_USERS = ["serpinxbt"];
+const SPAM_CHECK_RATE_LIMIT_EXEMPT_USERS = ["serpinxbt"];
 
 /** Return the full tweet text, preferring note_tweet.text for long-form posts. */
 function fullText(tweet: TwitterTweet): string {
@@ -93,7 +93,7 @@ export class CommandProcessor {
     }
 
     // Define valid commands that we actually support
-    const validCommands = ["profile", "save", "help", "grifter?", "reputable?"];
+    const validCommands = ["profile", "save", "help", "grifter?", "spam check"];
     
     // Parse the tweet to find mentions and the command structure
     // Split by whitespace but preserve the original structure
@@ -231,8 +231,8 @@ export class CommandProcessor {
         case "save":
           return await this.handleSaveCommand(command, allUsers);
 
-        case "reputable?":
-          return await this.handleReputableCommand(command);
+        case "spam check":
+          return await this.handleSpamCheckCommand(command);
 
         default:
           return {
@@ -244,7 +244,7 @@ export class CommandProcessor {
     } catch (error) {
       console.error(`❌ Unexpected error processing ${command.type} command:`, error);
       
-      const knownCommands = ["profile", "help", "save", "grifter?", "reputable?"];
+      const knownCommands = ["profile", "help", "save", "grifter?", "spam check"];
       if (knownCommands.includes(command.type)) {
         return {
           success: false,
@@ -468,8 +468,8 @@ export class CommandProcessor {
    • Add sentiment: "@ethosAgent save positive target [@ mention]"
    • Default sentiment is neutral if not specified
 
-**reputable?** - Analyze the reputation of repliers in a thread
-   • Reply to any tweet with "@ethosAgent reputable?" to see Ethos scores of repliers
+**spam check** - Analyze the reputation of repliers in a thread
+   • Reply to any tweet with "@ethosAgent spam check" to see Ethos scores of repliers
    • Requires 1600+ Ethos score to use, limited to once per day
 
 **help** - Show this help message
@@ -493,15 +493,15 @@ Learn more about Ethos at https://ethos.network`;
   }
 
   /**
-   * Handle the 'reputable?' command
+   * Handle the 'spam check' command
    * Analyzes the reputation of repliers in a thread
    */
-  private async handleReputableCommand(command: Command): Promise<CommandResult> {
+  private async handleSpamCheckCommand(command: Command): Promise<CommandResult> {
     try {
       const mentionerUsername = command.mentionedUser.username;
       const mentionerUserId = command.mentionedUser.id;
 
-      console.log(`🔍 Processing reputable? command from @${mentionerUsername}`);
+      console.log(`🔍 Processing spam check command from @${mentionerUsername}`);
 
       // 1. Check invoker's Ethos score (must be >= 1600)
       const invokerStats = await this.ethosService.getUserStats(mentionerUsername);
@@ -510,21 +510,21 @@ Learn more about Ethos at https://ethos.network`;
         console.log(`🚫 @${mentionerUsername} does not meet score threshold (score: ${currentScore ?? 'none'})`);
         return {
           success: false,
-          message: "Invoker score too low for reputable? command",
-          replyText: `The reputable? command requires an Ethos score of 1600+. ${currentScore !== null && currentScore !== undefined ? `Your current score is ${currentScore}.` : "You don't have an Ethos score yet."}`
+          message: "Invoker score too low for spam check command",
+          replyText: `The spam check command requires an Ethos score of 1600+. ${currentScore !== null && currentScore !== undefined ? `Your current score is ${currentScore}.` : "You don't have an Ethos score yet."}`
         };
       }
 
       // 2. Check daily rate limit (skip for exempt users)
-      const isExempt = REPUTABLE_RATE_LIMIT_EXEMPT_USERS.includes(mentionerUsername.toLowerCase());
+      const isExempt = SPAM_CHECK_RATE_LIMIT_EXEMPT_USERS.includes(mentionerUsername.toLowerCase());
       if (!isExempt) {
-        const isLimited = await this._storageService.isRateLimitedDaily(mentionerUserId, "reputable?");
+        const isLimited = await this._storageService.isRateLimitedDaily(mentionerUserId, "spam check");
         if (isLimited) {
-          console.log(`🚨 Daily rate limit hit: @${mentionerUsername} already used reputable? today`);
+          console.log(`🚨 Daily rate limit hit: @${mentionerUsername} already used spam check today`);
           return {
             success: false,
-            message: "Reputable command daily rate limit exceeded",
-            replyText: `You've already used the reputable? command today. Try again tomorrow!`
+            message: "Spam check command daily rate limit exceeded",
+            replyText: `You've already used the spam check command today. Try again tomorrow!`
           };
         }
       }
@@ -576,7 +576,7 @@ Learn more about Ethos at https://ethos.network`;
       const avgScore = withScore > 0 ? totalScore / withScore : 0;
 
       // 7. Format reply
-      const replyText = this.ethosService.formatReputableSummary(
+      const replyText = this.ethosService.formatSpamCheckSummary(
         replies.length,
         totalCollected,
         withScore,
@@ -585,20 +585,20 @@ Learn more about Ethos at https://ethos.network`;
       );
 
       // 8. Record command usage
-      await this._storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "reputable?");
+      await this._storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "spam check");
 
-      console.log(`✅ reputable? complete: ${replies.length} analyzed, ${withScore} scored, avg=${Math.round(avgScore)}`);
+      console.log(`✅ spam check complete: ${replies.length} analyzed, ${withScore} scored, avg=${Math.round(avgScore)}`);
 
       return {
         success: true,
-        message: "Reputable command processed successfully",
+        message: "Spam check command processed successfully",
         replyText
       };
     } catch (error) {
-      console.error("❌ Error processing reputable? command:", error);
+      console.error("❌ Error processing spam check command:", error);
       return {
         success: false,
-        message: "Error processing reputable? command",
+        message: "Error processing spam check command",
         replyText: this.getStandardErrorMessage()
       };
     }
