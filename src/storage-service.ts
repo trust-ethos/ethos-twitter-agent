@@ -11,7 +11,7 @@ interface SavedTweet {
 interface RateLimitRecord {
   userId: string;
   username: string;
-  commandType: "save";
+  commandType: "save" | "reputable?";
   timestamp: string;
 }
 
@@ -267,7 +267,7 @@ export class StorageService {
   /**
    * Check if a user has exceeded the rate limit (5 commands per hour)
    */
-  async isRateLimited(userId: string, commandType: "save"): Promise<boolean> {
+  async isRateLimited(userId: string, commandType: "save" | "reputable?"): Promise<boolean> {
     try {
       const oneHourAgo = Date.now() - (60 * 60 * 1000);
       let commandCount = 0;
@@ -299,9 +299,41 @@ export class StorageService {
   }
 
   /**
+   * Check if a user has exceeded a daily rate limit (1 command per 24 hours)
+   */
+  async isRateLimitedDaily(userId: string, commandType: "save" | "reputable?"): Promise<boolean> {
+    try {
+      const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+      let commandCount = 0;
+
+      if (this.kv) {
+        const iter = this.kv.list({ prefix: ["rate_limit", userId, commandType] });
+        for await (const entry of iter) {
+          const record = entry.value as RateLimitRecord;
+          const recordTime = new Date(record.timestamp).getTime();
+          if (recordTime > oneDayAgo) {
+            commandCount++;
+          }
+        }
+      }
+
+      const isLimited = commandCount >= 1;
+
+      if (isLimited) {
+        console.log(`⚠️ User ${userId} is daily rate limited for ${commandType} commands (${commandCount}/1 per day)`);
+      }
+
+      return isLimited;
+    } catch (error) {
+      console.error("❌ Error checking daily rate limit:", error);
+      return false;
+    }
+  }
+
+  /**
    * Record a command usage for rate limiting
    */
-  async recordCommandUsage(userId: string, username: string, commandType: "save"): Promise<void> {
+  async recordCommandUsage(userId: string, username: string, commandType: "save" | "reputable?"): Promise<void> {
     try {
       const now = Date.now();
       const record: RateLimitRecord = {

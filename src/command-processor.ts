@@ -5,6 +5,8 @@ import { StorageService } from "./storage-service.ts";
 import { BlocklistService } from "./blocklist-service.ts";
 import { IntentResolver } from "./intent-resolver.ts";
 
+const REPUTABLE_RATE_LIMIT_EXEMPT_USERS = ["serpinxbt"];
+
 /** Return the full tweet text, preferring note_tweet.text for long-form posts. */
 function fullText(tweet: TwitterTweet): string {
   return tweet.note_tweet?.text || tweet.text;
@@ -91,7 +93,7 @@ export class CommandProcessor {
     }
 
     // Define valid commands that we actually support
-    const validCommands = ["profile", "save", "help", "grifter?"];
+    const validCommands = ["profile", "save", "help", "grifter?", "reputable?"];
     
     // Parse the tweet to find mentions and the command structure
     // Split by whitespace but preserve the original structure
@@ -228,7 +230,10 @@ export class CommandProcessor {
         
         case "save":
           return await this.handleSaveCommand(command, allUsers);
-        
+
+        case "reputable?":
+          return await this.handleReputableCommand(command);
+
         default:
           return {
             success: false,
@@ -239,7 +244,7 @@ export class CommandProcessor {
     } catch (error) {
       console.error(`❌ Unexpected error processing ${command.type} command:`, error);
       
-      const knownCommands = ["profile", "help", "save", "grifter?"];
+      const knownCommands = ["profile", "help", "save", "grifter?", "reputable?"];
       if (knownCommands.includes(command.type)) {
         return {
           success: false,
@@ -463,6 +468,10 @@ export class CommandProcessor {
    • Add sentiment: "@ethosAgent save positive target [@ mention]"
    • Default sentiment is neutral if not specified
 
+**reputable?** - Analyze the reputation of repliers in a thread
+   • Reply to any tweet with "@ethosAgent reputable?" to see Ethos scores of repliers
+   • Requires 1600+ Ethos score to use, limited to once per day
+
 **help** - Show this help message
 
 Learn more about Ethos at https://ethos.network`;
@@ -478,6 +487,118 @@ Learn more about Ethos at https://ethos.network`;
       return {
         success: false,
         message: "Error processing help command",
+        replyText: this.getStandardErrorMessage()
+      };
+    }
+  }
+
+  /**
+   * Handle the 'reputable?' command
+   * Analyzes the reputation of repliers in a thread
+   */
+  private async handleReputableCommand(command: Command): Promise<CommandResult> {
+    try {
+      const mentionerUsername = command.mentionedUser.username;
+      const mentionerUserId = command.mentionedUser.id;
+
+      console.log(`🔍 Processing reputable? command from @${mentionerUsername}`);
+
+      // 1. Check invoker's Ethos score (must be >= 1600)
+      const invokerStats = await this.ethosService.getUserStats(mentionerUsername);
+      if (!invokerStats.success || !invokerStats.data || invokerStats.data.score === null || invokerStats.data.score < 1600) {
+        const currentScore = invokerStats.data?.score;
+        console.log(`🚫 @${mentionerUsername} does not meet score threshold (score: ${currentScore ?? 'none'})`);
+        return {
+          success: false,
+          message: "Invoker score too low for reputable? command",
+          replyText: `The reputable? command requires an Ethos score of 1600+. ${currentScore !== null && currentScore !== undefined ? `Your current score is ${currentScore}.` : "You don't have an Ethos score yet."}`
+        };
+      }
+
+      // 2. Check daily rate limit (skip for exempt users)
+      const isExempt = REPUTABLE_RATE_LIMIT_EXEMPT_USERS.includes(mentionerUsername.toLowerCase());
+      if (!isExempt) {
+        const isLimited = await this._storageService.isRateLimitedDaily(mentionerUserId, "reputable?");
+        if (isLimited) {
+          console.log(`🚨 Daily rate limit hit: @${mentionerUsername} already used reputable? today`);
+          return {
+            success: false,
+            message: "Reputable command daily rate limit exceeded",
+            replyText: `You've already used the reputable? command today. Try again tomorrow!`
+          };
+        }
+      }
+
+      // 3. Get conversation_id from the mention tweet
+      const tweet = command.originalTweet;
+      let conversationId = tweet.conversation_id;
+
+      // If the mention tweet doesn't have conversation_id, try to get it from the parent tweet
+      if (!conversationId && tweet.referenced_tweets) {
+        const repliedTo = tweet.referenced_tweets.find(ref => ref.type === "replied_to");
+        if (repliedTo) {
+          const parentTweet = await this.twitterService.getTweetById(repliedTo.id);
+          conversationId = parentTweet?.conversation_id;
+        }
+      }
+
+      if (!conversationId) {
+        return {
+          success: false,
+          message: "Could not determine conversation_id",
+          replyText: `I couldn't find the thread to analyze. Make sure you're replying to a tweet in a conversation.`
+        };
+      }
+
+      console.log(`🔗 Analyzing conversation: ${conversationId}`);
+
+      // 4. Fetch thread replies
+      const { replies, totalCollected, wasSampled } = await this.twitterService.getThreadReplies(conversationId);
+
+      if (replies.length === 0) {
+        return {
+          success: true,
+          message: "No replies found in thread",
+          replyText: `This thread has no replies to analyze.`
+        };
+      }
+
+      // 5. Get bulk Ethos scores
+      const usernames = replies.map(r => r.authorUsername);
+      const scoresMap = await this.twitterService.getBulkEthosScores(usernames);
+
+      // 6. Compute stats
+      const withScore = scoresMap.size;
+      let totalScore = 0;
+      for (const score of scoresMap.values()) {
+        totalScore += score;
+      }
+      const avgScore = withScore > 0 ? totalScore / withScore : 0;
+
+      // 7. Format reply
+      const replyText = this.ethosService.formatReputableSummary(
+        replies.length,
+        totalCollected,
+        withScore,
+        avgScore,
+        wasSampled
+      );
+
+      // 8. Record command usage
+      await this._storageService.recordCommandUsage(mentionerUserId, mentionerUsername, "reputable?");
+
+      console.log(`✅ reputable? complete: ${replies.length} analyzed, ${withScore} scored, avg=${Math.round(avgScore)}`);
+
+      return {
+        success: true,
+        message: "Reputable command processed successfully",
+        replyText
+      };
+    } catch (error) {
+      console.error("❌ Error processing reputable? command:", error);
+      return {
+        success: false,
+        message: "Error processing reputable? command",
         replyText: this.getStandardErrorMessage()
       };
     }

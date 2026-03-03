@@ -579,6 +579,28 @@ export class EthosService {
   }
 
   /**
+   * Format a summary for the reputable? command
+   */
+  formatReputableSummary(
+    totalAnalyzed: number,
+    totalReplies: number,
+    withScore: number,
+    avgScore: number,
+    wasSampled: boolean
+  ): string {
+    const withoutScore = totalAnalyzed - withScore;
+    const sampledNote = wasSampled
+      ? `${totalAnalyzed} of ~${totalReplies} unique repliers randomly sampled.\n\n`
+      : "";
+
+    if (withScore === 0) {
+      return `${sampledNote}${totalAnalyzed} repliers analyzed. None have Ethos scores.`;
+    }
+
+    return `${sampledNote}${totalAnalyzed} repliers analyzed. ${withScore} have Ethos scores (avg ${Math.round(avgScore)}). ${withoutScore} have no score.`;
+  }
+
+  /**
    * Format a review into a tweet-friendly string
    */
   formatReviewForTweet(review: TopReview): string {

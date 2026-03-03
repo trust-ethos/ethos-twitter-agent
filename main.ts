@@ -563,6 +563,108 @@ router.post("/admin/sync-reviews", async (ctx) => {
   }
 });
 
+// Admin endpoint to test reputable? command without posting a tweet
+router.post("/admin/test-reputable", async (ctx) => {
+  if (!checkAdminAuth(ctx)) return;
+
+  try {
+    const body = await ctx.request.body().value;
+    const { tweetId } = body;
+
+    if (!tweetId) {
+      ctx.response.status = 400;
+      ctx.response.body = { status: "error", message: "tweetId is required" };
+      return;
+    }
+
+    // Fetch the tweet to get conversation_id
+    const tweet = await twitterService.getTweetById(tweetId);
+    if (!tweet) {
+      ctx.response.status = 404;
+      ctx.response.body = { status: "error", message: `Tweet ${tweetId} not found` };
+      return;
+    }
+
+    const conversationId = tweet.conversation_id;
+    if (!conversationId) {
+      ctx.response.status = 400;
+      ctx.response.body = {
+        status: "error",
+        message: "Tweet has no conversation_id (may not be part of a thread)",
+        tweet: { id: tweet.id, text: tweet.text.substring(0, 100), author_id: tweet.author_id }
+      };
+      return;
+    }
+
+    // Fetch thread replies
+    const { replies, totalCollected, wasSampled } = await twitterService.getThreadReplies(conversationId);
+
+    if (replies.length === 0) {
+      ctx.response.body = {
+        status: "success",
+        message: "No replies found in thread",
+        conversationId,
+        totalCollected: 0,
+        uniqueAuthors: 0,
+        scores: [],
+        replyText: "This thread has no replies to analyze."
+      };
+      return;
+    }
+
+    // Get bulk Ethos scores
+    const usernames = replies.map(r => r.authorUsername);
+    const scoresMap = await twitterService.getBulkEthosScores(usernames);
+
+    // Build detailed breakdown
+    const scoreBreakdown = replies.map(r => ({
+      username: r.authorUsername,
+      authorId: r.authorId,
+      ethosScore: scoresMap.get(r.authorUsername) ?? null
+    }));
+
+    const withScore = scoresMap.size;
+    let totalScore = 0;
+    for (const score of scoresMap.values()) {
+      totalScore += score;
+    }
+    const avgScore = withScore > 0 ? totalScore / withScore : 0;
+
+    // Import EthosService to format the summary
+    const { EthosService } = await import("./src/ethos-service.ts");
+    const ethosService = new EthosService();
+    const replyText = ethosService.formatReputableSummary(
+      replies.length,
+      totalCollected,
+      withScore,
+      avgScore,
+      wasSampled
+    );
+
+    ctx.response.body = {
+      status: "success",
+      conversationId,
+      tweetId,
+      tweetText: tweet.text.substring(0, 200),
+      totalCollected,
+      uniqueAuthors: replies.length,
+      wasSampled,
+      withScore,
+      withoutScore: replies.length - withScore,
+      avgScore: Math.round(avgScore),
+      replyText,
+      scores: scoreBreakdown
+    };
+  } catch (error) {
+    console.error("❌ test-reputable failed:", error);
+    ctx.response.status = 500;
+    ctx.response.body = {
+      status: "error",
+      message: `Test failed: ${error instanceof Error ? error.message : "Unknown error"}`
+    };
+  }
+});
+
 // ============================================================================
 // PUBLIC API ENDPOINTS
 // ============================================================================

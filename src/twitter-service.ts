@@ -812,7 +812,7 @@ export class TwitterService {
     try {
       console.log(`🔍 Fetching tweet info for ID: ${tweetId}`);
       
-      const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,author_id,referenced_tweets,in_reply_to_user_id,note_tweet`, {
+      const response = await fetch(`https://api.twitter.com/2/tweets/${tweetId}?tweet.fields=created_at,author_id,referenced_tweets,in_reply_to_user_id,note_tweet,conversation_id`, {
         headers: {
           'Authorization': `Bearer ${this.bearerToken}`,
         },
@@ -1082,6 +1082,86 @@ export class TwitterService {
 
     console.log(`🎯 Total repliers collected: ${repliers.length}, unique: ${uniqueRepliers.length}${rateLimited ? ' (rate limited)' : ''}`);
     return { users: uniqueRepliers, rateLimited };
+  }
+
+  /**
+   * Get unique reply authors for a conversation thread (used by reputable? command).
+   * Searches Recent Search API for conversation_id, deduplicates by author_id,
+   * and randomly samples if unique authors exceed maxReplies.
+   */
+  async getThreadReplies(
+    conversationId: string,
+    maxReplies: number = 200,
+    safetyCapTotal: number = 1000
+  ): Promise<{ replies: { authorId: string; authorUsername: string }[]; totalCollected: number; wasSampled: boolean }> {
+    const authorMap = new Map<string, { authorId: string; authorUsername: string }>();
+    let nextToken: string | undefined = undefined;
+    let totalCollected = 0;
+
+    do {
+      const url = new URL('https://api.twitter.com/2/tweets/search/recent');
+      url.searchParams.set('query', `conversation_id:${conversationId} -from:ethosAgent`);
+      url.searchParams.set('max_results', '100');
+      url.searchParams.set('tweet.fields', 'author_id');
+      url.searchParams.set('user.fields', 'username');
+      url.searchParams.set('expansions', 'author_id');
+
+      if (nextToken) {
+        url.searchParams.set('next_token', nextToken);
+      }
+
+      try {
+        const response = await this.makeEngagementOAuthRequest("GET", url.toString());
+
+        if (!response.ok) {
+          if (response.status === 429) {
+            console.log(`⏰ Rate limit hit fetching thread replies, stopping`);
+            break;
+          }
+          console.error(`❌ Thread replies API error: ${response.status} ${response.statusText}`);
+          break;
+        }
+
+        const data = await response.json();
+
+        if (data.data && data.data.length > 0) {
+          const users = data.includes?.users || [];
+          for (const tweet of data.data) {
+            totalCollected++;
+            if (!authorMap.has(tweet.author_id)) {
+              const user = users.find((u: any) => u.id === tweet.author_id);
+              authorMap.set(tweet.author_id, {
+                authorId: tweet.author_id,
+                authorUsername: user?.username || `user_${tweet.author_id}`,
+              });
+            }
+          }
+        }
+
+        nextToken = data.meta?.next_token;
+
+        // Check rate limit headers
+        const remaining = parseInt(response.headers.get('x-rate-limit-remaining') || '999');
+        if (remaining <= 1) {
+          console.log(`⏰ Rate limit exhausted fetching thread replies, stopping`);
+          break;
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching thread replies:`, error);
+        break;
+      }
+    } while (nextToken && totalCollected < safetyCapTotal);
+
+    let replies = Array.from(authorMap.values());
+    let wasSampled = false;
+
+    if (replies.length > maxReplies) {
+      replies = this.randomSample(replies, maxReplies);
+      wasSampled = true;
+    }
+
+    console.log(`🎯 Thread replies: ${totalCollected} posts, ${authorMap.size} unique authors, sampled=${wasSampled}, returning ${replies.length}`);
+    return { replies, totalCollected, wasSampled };
   }
 
   /**
