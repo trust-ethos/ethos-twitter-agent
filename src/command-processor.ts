@@ -5,6 +5,7 @@ import { StorageService } from "./storage-service.ts";
 import { BlocklistService } from "./blocklist-service.ts";
 import { IntentResolver } from "./intent-resolver.ts";
 import { getDatabase } from "./database.ts";
+import { getSlackAlerting } from "./slack-alerting.ts";
 
 const SPAM_CHECK_RATE_LIMIT_EXEMPT_USERS = ["serpinxbt"];
 
@@ -244,7 +245,15 @@ export class CommandProcessor {
       }
     } catch (error) {
       console.error(`❌ Unexpected error processing ${command.type} command:`, error);
-      
+      getSlackAlerting().alert({
+        title: `Command Error: ${command.type}`,
+        error: error.message || String(error),
+        context: {
+          "Tweet": command.tweetId || "unknown",
+          "User": command.mentionedUser?.username || "unknown",
+        },
+      });
+
       const knownCommands = ["profile", "help", "save", "grifter?", "spam check"];
       if (knownCommands.includes(command.type)) {
         return {

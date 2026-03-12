@@ -1,4 +1,5 @@
 // Ethos API service for fetching user stats and profile information
+import { getSlackAlerting } from "./slack-alerting.ts";
 
 export interface EthosUserStats {
   score: number | null;
@@ -453,6 +454,15 @@ export class EthosService {
         const errorText = await response.text();
         console.log(`❌ Ethos review API error: ${response.status} ${response.statusText}`);
         console.log(`❌ Error details: ${errorText}`);
+        getSlackAlerting().alert({
+          title: "Ethos Review API Error",
+          error: `${response.status} ${response.statusText}: ${errorText}`,
+          context: {
+            "Target": request.targetUsername,
+            "Score": request.score,
+            "Source": reviewPayload.source,
+          },
+        });
         return {
           success: false,
           error: `API request failed: ${response.status} ${response.statusText}`
@@ -469,6 +479,14 @@ export class EthosService {
 
     } catch (error) {
       console.error("❌ Error creating Ethos review:", error);
+      getSlackAlerting().alert({
+        title: "Ethos Review Creation Exception",
+        error: error.message || String(error),
+        context: {
+          "Target": request.targetUsername,
+          "Score": request.score,
+        },
+      });
       return {
         success: false,
         error: error.message || "Unknown error occurred"

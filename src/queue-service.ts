@@ -3,6 +3,7 @@
 
 import { TwitterService } from "./twitter-service.ts";
 import { CommandProcessor } from "./command-processor.ts";
+import { getSlackAlerting } from "./slack-alerting.ts";
 
 /**
  * Job data structure for the queue
@@ -174,9 +175,25 @@ export class QueueService {
 
           } else {
             console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyResult.error);
+            getSlackAlerting().alert({
+              title: "Tweet Reply Failed",
+              error: replyResult.error || "Unknown reply error",
+              context: {
+                "Tweet ID": mention.id,
+                "User": `@${author.username}`,
+              },
+            });
           }
         } catch (replyError) {
           console.error(`❌ Failed to reply to tweet ${mention.id}:`, replyError);
+          getSlackAlerting().alert({
+            title: "Tweet Reply Exception",
+            error: replyError.message || String(replyError),
+            context: {
+              "Tweet ID": mention.id,
+              "User": `@${author.username}`,
+            },
+          });
         }
       } else if (!result.success) {
         console.log(`❌ Command processing failed: ${result.message}`);

@@ -3,6 +3,7 @@
 import { TwitterService } from "./twitter-service.ts";
 import { QueueService } from "./queue-service.ts";
 import { DeduplicationService } from "./deduplication-service.ts";
+import { getSlackAlerting } from "./slack-alerting.ts";
 import { TextLineStream } from "@std/streams/text_line_stream.ts";
 
 interface StreamStatus {
@@ -180,6 +181,10 @@ export class StreamingService {
           `❌ Stream connection failed: ${response.status} ${response.statusText}`,
         );
         console.error(`❌ Error details: ${errorText}`);
+        getSlackAlerting().alert({
+          title: "Twitter Stream Connection Failed",
+          error: `${response.status} ${response.statusText}: ${errorText}`,
+        });
         this.handleConnectionError(response.status, errorText);
         return;
       }
