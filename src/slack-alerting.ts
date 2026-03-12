@@ -48,11 +48,11 @@ class SlackAlerting {
 
     const contextLines = context
       ? Object.entries(context)
-          .map(([k, v]) => `• *${k}*: ${v}`)
-          .join("\n")
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(" | ")
       : "";
 
-    const text = `:rotating_light: *${title}*\n\`\`\`${error.substring(0, 1500)}\`\`\`${contextLines ? `\n${contextLines}` : ""}`;
+    const text = `🚨 ${title}\n${error.substring(0, 1500)}${contextLines ? `\n${contextLines}` : ""}`;
 
     try {
       const response = await fetch(this.webhookUrl, {
