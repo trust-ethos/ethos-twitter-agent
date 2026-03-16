@@ -29,6 +29,11 @@ const RULE_TAG = "ethosAgent-mentions";
 const HEARTBEAT_INTERVAL_MS = 10_000;
 const HEARTBEAT_TIMEOUT_MS = 30_000;
 
+// After this many consecutive errors, do a full restart cycle (re-check rules, reset state)
+const FULL_RESTART_THRESHOLD = 50;
+// After this many consecutive errors, exit the process so the orchestrator (Railway) restarts fresh
+const FATAL_EXIT_THRESHOLD = 200;
+
 export class StreamingService {
   private twitterService: TwitterService;
   private queueService: QueueService;
@@ -318,6 +323,36 @@ export class StreamingService {
       `❌ Connection error #${this.consecutiveErrors}: status=${statusCode} message=${message}`,
     );
 
+    // After too many consecutive failures, exit so Railway restarts the container fresh
+    if (this.consecutiveErrors >= FATAL_EXIT_THRESHOLD) {
+      console.error(
+        `💀 ${FATAL_EXIT_THRESHOLD} consecutive errors — exiting process for container restart`,
+      );
+      getSlackAlerting().alert({
+        title: "Stream Fatal: Process Exiting",
+        error: `${FATAL_EXIT_THRESHOLD} consecutive connection failures. Last error: ${message}. Process exiting for container restart.`,
+      });
+      // Give Slack alert a moment to send, then exit
+      setTimeout(() => Deno.exit(1), 2_000);
+      return;
+    }
+
+    // After sustained failures, do a full restart cycle (re-check rules, reset backoff)
+    if (
+      this.consecutiveErrors >= FULL_RESTART_THRESHOLD &&
+      this.consecutiveErrors % FULL_RESTART_THRESHOLD === 0
+    ) {
+      console.warn(
+        `⚠️ ${this.consecutiveErrors} consecutive errors — performing full restart cycle`,
+      );
+      getSlackAlerting().alert({
+        title: "Stream Sustained Failure",
+        error: `${this.consecutiveErrors} consecutive connection failures. Performing full restart cycle. Last error: ${message}`,
+      });
+      this.performFullRestart();
+      return;
+    }
+
     // Determine backoff type based on status code
     if (statusCode === 429) {
       this.scheduleReconnect("rate_limit");
@@ -326,6 +361,34 @@ export class StreamingService {
     } else {
       this.scheduleReconnect("tcp");
     }
+  }
+
+  private async performFullRestart(): Promise<void> {
+    // Clear any pending reconnects
+    if (this.reconnectTimeout !== null) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
+    // Reset backoff state
+    this.tcpBackoffMs = 0;
+    this.httpBackoffMs = 5_000;
+    this.rateLimitBackoffMs = 60_000;
+
+    // Wait longer before full restart (60s)
+    console.log("⏳ Waiting 60s before full restart...");
+    await new Promise((resolve) => setTimeout(resolve, 60_000));
+
+    if (this.isStopping) return;
+
+    // Re-check stream rules and reconnect fresh
+    try {
+      await this.ensureStreamRules();
+    } catch (e) {
+      console.error("❌ Failed to re-check stream rules during restart:", e);
+    }
+
+    this.connect();
   }
 
   private scheduleReconnect(type: BackoffType): void {
