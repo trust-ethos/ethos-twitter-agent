@@ -14,6 +14,63 @@ function fullText(tweet: TwitterTweet): string {
   return tweet.note_tweet?.text || tweet.text;
 }
 
+/**
+ * Extract an explicit @mention target from the tweet text.
+ * Ignores @ethosAgent and the mentioner themselves.
+ * Returns the username (without @) if found, or null.
+ *
+ * Examples:
+ *   "is @serpinxbt a grifter?" → "serpinxbt"
+ *   "@ethosAgent grifter?" (reply to someone) → null (no explicit target)
+ */
+function extractExplicitTarget(
+  tweetText: string,
+  botUsername: string,
+  mentionerUsername: string,
+): string | null {
+  // Find all @mentions in the tweet
+  const mentionRegex = /@(\w+)/g;
+  const mentions: string[] = [];
+  let match;
+  while ((match = mentionRegex.exec(tweetText)) !== null) {
+    mentions.push(match[1]);
+  }
+
+  // Filter out the bot and the mentioner
+  const ignoredUsernames = new Set([
+    botUsername.toLowerCase(),
+    mentionerUsername.toLowerCase(),
+  ]);
+
+  // Return the first candidate that isn't in the initial mention prefix
+  // (i.e., it appears in the body of the tweet, not just the reply chain)
+  // To do this, find where the command text starts (after leading @mentions)
+  const parts = tweetText.split(/\s+/);
+  let commandStartIndex = 0;
+  for (let i = 0; i < parts.length; i++) {
+    if (parts[i].startsWith("@")) {
+      commandStartIndex = i + 1;
+    } else {
+      break;
+    }
+  }
+
+  // Get the command body text (everything after leading mentions)
+  const commandBody = parts.slice(commandStartIndex).join(" ");
+
+  // Find a @mention in the command body
+  const bodyMentionRegex = /@(\w+)/g;
+  let bodyMatch;
+  while ((bodyMatch = bodyMentionRegex.exec(commandBody)) !== null) {
+    const username = bodyMatch[1];
+    if (!ignoredUsernames.has(username.toLowerCase())) {
+      return username;
+    }
+  }
+
+  return null;
+}
+
 export class CommandProcessor {
   private twitterService: TwitterService;
   private ethosService: EthosService;
@@ -291,15 +348,40 @@ export class CommandProcessor {
 
       // Check if this is a reply to another tweet
       const isReply = tweet.in_reply_to_user_id || tweet.referenced_tweets?.some(ref => ref.type === "replied_to");
-      
+
       let targetUsername: string;
       let targetName: string;
       let analysisContext: string;
 
-      if (isReply && tweet.in_reply_to_user_id) {
+      // First, check if the tweet explicitly mentions a target user
+      // e.g. "@ethosAgent profile @serpinxbt"
+      const explicitTarget = extractExplicitTarget(
+        fullText(tweet),
+        "ethosAgent",
+        mentionerUsername,
+      );
+
+      if (explicitTarget) {
+        // Explicit @mention in the command body — look up that user
+        const explicitUser = allUsers?.find(
+          (u) => u.username.toLowerCase() === explicitTarget.toLowerCase(),
+        ) || await this.twitterService.getUserByUsername(explicitTarget);
+
+        if (explicitUser) {
+          targetUsername = explicitUser.username;
+          targetName = explicitUser.name;
+          analysisContext = `analyzing the profile of ${targetName} (@${targetUsername}) as explicitly requested by @${mentionerUsername}`;
+        } else {
+          return {
+            success: false,
+            message: `Could not find user @${explicitTarget}`,
+            replyText: `I couldn't find the user @${explicitTarget}. Please check the username and try again.`,
+          };
+        }
+      } else if (isReply && tweet.in_reply_to_user_id) {
         // This is a reply - find the original tweet author from the webhook data
         const originalAuthor = allUsers?.find(user => user.id === tweet.in_reply_to_user_id);
-        
+
         if (originalAuthor) {
           targetUsername = originalAuthor.username;
           targetName = originalAuthor.name;
@@ -372,7 +454,33 @@ export class CommandProcessor {
       let targetUserId: string;
       let analysisContext: string;
 
-      if (isReply && tweet.in_reply_to_user_id) {
+      // First, check if the tweet explicitly mentions a target user
+      // e.g. "@ethosAgent is @serpinxbt a grifter?"
+      const explicitTarget = extractExplicitTarget(
+        fullText(tweet),
+        "ethosAgent",
+        mentionerUsername,
+      );
+
+      if (explicitTarget) {
+        // Explicit @mention in the command body — look up that user
+        const explicitUser = allUsers?.find(
+          (u) => u.username.toLowerCase() === explicitTarget.toLowerCase(),
+        ) || await this.twitterService.getUserByUsername(explicitTarget);
+
+        if (explicitUser) {
+          targetUsername = explicitUser.username;
+          targetName = explicitUser.name;
+          targetUserId = explicitUser.id;
+          analysisContext = `analyzing grifter status of ${targetName} (@${targetUsername}) as explicitly requested by @${mentionerUsername}`;
+        } else {
+          return {
+            success: false,
+            message: `Could not find user @${explicitTarget}`,
+            replyText: `I couldn't find the user @${explicitTarget}. Please check the username and try again.`,
+          };
+        }
+      } else if (isReply && tweet.in_reply_to_user_id) {
         // This is a reply - find the original tweet author from the webhook data
         const originalAuthor = allUsers?.find(user => user.id === tweet.in_reply_to_user_id);
 
