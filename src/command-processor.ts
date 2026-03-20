@@ -822,14 +822,19 @@ Learn more about Ethos at https://ethos.network`;
         console.log(`💭 Found sentiment: ${reviewScore}`);
       }
 
-      // Parse remaining args to see if this is "save target @username"
+      // Parse remaining args to see if this is "save target @username" or "save @username"
       let targetUserId: string;
-      if (remainingArgs.length >= 2 && remainingArgs[0].toLowerCase() === "target") {
-        // This is "save target @username" format
+      const hasTargetKeyword = remainingArgs.length >= 2 && remainingArgs[0].toLowerCase() === "target";
+      const hasDirectMention = remainingArgs.some(arg =>
+        arg.startsWith('@') && !arg.toLowerCase().includes('ethosagent')
+      );
+      if (hasTargetKeyword || hasDirectMention) {
+        // This is "save target @username" or "save @username" format
         // Find the LAST @mention in the entire original text to handle cases like:
         // "@user1 @user2 @ethosAgent save positive target @targetuser"
+        // or "@user1 @ethosAgent save positive @targetuser"
         // We only want @targetuser, not @user1 or @user2
-        
+
         const originalText = command.originalTweet.text;
         const mentionMatches = originalText.match(/@\w+/g);
         
