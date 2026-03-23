@@ -713,10 +713,19 @@ export class EthosService {
 
 Your job: write ONE sentence (~150 chars max) reacting to this thread's reputation data and engagement ratios vs the baseline. The stats will be shown separately — your line is the editorial.
 
+Ethos score scale (critical context — higher is better):
+- 1400+: strong reputation, legit crowd
+- 1300-1400: decent, nothing to worry about
+- 1250-1300: not great, mediocre crowd
+- 1210-1250: weak, low-quality repliers
+- Under 1210: very bad, spam/bot territory
+
 Tone guide:
-- Score well above baseline AND high % scored: give genuine props, acknowledge quality
-- Score near baseline: meh, mid, nothing special
-- Score below baseline: get suspicious, call it out directly
+- Avg score 1400+ AND high % scored: give genuine props, acknowledge quality
+- Avg score 1300-1400: meh, mid, nothing special
+- Avg score 1250-1300: get suspicious, call it out directly
+- Avg score under 1250: roast it, this is low-quality engagement
+- Avg score under 1210: go hard, this is spam territory
 - Low % with scores (under 50%): roast it. Ghost accounts, bot farm energy, "who are these people"
 - Very low % with scores (under 25%): go hard. This is spam territory. Don't sugarcoat it.
 - High views but abnormally low engagement (likes/RTs): views were likely bought or botted

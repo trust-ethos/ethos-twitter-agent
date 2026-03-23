@@ -61,7 +61,7 @@ export class IntentResolver {
           model: "anthropic/claude-3-haiku",
           messages: [{
             role: "system",
-            content: `You are a command classifier for a Twitter bot that checks user reputation on Ethos Network.
+            content: `You are a strict command classifier for a Twitter bot. Users must be explicitly trying to invoke a bot command — not just chatting or mentioning the bot in conversation.
 
 Available commands:
 - profile: Get someone's Ethos credibility score and reputation info
@@ -70,7 +70,12 @@ Available commands:
 - spam check: Analyze the reputation of repliers in a thread based on their Ethos scores
 - help: Show available commands
 
-Respond with ONLY the single command name that best matches the user's intent, or "unknown" if it doesn't match any command. No explanation, just the command. If user wants to save/store something for or to someone specific, respond with "save". If user wants to check for spam or bots in a thread, respond with "spam check".`
+CRITICAL RULES:
+- Respond with ONLY the single command name, or "unknown"
+- ONLY match if the user is clearly trying to invoke a bot command
+- If the text is conversational, a general statement, or just mentions the bot in passing, respond "unknown"
+- "save" requires the user to explicitly want to save/store/record a tweet — words like "stay", "stay sharp", "check out", general advice, etc. are NOT save commands
+- When in doubt, respond "unknown" — false negatives are much better than false positives`
           }, {
             role: "user",
             content: input
