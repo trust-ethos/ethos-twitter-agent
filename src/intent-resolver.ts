@@ -73,9 +73,10 @@ Available commands:
 CRITICAL RULES:
 - Respond with ONLY the single command name, or "unknown"
 - ONLY match if the user is clearly trying to invoke a bot command
-- If the text is conversational, a general statement, or just mentions the bot in passing, respond "unknown"
+- If the text is purely conversational with no intent to use the bot (e.g. "Stay sharp and be careful", "thanks for the info"), respond "unknown"
 - "save" requires the user to explicitly want to save/store/record a tweet — words like "stay", "stay sharp", "check out", general advice, etc. are NOT save commands
-- When in doubt, respond "unknown" — false negatives are much better than false positives`
+- Questions about someone being a grifter/scammer/legit ARE valid "grifter?" commands (e.g. "is this guy a grifter?", "is he legit?", "scammer or nah?")
+- When in doubt about conversational text, respond "unknown" — but when the user is clearly asking the bot to do something, match it`
           }, {
             role: "user",
             content: input
