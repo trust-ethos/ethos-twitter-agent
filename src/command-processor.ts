@@ -174,22 +174,39 @@ export class CommandProcessor {
     }
     
     // Check if @ethosagent is mentioned in the initial group
-    const ethosAgentMentioned = initialMentions.some(mention => 
+    const ethosAgentMentioned = initialMentions.some(mention =>
       mention.includes('@ethosagent')
     );
-    
+
+    // If @ethosAgent is not in the initial mention group, look for it in the body
+    // e.g. "@mert @grok why not use @ethosAgent save negative target @someone"
+    let commandStartIndex = firstNonMentionIndex;
+    let ethosAgentInBody = false;
+
     if (!ethosAgentMentioned) {
-      console.log(`ℹ️ @ethosAgent not in initial mention group: [${initialMentions.join(', ')}]`);
+      // Find @ethosAgent in the body of the tweet
+      const ethosIndex = parts.findIndex((part, i) =>
+        i >= firstNonMentionIndex && part.toLowerCase().includes('@ethosagent')
+      );
+
+      if (ethosIndex === -1) {
+        console.log(`ℹ️ @ethosAgent not found in tweet: [${initialMentions.join(', ')}]`);
+        return null;
+      }
+
+      // Command starts after @ethosAgent in the body
+      commandStartIndex = ethosIndex + 1;
+      ethosAgentInBody = true;
+      console.log(`ℹ️ @ethosAgent found in tweet body at position ${ethosIndex}, parsing command from there`);
+    }
+
+    // Look for a command word after @ethosAgent
+    if (commandStartIndex >= parts.length) {
+      console.log(`ℹ️ No content after @ethosAgent: "${originalText}"`);
       return null;
     }
-    
-    // Look for a command word immediately after the mentions
-    if (firstNonMentionIndex >= parts.length) {
-      console.log(`ℹ️ No content after mentions: "${originalText}"`);
-      return null;
-    }
-    
-    const potentialCommand = parts[firstNonMentionIndex].toLowerCase();
+
+    const potentialCommand = parts[commandStartIndex].toLowerCase();
     
     // Check if the first word after mentions is a valid command
     let resolvedCommand: string | null = null;
@@ -198,12 +215,12 @@ export class CommandProcessor {
       resolvedCommand = potentialCommand;
     } else {
       // Try to resolve the intent using AI
-      // Get all text after mentions for context
-      const commandText = parts.slice(firstNonMentionIndex).join(' ');
+      // Get all text after @ethosAgent for context
+      const commandText = parts.slice(commandStartIndex).join(' ');
       console.log(`🤖 Attempting AI intent resolution for: "${commandText}"`);
-      
+
       resolvedCommand = await this.intentResolver.resolveIntent(commandText);
-      
+
       if (resolvedCommand) {
         console.log(`✅ AI resolved command: "${commandText}" → "${resolvedCommand}"`);
       } else {
@@ -211,9 +228,9 @@ export class CommandProcessor {
         return null;
       }
     }
-    
-    // Args are everything after the first word (which may or may not be the exact command)
-    const args = parts.slice(firstNonMentionIndex + 1);
+
+    // Args are everything after the command word
+    const args = parts.slice(commandStartIndex + 1);
     
     // Check if this is a "save target" command by looking at the args
     // Triggers if:
@@ -228,25 +245,28 @@ export class CommandProcessor {
                                 (hasTargetWord || hasTargetMention);
     
     // Check @ethosAgent position based on command type
-    const lastMention = initialMentions[initialMentions.length - 1];
-    const secondToLastMention = initialMentions.length >= 2 ? initialMentions[initialMentions.length - 2] : null;
-    
-    if (isSaveTargetCommand) {
-      // For "save target" commands, @ethosAgent can be second-to-last (target user is last)
-      const ethosAgentInCorrectPosition = lastMention.includes('@ethosagent') || 
-                                         (secondToLastMention && secondToLastMention.includes('@ethosagent'));
-      
-      if (!ethosAgentInCorrectPosition) {
-        console.log(`ℹ️ For save target command, @ethosAgent must be last or second-to-last mention in group: [${initialMentions.join(', ')}]`);
-        return null;
-      }
-      
-      console.log(`✅ Save target command: @ethosAgent found in valid position (last: ${lastMention}, second-to-last: ${secondToLastMention})`);
-    } else {
-      // For all other commands, @ethosAgent must be the LAST mention
-      if (!lastMention.includes('@ethosagent')) {
-        console.log(`ℹ️ @ethosAgent not the last mention in group: [${initialMentions.join(', ')}]. Last: ${lastMention}`);
-        return null;
+    // Skip position checks when @ethosAgent was found in the body (not in initial mentions)
+    if (!ethosAgentInBody) {
+      const lastMention = initialMentions[initialMentions.length - 1];
+      const secondToLastMention = initialMentions.length >= 2 ? initialMentions[initialMentions.length - 2] : null;
+
+      if (isSaveTargetCommand) {
+        // For "save target" commands, @ethosAgent can be second-to-last (target user is last)
+        const ethosAgentInCorrectPosition = lastMention.includes('@ethosagent') ||
+                                           (secondToLastMention && secondToLastMention.includes('@ethosagent'));
+
+        if (!ethosAgentInCorrectPosition) {
+          console.log(`ℹ️ For save target command, @ethosAgent must be last or second-to-last mention in group: [${initialMentions.join(', ')}]`);
+          return null;
+        }
+
+        console.log(`✅ Save target command: @ethosAgent found in valid position (last: ${lastMention}, second-to-last: ${secondToLastMention})`);
+      } else {
+        // For all other commands, @ethosAgent must be the LAST mention
+        if (!lastMention.includes('@ethosagent')) {
+          console.log(`ℹ️ @ethosAgent not the last mention in group: [${initialMentions.join(', ')}]. Last: ${lastMention}`);
+          return null;
+        }
       }
     }
 
