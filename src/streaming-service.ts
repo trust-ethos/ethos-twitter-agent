@@ -167,6 +167,12 @@ export class StreamingService {
   private async connect(): Promise<void> {
     if (this.isStopping) return;
 
+    // Abort any lingering previous connection before opening a new one
+    if (this.abortController) {
+      this.abortController.abort();
+      this.abortController = null;
+    }
+
     this.abortController = new AbortController();
     const url = `https://api.x.com/2/tweets/search/stream?${STREAM_PARAMS}`;
 
